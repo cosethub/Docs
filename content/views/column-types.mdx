@@ -1,0 +1,117 @@
+import { Callout } from 'nextra/components'
+
+# Column types
+
+**Select columns** define what the view returns. Use **Column** for the default type in the current mode, or open the chevron menu to pick a specific type.
+
+<Callout type="info">
+  **Screenshot placeholder** (`columns-menu.png`)
+
+  Placeholder: Chevron menu listing available column types.
+</Callout>
+
+## Display names
+
+Every select column needs a **Display name**:
+
+- Letters, numbers, and underscores only
+- Must start with a letter or underscore
+- Must be unique within the view
+
+<Callout type="info">
+  **Screenshot placeholder** (`columns-display-name.png`)
+
+  Placeholder: Display name field on a select column.
+</Callout>
+
+## Reference
+
+**Reference** columns map directly to a table column.
+
+1. Choose **Table**.
+2. Choose **Column**.
+3. Set **Display name** (defaults from the column name when you pick a source).
+
+Available in both all-rows and aggregate modes. In aggregate mode, reference columns are typically your group-by dimensions.
+
+<Callout type="info">
+  **Screenshot placeholder** (`columns-reference.png`)
+
+  Placeholder: Reference column with table and column selected.
+</Callout>
+
+## Calculated
+
+**Calculated** columns build an expression from values and operators.
+
+- Operators: `+`, `-`, `*`, `/`, `^`
+- Values can be columns or custom literals
+- Nest **groups** to control order of operations
+
+Use calculated columns in **all matching rows** mode (not for rolled-up aggregates — use SUM/AVG/etc. there instead).
+
+<Callout type="info">
+  **Screenshot placeholder** (`columns-calculated.png`)
+
+  Placeholder: Calculated column with an expression (values and operators).
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`columns-calculated-group.png`)
+
+  Placeholder: Nested calculation group for parentheses / order of operations.
+</Callout>
+
+## Conditional
+
+**Conditional** columns map to a CASE-style expression:
+
+1. Add one or more **When** / **Then** cases (each When is a condition group, similar to where logic).
+2. Optionally set a **Default** result when no case matches.
+
+Use conditional columns in **all matching rows** mode.
+
+<Callout type="info">
+  **Screenshot placeholder** (`columns-conditional.png`)
+
+  Placeholder: Conditional column with When / Then cases and Default.
+</Callout>
+
+## Aggregate columns
+
+Available when [group by](./group-by) is enabled:
+
+| Type | Purpose |
+| --- | --- |
+| **SUM** | Total of a numeric column |
+| **COUNT** | Count of rows, or of a column’s values. Leave column empty for `COUNT(*)` |
+| **AVG** | Average of a numeric column |
+| **MIN** | Minimum value |
+| **MAX** | Maximum value |
+
+For **SUM**, **COUNT**, and **AVG**, enable **Distinct** to aggregate distinct values only.
+
+<Callout type="info">
+  **Screenshot placeholder** (`columns-aggregates.png`)
+
+  Placeholder: One or more SUM/COUNT/AVG/MIN/MAX columns configured.
+</Callout>
+
+## Value types
+
+When building calculations, conditions, or filters, values are typed as:
+
+| Type | Used for |
+| --- | --- |
+| **date** | Date comparisons and date literals / presets |
+| **number** | Numeric math and comparisons |
+| **text** | String equality / contains |
+| **boolean** | True/false comparisons |
+
+Pick columns and custom values that match the type you intend so operators and pickers stay consistent.
+
+## Reordering and deleting
+
+- Drag the handle on a select column to change output order.
+- Use the trash control to remove a column.
+- At least one select column is required to save.

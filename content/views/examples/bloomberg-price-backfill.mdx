@@ -1,0 +1,100 @@
+import { Callout } from 'nextra/components'
+
+# Bloomberg price backfill
+
+**Goal:** Take positions that have no price, and fill in Bloomberg `PxLast` by matching **security**, **security type**, and **date**.
+
+This is a classic **left join** repair: keep every position; attach a price when one exists.
+
+## Sample data
+
+- [`positions.csv`](/examples/positions.csv) — 8 rows, 4 columns (no price)
+- [`bloomberg_px_last.csv`](/examples/bloomberg_px_last.csv) — 8 rows, 4 columns (Bloomberg PX_LAST style)
+
+### Positions (need prices)
+
+| AsOfDate | Security | SecurityType | Quantity |
+| --- | --- | --- | --- |
+| 2024-01-31 | AAPL | Equity | 100 |
+| 2024-01-31 | MSFT | Equity | 50 |
+| 2024-01-31 | IBM | Equity | 20 |
+| 2024-01-30 | AAPL | Equity | 100 |
+| 2024-01-30 | MSFT | Equity | 50 |
+| 2024-01-31 | US10Y | Bond | 1000 |
+| 2024-01-30 | US10Y | Bond | 1000 |
+| 2024-01-31 | EURUSD | FX | 500000 |
+
+### Bloomberg PX_LAST
+
+| AsOfDate | Security | SecurityType | PxLast |
+| --- | --- | --- | --- |
+| 2024-01-31 | AAPL | Equity | 185.50 |
+| 2024-01-31 | MSFT | Equity | 390.00 |
+| 2024-01-31 | IBM | Equity | 165.25 |
+| 2024-01-30 | AAPL | Equity | 184.00 |
+| 2024-01-30 | MSFT | Equity | 388.50 |
+| 2024-01-31 | US10Y | Bond | 98.50 |
+| 2024-01-30 | US10Y | Bond | 98.25 |
+| 2024-01-31 | EURUSD | FX | 1.0850 |
+
+Same keys on both sides: **AsOfDate + Security + SecurityType**.
+
+## Build the view (simple steps)
+
+1. **Create View**
+2. **Table** = `positions`
+3. **I want to** = all matching rows
+4. **Join** → one join:
+   - Join type: **LEFT** (keep positions even if a price is missing)
+   - Table 1: `positions`
+   - Table 2: `bloomberg_px_last`
+   - Conditions (all AND):
+     - `positions.AsOfDate` = `bloomberg_px_last.AsOfDate`
+     - `positions.Security` = `bloomberg_px_last.Security`
+     - `positions.SecurityType` = `bloomberg_px_last.SecurityType`
+5. **Select columns**
+   - Reference: AsOfDate, Security, SecurityType, Quantity, PxLast
+6. **Save**
+
+Why **LEFT**? If Bloomberg is missing a row tomorrow, you still see the position — `PxLast` is just empty.
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-bbg-join.png`)
+
+  Placeholder: LEFT join with AsOfDate, Security, SecurityType conditions.
+</Callout>
+
+## Expected result
+
+| AsOfDate | Security | SecurityType | Quantity | PxLast |
+| --- | --- | --- | --- | --- |
+| 2024-01-31 | AAPL | Equity | 100 | 185.50 |
+| 2024-01-31 | MSFT | Equity | 50 | 390.00 |
+| 2024-01-31 | IBM | Equity | 20 | 165.25 |
+| 2024-01-30 | AAPL | Equity | 100 | 184.00 |
+| 2024-01-30 | MSFT | Equity | 50 | 388.50 |
+| 2024-01-31 | US10Y | Bond | 1000 | 98.50 |
+| 2024-01-30 | US10Y | Bond | 1000 | 98.25 |
+| 2024-01-31 | EURUSD | FX | 500000 | 1.0850 |
+
+Notice **AAPL** has a different price on 01-30 vs 01-31 — the date is part of the match on purpose.
+
+## Optional: market value
+
+Add a **calculated** column:
+
+- `MarketValue` = Quantity × PxLast
+
+## Optional: find missing prices
+
+In **Where conditions**:
+
+- `PxLast` **is null**
+
+With this sample, every row matches. Delete one Bloomberg row (for example IBM) and re-run — that position should still appear with a blank `PxLast`.
+
+## What you practiced
+
+- [LEFT join](../joins) for “keep left, fill from right”
+- Matching on **security + type + date** (not security alone)
+- Optional null check in [where clauses](../where-clauses)

@@ -1,0 +1,36 @@
+import { Callout } from 'nextra/components'
+
+# Aga Sync
+
+Synchronize with AGA for automated fund accounting operations.
+
+| | |
+| --- | --- |
+| **Category** | Finance and Accounting |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. Configure AGA connection.
+2. Run sync.
+3. Continue downstream accounting jobs.
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-aga-sync-picker.png`)
+
+  Placeholder: Job type picker with Aga Sync selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-aga-sync-config.png`)
+
+  Placeholder: Configure Job Fields for Aga Sync.
+</Callout>
+
+## In a workflow tree
+
+- Add as a child under a **Group** (or under another job).
+- Give it a schedule, or **Run job based on parent status** (**On success** / **On failure** / **Always**).
+- Add children for the next step after this job finishes.
+
+See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

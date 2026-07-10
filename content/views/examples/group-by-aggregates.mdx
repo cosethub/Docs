@@ -1,0 +1,78 @@
+import { Callout } from 'nextra/components'
+
+# Group by & aggregates
+
+**Goal:** Roll positions up by fund (and optionally strategy), then measure with **SUM** and **COUNT**.
+
+This uses **aggregates / roll-up** mode — one output row per group, not one row per position.
+
+## Sample data
+
+[`positions_by_fund.csv`](/examples/positions_by_fund.csv) — 8 rows, 6 columns
+
+| AsOfDate | Fund | Strategy | Security | Quantity | MarketValue |
+| --- | --- | --- | --- | --- | --- |
+| 2024-01-31 | Alpha | LongEquity | AAPL | 100 | 18500 |
+| 2024-01-31 | Alpha | LongEquity | MSFT | 50 | 19500 |
+| 2024-01-31 | Alpha | Macro | US10Y | 1000 | 98500 |
+| 2024-01-31 | Beta | LongEquity | AAPL | 200 | 37000 |
+| 2024-01-31 | Beta | LongEquity | GOOG | 25 | 3750 |
+| 2024-01-31 | Beta | Credit | CORP1 | 500 | 50000 |
+| 2024-01-31 | Gamma | Macro | EURUSD | 500000 | 542500 |
+| 2024-01-31 | Gamma | Credit | CORP1 | 250 | 25000 |
+
+## Build the view — MV by fund
+
+1. **Create View**
+2. **Table** = `positions_by_fund`
+3. **I want to** = aggregates / rolls up groups of rows
+4. **Group by** → add **Fund**
+5. **Select columns**
+   - Reference: Fund
+   - **SUM** MarketValue → display name `TotalMV`
+   - **COUNT** (leave column empty for `COUNT(*)`) → display name `PositionCount`
+6. **Save**
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-groupby-fund.png`)
+
+  Placeholder: Group by Fund with SUM(MarketValue) and COUNT(*).
+</Callout>
+
+### Expected result
+
+| Fund | TotalMV | PositionCount |
+| --- | --- | --- |
+| Alpha | 136500 | 3 |
+| Beta | 90750 | 3 |
+| Gamma | 567500 | 2 |
+
+## Optional: finer grain — Fund + Strategy
+
+1. Keep aggregate mode.
+2. **Group by** Fund **and** Strategy.
+3. Select Fund, Strategy, SUM(MarketValue), COUNT(*).
+
+### Expected result (Fund + Strategy)
+
+| Fund | Strategy | TotalMV | PositionCount |
+| --- | --- | --- | --- |
+| Alpha | LongEquity | 38000 | 2 |
+| Alpha | Macro | 98500 | 1 |
+| Beta | LongEquity | 40750 | 2 |
+| Beta | Credit | 50000 | 1 |
+| Gamma | Macro | 542500 | 1 |
+| Gamma | Credit | 25000 | 1 |
+
+## Optional: distinct count
+
+To count unique securities per fund:
+
+- **COUNT** Security with **Distinct** checked → e.g. Alpha has 3 distinct securities
+
+## What you practiced
+
+- [Group by & aggregates](../group-by) mode
+- [SUM / COUNT](../column-types) measure columns
+- Multi-column grouping (Fund + Strategy)
+- Optional **Distinct** on COUNT

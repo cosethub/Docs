@@ -1,0 +1,28 @@
+---
+description: Write docs for hedge fund / fund admin ops and developer readers
+globs: content/**/*.mdx
+alwaysApply: false
+---
+
+# Audience: ops and developers
+
+Write for operations and engineering users at a hedge fund or fund administrator—not marketers or general consumers.
+
+## Voice
+
+- Prefer precise ops language: positions, as-of date, custodian, book, breaks, NAV, security, account, fund, strategy, reconciliation, SFTP, PX_LAST.
+- Assume readers know basic middle/back-office concepts; explain product UI and API mechanics, not what a prime broker is.
+- Be direct and procedural. Prefer numbered steps and tables over narrative fluff.
+- Avoid hype (“unlock”, “magic”, “seamless”, “game-changing”). State what the feature does and when to use it.
+
+## Examples
+
+- Use realistic counterparty / table names when helpful (e.g. book vs custodian, PB vs FA), but keep them generic enough to teach.
+- Prefer securities, quantities, market values, and dates over abstract Foo/Bar samples.
+- For API docs, use snake_case payloads and scopes that match the product; call out auth and tenant base URLs clearly.
+
+## ❌ Avoid
+
+- Consumer-app tone or startup blog voice
+- Toy domains unrelated to finance (todos, pets, e-commerce) unless illustrating a pure UI control
+- Over-explaining market structure the reader already knows

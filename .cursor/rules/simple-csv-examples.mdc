@@ -1,0 +1,33 @@
+---
+description: Keep CSV and walkthrough examples minimal; add complexity only when required
+globs: content/**/*.{mdx,js},public/examples/**
+alwaysApply: false
+---
+
+# Simple CSV examples
+
+Teaching datasets and walkthroughs must stay small and focused.
+
+## Defaults
+
+- About **5–10 rows** and **fewer than 10 columns** per CSV.
+- One teaching goal per example page (join, left join, where, group by, calculated, conditional).
+- Column names should be obvious (`AsOfDate`, `Account`, `Security`, `Quantity`, `MarketValue`).
+- Expected-result tables must match the sample math exactly so readers can verify by hand.
+
+## Add complexity only when essential
+
+| Need | OK to add |
+| --- | --- |
+| Multi-key join | 2–3 equality keys (e.g. date + account + security) |
+| Aggregates | One group-by set + 1–2 measures |
+| Filters | One AND group; nest OR only if the lesson is OR logic |
+| Calculated | One or two expressions; no deep formula trees |
+
+Do **not** add extra funds, strategies, statuses, or joins “for realism” if they are not required to show the feature.
+
+## ❌ Avoid
+
+- Wide production-like schemas or dozens of rows
+- Multiple unrelated lessons on one page
+- Optional steps that require new columns unless clearly marked optional and still tiny

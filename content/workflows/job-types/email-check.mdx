@@ -1,0 +1,36 @@
+import { Callout } from 'nextra/components'
+
+# Email Check
+
+Watch a mailbox for emails that match your rules (sender, subject, attachments, timing). Continue the workflow when found — or when not found in time.
+
+> This is the usual job for **inbound email data gathering** (save attachments, then process). For *sending* mail, use [Email](./email). For *asking* someone to send data, use [Data request task](./data-request-task).
+
+| | |
+| --- | --- |
+| **Category** | Email and Communication |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. **Mail Server Settings** — mailbox credentials.
+2. **Search Settings** — folder, subject, sender, has attachment, wait window; set **Succeed when**.
+3. **Save attachment settings** — turn on **Save attachments** and choose a folder for later jobs (Excel→CSV, decrypt, SQL Bulk Load, and so on).
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-email-check-picker.png`)
+
+  Placeholder: Job type picker with Email Check selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-email-check-config.png`)
+
+  Placeholder: Mail Server, Search Settings, Save attachments.
+</Callout>
+
+## In a workflow tree
+
+Schedule Email Check → process attachments **On success** → alert **On failure** if the mail never arrives.
+
+Walkthrough: [Email data gathering](../examples/email-data-gathering).

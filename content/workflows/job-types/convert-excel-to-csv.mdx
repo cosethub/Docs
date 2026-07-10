@@ -1,0 +1,36 @@
+import { Callout } from 'nextra/components'
+
+# Convert Excel to CSV
+
+Convert XLSX workbooks to CSV (can emit multiple CSVs for multiple sheets).
+
+| | |
+| --- | --- |
+| **Category** | Systems and Security |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. Point at the Excel file.
+2. Choose output folder.
+3. Often followed by SQL Bulk Load.
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-convert-excel-to-csv-picker.png`)
+
+  Placeholder: Job type picker with Convert Excel to CSV selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-convert-excel-to-csv-config.png`)
+
+  Placeholder: Configure Job Fields for Convert Excel to CSV.
+</Callout>
+
+## In a workflow tree
+
+- Add as a child under a **Group** (or under another job).
+- Give it a schedule, or **Run job based on parent status** (**On success** / **On failure** / **Always**).
+- Add children for the next step after this job finishes.
+
+See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

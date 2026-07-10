@@ -1,0 +1,38 @@
+import { Callout } from 'nextra/components'
+
+# Group
+
+Organizes a workflow and gives it a title. Level-1 container that does not run business logic itself.
+
+> Always start a new workflow with a Group.
+
+| | |
+| --- | --- |
+| **Category** | Other |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. Create a Group as the root of a new workflow.
+2. Add child jobs under it.
+3. Name the Group after the process (for example, Daily Broker Files).
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-group-picker.png`)
+
+  Placeholder: Job type picker with Group selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-group-config.png`)
+
+  Placeholder: Configure Job Fields for Group.
+</Callout>
+
+## In a workflow tree
+
+- Add as a child under a **Group** (or under another job).
+- Give it a schedule, or **Run job based on parent status** (**On success** / **On failure** / **Always**).
+- Add children for the next step after this job finishes.
+
+See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

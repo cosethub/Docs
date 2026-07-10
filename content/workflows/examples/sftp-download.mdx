@@ -1,0 +1,71 @@
+import { Callout } from 'nextra/components'
+
+# SFTP download
+
+**Goal:** Wait for a file on SFTP, download it, then (optionally) decrypt and load it.
+
+**FTP Download** supports FTP and **SFTP** through FTP/SFTP credentials in Credential Hub.
+
+## Tree
+
+```
+Group: Prime Broker Cash File
+ └── FTP Monitor           [schedule: weekdays 7:00]
+      └── FTP Download     [On success]
+           └── Decrypt File - PGP   [On success]   ← only if encrypted
+                └── SQL Bulk Load   [On success]
+      └── Email (alert)    [On failure]
+```
+
+Simpler version (no monitor): schedule **FTP Download** alone if the file is always there when you run.
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-sftp-tree.png`)
+
+  Placeholder: FTP Monitor → FTP Download → optional decrypt/load.
+</Callout>
+
+## 1. FTP Monitor
+
+Job type: [FTP Monitor](../job-types/ftp-monitor)
+
+| Setting | Example |
+| --- | --- |
+| Credentials | SFTP prime-broker credential |
+| Remote folder | `/outbound/cash` |
+| File pattern | `CASH_*.csv` |
+| Wait window | Until 9:00 or N minutes |
+
+## 2. FTP Download (On success)
+
+Job type: [FTP Download](../job-types/ftp-download)
+
+| Section | What to set |
+| --- | --- |
+| **FTP Settings** | Same SFTP credentials |
+| **Source Settings** | Remote folder + file name / pattern |
+| **Destination Settings** | Local folder, for example `files/pb/cash` |
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-sftp-download-config.png`)
+
+  Placeholder: FTP Download with SFTP credentials, source path, destination folder.
+</Callout>
+
+## 3. Optional next steps
+
+| If the file is… | Next job |
+| --- | --- |
+| PGP encrypted | [Decrypt File - PGP](../job-types/decrypt-file-pgp) |
+| Excel | [Convert Excel to CSV](../job-types/convert-excel-to-csv) |
+| CSV ready to load | [SQL Bulk Load](../job-types/sql-bulk-load) |
+
+## 4. Alert if the file never shows
+
+[Email](../job-types/email) under FTP Monitor with **On failure**.
+
+## What you practiced
+
+- SFTP via **FTP Monitor** + **FTP Download**  
+- Chaining decrypt / load only after a successful download  
+- Failure alert when the remote file is missing  

@@ -1,0 +1,76 @@
+import { Callout } from 'nextra/components'
+
+# Where filters
+
+**Goal:** Keep only **Active** positions for a single as-of date, using where conditions (and a nested AND group).
+
+## Sample data
+
+[`active_positions.csv`](/examples/active_positions.csv) — 8 rows, 6 columns
+
+| AsOfDate | Account | Security | Status | Quantity | MarketValue |
+| --- | --- | --- | --- | --- | --- |
+| 2024-01-31 | ACC1 | AAPL | Active | 100 | 18500 |
+| 2024-01-31 | ACC1 | MSFT | Active | 50 | 19500 |
+| 2024-01-31 | ACC1 | GOOG | Closed | 25 | 3750 |
+| 2024-01-30 | ACC2 | AAPL | Active | 200 | 36800 |
+| 2024-01-30 | ACC2 | TSLA | Pending | 10 | 2000 |
+| 2024-01-31 | ACC2 | MSFT | Active | 75 | 29250 |
+| 2024-01-31 | ACC3 | AMZN | Active | 15 | 2625 |
+| 2024-01-29 | ACC3 | IBM | Closed | 20 | 3300 |
+
+Without filters you get everything — including Closed / Pending and older dates.
+
+## Build the view
+
+1. **Create View**
+2. **Table** = `active_positions`
+3. **I want to** = all matching rows
+4. **Select columns** — Reference: AsOfDate, Account, Security, Status, Quantity, MarketValue
+5. **Where conditions** — add a **Group** with logical operator **AND**:
+   - Condition: `Status` `=` `Active`
+   - Condition: `AsOfDate` **between** `2024-01-31` and `2024-01-31`  
+     (or equality on AsOfDate if your picker allows a single day)
+6. **Save**
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-where-active.png`)
+
+  Placeholder: Where group with Status = Active AND AsOfDate on 2024-01-31.
+</Callout>
+
+### Expected result
+
+| AsOfDate | Account | Security | Status | Quantity | MarketValue |
+| --- | --- | --- | --- | --- | --- |
+| 2024-01-31 | ACC1 | AAPL | Active | 100 | 18500 |
+| 2024-01-31 | ACC1 | MSFT | Active | 50 | 19500 |
+| 2024-01-31 | ACC2 | MSFT | Active | 75 | 29250 |
+| 2024-01-31 | ACC3 | AMZN | Active | 15 | 2625 |
+
+Dropped: GOOG (Closed), ACC2 AAPL (wrong date), TSLA (Pending), IBM (Closed + older date).
+
+## Optional: text contains
+
+To keep only Apple-related securities regardless of status:
+
+- `Security` **contains** `AAPL`
+
+That returns the two AAPL rows (Active on 01-31 and Active on 01-30).
+
+## Optional: OR group
+
+To include Active **or** Pending on 2024-01-31:
+
+1. Outer group: `AsOfDate` between 2024-01-31 and 2024-01-31 (**AND**)
+2. Nested group (**OR**):
+   - `Status` `=` `Active`
+   - `Status` `=` `Pending`
+
+With this sample, Pending has no 01-31 row, so the result matches the Active-only table above.
+
+## What you practiced
+
+- [Where clauses](../where-clauses) with AND groups
+- Equality / date **between** filters
+- Optional **contains** and nested OR logic

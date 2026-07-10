@@ -1,0 +1,71 @@
+import { Callout } from 'nextra/components'
+
+# Calculated columns
+
+**Goal:** Derive **MarketValue** and **PnL** from quantity, price, and cost using calculated select columns.
+
+This stays in **all matching rows** mode — one output row per lot.
+
+## Sample data
+
+[`lots_cost.csv`](/examples/lots_cost.csv) — 8 rows, 5 columns
+
+| LotId | Security | Quantity | Price | Cost |
+| --- | --- | --- | --- | --- |
+| L1 | AAPL | 100 | 185.50 | 18000 |
+| L2 | MSFT | 50 | 390.00 | 18500 |
+| L3 | GOOG | 25 | 150.00 | 4000 |
+| L4 | TSLA | 10 | 200.00 | 2500 |
+| L5 | AMZN | 40 | 175.00 | 6000 |
+| L6 | META | 15 | 480.00 | 7500 |
+| L7 | NVDA | 80 | 500.00 | 32000 |
+| L8 | NFLX | 5 | 450.00 | 2000 |
+
+## Build the view
+
+1. **Create View**
+2. **Table** = `lots_cost`
+3. **I want to** = all matching rows
+4. **Select columns**
+   - Reference: LotId, Security, Quantity, Price, Cost
+   - **Calculated**, display name `MarketValue`:
+     - Quantity `*` Price
+   - **Calculated**, display name `PnL`:
+     - MarketValue is not available as a prior select column in the expression builder — build it as Quantity `*` Price `-` Cost  
+       (or nest a group: `(Quantity * Price) - Cost`)
+5. **Save**
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-calculated-pnl.png`)
+
+  Placeholder: Calculated columns for MarketValue and PnL.
+</Callout>
+
+### Expected result
+
+| LotId | Security | Quantity | Price | Cost | MarketValue | PnL |
+| --- | --- | --- | --- | --- | --- | --- |
+| L1 | AAPL | 100 | 185.50 | 18000 | 18550 | 550 |
+| L2 | MSFT | 50 | 390.00 | 18500 | 19500 | 1000 |
+| L3 | GOOG | 25 | 150.00 | 4000 | 3750 | -250 |
+| L4 | TSLA | 10 | 200.00 | 2500 | 2000 | -500 |
+| L5 | AMZN | 40 | 175.00 | 6000 | 7000 | 1000 |
+| L6 | META | 15 | 480.00 | 7500 | 7200 | -300 |
+| L7 | NVDA | 80 | 500.00 | 32000 | 40000 | 8000 |
+| L8 | NFLX | 5 | 450.00 | 2000 | 2250 | 250 |
+
+Winners: NVDA (+8000), MSFT / AMZN (+1000). Losers: TSLA (−500), META (−300), GOOG (−250).
+
+## Optional: only profitable lots
+
+In **Where conditions**, after you have PnL (or filter on the same expression):
+
+- `PnL` `>` `0`
+
+That keeps L1, L2, L5, L7, L8.
+
+## What you practiced
+
+- [Calculated columns](../column-types) with `*` and `-`
+- Nesting / order of operations for `(Quantity * Price) - Cost`
+- Optional [where](../where-clauses) on a derived measure

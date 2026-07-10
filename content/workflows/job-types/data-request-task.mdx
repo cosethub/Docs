@@ -1,0 +1,38 @@
+import { Callout } from 'nextra/components'
+
+# Data request task
+
+Send structured data requests to people by email and in-product notification, then wait for their response.
+
+> Outbound request pattern — different from Email Check (inbound watch).
+
+| | |
+| --- | --- |
+| **Category** | Email and Communication |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. Choose request mode (file to table, file to location, or form).
+2. Pick recipients and instructions.
+3. Child jobs run after the request is completed.
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-data-request-task-picker.png`)
+
+  Placeholder: Job type picker with Data request task selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-data-request-task-config.png`)
+
+  Placeholder: Configure Job Fields for Data request task.
+</Callout>
+
+## In a workflow tree
+
+- Add as a child under a **Group** (or under another job).
+- Give it a schedule, or **Run job based on parent status** (**On success** / **On failure** / **Always**).
+- Add children for the next step after this job finishes.
+
+See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

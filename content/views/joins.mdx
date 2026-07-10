@@ -1,0 +1,83 @@
+import { Callout } from 'nextra/components'
+
+# Joins
+
+Use **Join criteria** to bring in columns from related tables (or other views). Each join has a join type, two tables, and one or more match conditions.
+
+## Add a join
+
+1. Open **Join criteria** in the view form.
+2. Choose **Join**.
+3. Set **Join Type**, **Table 1**, and **Table 2**.
+4. Add at least one **Condition** that links the tables (for example, matching key columns).
+
+<Callout type="info">
+  **Screenshot placeholder** (`joins-add.png`)
+
+  Placeholder: Join criteria section with the Join action highlighted.
+</Callout>
+
+## Join types
+
+| Type | Behavior |
+| --- | --- |
+| **INNER** | Only rows that match on both sides |
+| **LEFT** | All rows from Table 1; matching rows from Table 2 (nulls when no match) |
+| **RIGHT** | All rows from Table 2; matching rows from Table 1 |
+| **FULL** | All rows from both tables; nulls where there is no match |
+
+<Callout type="info">
+  **Screenshot placeholder** (`joins-types.png`)
+
+  Placeholder: Join Type dropdown showing INNER, LEFT, RIGHT, FULL.
+</Callout>
+
+## Tables
+
+- **Table 1** — usually the base table or a table already included by a previous join.
+- **Table 2** — the table (or view) you are bringing in. Use the table picker; access is limited to tables you can see via screen access.
+
+You can add multiple joins. Later joins can reference tables introduced by earlier ones.
+
+<Callout type="info">
+  **Screenshot placeholder** (`joins-tables.png`)
+
+  Placeholder: A join with Table 1 and Table 2 selected.
+</Callout>
+
+## Conditions and groups
+
+Under each join:
+
+1. Choose **Condition** to add a match rule (left value, operator, right value).
+2. Choose **Group** to nest AND/OR logic when you need more than a simple equality chain.
+3. Use equality-style operators (`=`, `<>`, `>`, `>=`, `<`, `<=`) to relate columns (or values) across the two sides.
+
+<Callout type="info">
+  **Screenshot placeholder** (`joins-condition.png`)
+
+  Placeholder: A join with one or more ON conditions visible.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`joins-group.png`)
+
+  Placeholder: Nested condition group with AND/OR inside a join.
+</Callout>
+
+## Cast to date (optional)
+
+When comparing date-like values across systems, some join conditions offer a **Cast to date** option so both sides are compared as dates. Use this when raw types would otherwise prevent a correct match.
+
+<Callout type="info">
+  **Screenshot placeholder** (`joins-cast-to-date.png`)
+
+  Placeholder: Join condition showing the Cast to date option (if applicable).
+</Callout>
+
+## Tips
+
+- Prefer joining on stable keys (IDs) rather than display names when possible.
+- After adding a join, new tables appear in column pickers for [select columns](./column-types) and [where clauses](./where-clauses).
+- Remove a join with the trash control on the join header if you no longer need that table.
+- Unmatched table errors usually mean a join or column still references a table that was removed — fix or delete those references before saving.

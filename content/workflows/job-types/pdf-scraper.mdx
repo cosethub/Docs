@@ -1,0 +1,36 @@
+import { Callout } from 'nextra/components'
+
+# PDF Scraper
+
+Extract text or data from PDF documents using patterns or coordinates.
+
+| | |
+| --- | --- |
+| **Category** | Email and Communication |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. Point at the PDF source.
+2. Configure extraction rules.
+3. Write results for downstream use.
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-pdf-scraper-picker.png`)
+
+  Placeholder: Job type picker with PDF Scraper selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-pdf-scraper-config.png`)
+
+  Placeholder: Configure Job Fields for PDF Scraper.
+</Callout>
+
+## In a workflow tree
+
+- Add as a child under a **Group** (or under another job).
+- Give it a schedule, or **Run job based on parent status** (**On success** / **On failure** / **Always**).
+- Add children for the next step after this job finishes.
+
+See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

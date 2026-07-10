@@ -1,0 +1,40 @@
+import { Callout } from 'nextra/components'
+
+# Data Review Task
+
+Send data to people for **review and approval**. The job waits until someone approves or rejects.
+
+> Also labeled **Send Data for Review**. Prefer this over a plain **Task** when the thing being approved is data.
+
+| | |
+| --- | --- |
+| **Category** | Database and Reporting |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. **Recipients** — **Users to Email** and/or **Groups to Email**.
+2. **Message & Instructions** — what reviewers should check.
+3. **Data to Review** — choose one:
+   - **Link to filtered data (table or view)** — live warehouse rows
+   - **Attach a file** — snapshot (often a CSV from Table to CSV)
+4. Workflow pauses until approve / reject.
+5. **Approve** → parent succeeds → **On success** children. **Reject** → **On failure** children.
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-data-review-task-picker.png`)
+
+  Placeholder: Job type picker with Data Review Task selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-data-review-task-config.png`)
+
+  Placeholder: Recipients, Message, Link vs Attach a file.
+</Callout>
+
+## In a workflow tree
+
+Put it **after** data exists (Table to CSV, SQL, FTP Download, Email Check, and so on). Branch continue vs alert on success/failure.
+
+Full walkthrough: [Data review](../examples/data-review).

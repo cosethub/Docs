@@ -1,0 +1,75 @@
+import { Callout } from 'nextra/components'
+
+# Email data gathering
+
+**Goal:** Watch a mailbox for a broker file, save the attachment, turn it into CSV, and load it.
+
+This uses **Email Check** (inbound watch) — not the Email *send* job.
+
+## Tree
+
+```
+Group: Broker NAV Email
+ └── Email Check              [schedule: weekdays 8:00]
+      └── Convert Excel to CSV     [On success]
+           └── SQL Bulk Load       [On success]
+      └── Email (alert)            [On failure]   ← not found / timeout
+```
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-email-gather-tree.png`)
+
+  Placeholder: Tree with Email Check and On success / On failure children.
+</Callout>
+
+## 1. Email Check
+
+Job type: [Email Check](../job-types/email-check)
+
+Set roughly:
+
+| Section | What to set |
+| --- | --- |
+| **Mail Server Settings** | Mailbox credentials |
+| **Search Settings** | Sender and/or subject (for example, subject contains `NAV`) |
+| **Succeed when** | Email is found (within your wait window) |
+| **Save attachment settings** | **Save attachments** on → folder such as `inbox/broker` |
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-email-check-config.png`)
+
+  Placeholder: Email Check with search rules and Save attachments enabled.
+</Callout>
+
+## 2. Convert Excel to CSV (On success)
+
+Job type: [Convert Excel to CSV](../job-types/convert-excel-to-csv)
+
+- Source = the attachment folder / file from Email Check  
+- Destination = a CSV folder  
+
+Skip this step if the attachment is already CSV.
+
+## 3. SQL Bulk Load (On success)
+
+Job type: [SQL Bulk Load](../job-types/sql-bulk-load)
+
+- Point at the CSV  
+- Choose database + table  
+
+## 4. Alert on failure (optional)
+
+Job type: [Email](../job-types/email)
+
+- Child of Email Check with **On failure**  
+- Body: “Broker NAV email not received by 8:00”
+
+## What you practiced
+
+- Inbound **email data gathering** with Email Check  
+- Saving attachments for the next job  
+- **On success** processing vs **On failure** alert  
+
+### Related
+
+Outbound *requests* for data (ask someone to send you a file/form) use [Data request task](../job-types/data-request-task), not Email Check.

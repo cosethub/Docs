@@ -1,0 +1,103 @@
+import { Callout } from 'nextra/components'
+
+# Reconciliation
+
+**Goal:** Compare what your book says you hold vs what the custodian says you hold.
+
+You join the two files on the same keys, then look at quantity differences.
+
+## Sample data
+
+Load these CSVs as two tables (names used below: `book_positions` and `custodian_positions`):
+
+- [`book_positions.csv`](/examples/book_positions.csv) — 8 rows, 4 columns
+- [`custodian_positions.csv`](/examples/custodian_positions.csv) — 8 rows, 4 columns
+
+### Book (yours)
+
+| AsOfDate | Account | Security | BookQty |
+| --- | --- | --- | --- |
+| 2024-01-31 | ACC1 | AAPL | 100 |
+| 2024-01-31 | ACC1 | MSFT | 50 |
+| 2024-01-31 | ACC1 | GOOG | 25 |
+| 2024-01-31 | ACC2 | AAPL | 200 |
+| 2024-01-31 | ACC2 | TSLA | 10 |
+| 2024-01-31 | ACC2 | MSFT | 75 |
+| 2024-01-31 | ACC3 | AAPL | 40 |
+| 2024-01-31 | ACC3 | AMZN | 15 |
+
+### Custodian (theirs)
+
+| AsOfDate | Account | Security | CustodianQty |
+| --- | --- | --- | --- |
+| 2024-01-31 | ACC1 | AAPL | 100 |
+| 2024-01-31 | ACC1 | MSFT | 55 |
+| 2024-01-31 | ACC1 | GOOG | 25 |
+| 2024-01-31 | ACC2 | AAPL | 195 |
+| 2024-01-31 | ACC2 | TSLA | 10 |
+| 2024-01-31 | ACC2 | MSFT | 75 |
+| 2024-01-31 | ACC3 | AAPL | 40 |
+| 2024-01-31 | ACC3 | AMZN | 20 |
+
+Three lines do **not** match: ACC1/MSFT, ACC2/AAPL, ACC3/AMZN.
+
+## Build the view (simple steps)
+
+1. **Create View**
+2. **Table** = `book_positions`
+3. **I want to** = all matching rows (not aggregates)
+4. **Join** → add one join:
+   - Join type: **INNER**
+   - Table 1: `book_positions`
+   - Table 2: `custodian_positions`
+   - Conditions (all AND):
+     - `book_positions.AsOfDate` = `custodian_positions.AsOfDate`
+     - `book_positions.Account` = `custodian_positions.Account`
+     - `book_positions.Security` = `custodian_positions.Security`
+5. **Select columns**
+   - Reference: Account, Security, BookQty, CustodianQty
+   - Calculated: `Diff` = BookQty − CustodianQty
+6. **Save**
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-rec-join.png`)
+
+  Placeholder: Join with three equality conditions.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-rec-diff.png`)
+
+  Placeholder: Calculated column Diff = BookQty - CustodianQty.
+</Callout>
+
+## Expected result
+
+| Account | Security | BookQty | CustodianQty | Diff |
+| --- | --- | --- | --- | --- |
+| ACC1 | AAPL | 100 | 100 | 0 |
+| ACC1 | MSFT | 50 | 55 | -5 |
+| ACC1 | GOOG | 25 | 25 | 0 |
+| ACC2 | AAPL | 200 | 195 | 5 |
+| ACC2 | TSLA | 10 | 10 | 0 |
+| ACC2 | MSFT | 75 | 75 | 0 |
+| ACC3 | AAPL | 40 | 40 | 0 |
+| ACC3 | AMZN | 15 | 20 | -5 |
+
+**Breaks to investigate:** Diff ≠ 0 (MSFT −5, AAPL +5, AMZN −5).
+
+## Optional: only show breaks
+
+In **Where conditions**, add:
+
+- `Diff` `<>` `0`
+
+(or filter BookQty − CustodianQty ≠ 0 if you filter before naming Diff).
+
+Then you only keep the three mismatch rows.
+
+## What you practiced
+
+- [Joins](../joins) on multiple keys
+- A [calculated column](../column-types) for the difference
+- Optional [where](../where-clauses) to hide matches

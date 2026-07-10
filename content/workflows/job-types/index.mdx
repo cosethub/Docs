@@ -1,0 +1,100 @@
+---
+asIndexPage: true
+---
+
+# Job types
+
+Each job type is one kind of step you can put in a workflow tree. Pick a type when you **Add Workflow Item** or **Add Child Job**.
+
+## Categories
+
+Jobs are grouped in the picker as:
+
+1. Email and Communication
+2. Systems and Security
+3. Database and Reporting
+4. Finance and Accounting
+5. Other
+
+### Email and Communication
+
+| Job type | What it does |
+| --- | --- |
+| [Data request task](./data-request-task) | Send structured data requests to people by email and in-product notification, then wait for their response. |
+| [Email](./email) | Send an email from RyanEyes, with optional attachments, recipients, and subject/body. |
+| [Email Check](./email-check) | Watch a mailbox for emails that match your rules (sender, subject, attachments, timing). |
+| [FTP Download](./ftp-download) | Download one or more files from FTP or SFTP to a local destination. |
+| [FTP Monitor](./ftp-monitor) | Watch an FTP/SFTP site until a matching file appears (or timeout). |
+| [FTP Transmit](./ftp-transmit) | Upload files to an FTP or SFTP site. |
+| [HTTP/HTTPs Download](./http-https-download) | Download files from a web URL over HTTP or HTTPS. |
+| [Open Data Job](./open-data-job) | Pull and process open / public data sources. |
+| [PDF Scraper](./pdf-scraper) | Extract text or data from PDF documents using patterns or coordinates. |
+| [Quick Email Monitor](./quick-email-monitor) | Simplified inbox check for quick email-driven workflows. |
+| [Quick Task](./quick-task) | A lighter task step for quick approvals with minimal setup. |
+| [Task](./task) | Pause the workflow until a person approves (or rejects) continuing. |
+| [Unix Command](./unix-command) | Run a Unix command on the bridge host or target environment. |
+
+### Systems and Security
+
+| Job type | What it does |
+| --- | --- |
+| [AWS Automation Job](./aws-automation-job) | Automate AWS instance and cloud tasks. |
+| [Batch File](./batch-file) | Run a batch file on the bridge host. |
+| [Compress Files](./compress-files) | Zip / tar / gz files for storage or transfer. |
+| [Convert CSV to Excel](./convert-csv-to-excel) | Convert CSV files to XLSX, optionally naming sheets. |
+| [Convert Excel to CSV](./convert-excel-to-csv) | Convert XLSX workbooks to CSV (can emit multiple CSVs for multiple sheets). |
+| [Convert PDF to Text](./convert-pdf-to-text) | Extract text from PDF files (optionally selected pages). |
+| [Decompress Files](./decompress-files) | Unpack zip / tar / gz archives. |
+| [Decrypt File - PGP](./decrypt-file-pgp) | Decrypt PGP-encrypted files so later jobs can read them. |
+| [Decrypt File - RSA](./decrypt-file-rsa) | Decrypt RSA-encrypted files. |
+| [Encrypt File - PGP](./encrypt-file-pgp) | Encrypt files with PGP before sending them out. |
+| [Encrypt File - RSA](./encrypt-file-rsa) | Encrypt files with RSA. |
+| [File Action](./file-action) | Copy, move, or delete files in directories. |
+| [File Monitor](./file-monitor) | Watch a local directory until matching files arrive (or timeout). |
+| [Unix Health Monitor](./unix-health-monitor) | Check SSH server health (CPU, memory, disk, processes). |
+| [XSL Transform](./xsl-transform) | Transform XML with an XSLT stylesheet. |
+
+### Database and Reporting
+
+| Job type | What it does |
+| --- | --- |
+| [Data Review Task](./data-review-task) | Send data to people for review and approval. |
+| [ETL Job](./etl-job) | Extract, transform, and load data between systems. |
+| [Power BI to File](./power-bi-to-file) | Export Power BI report data/visuals to files for distribution or archive. |
+| [SQL Bulk Load](./sql-bulk-load) | Load a CSV into a SQL table (create or append). |
+| [SQL Text/Procedure](./sql-text-procedure) | Run SQL text or a stored procedure in your database. |
+| [SSIS Package](./ssis-package) | Execute an SSIS package, with optional parameters. |
+| [SSRS Report Run](./ssrs-report-run) | Run an SSRS report and save it to a folder in the chosen format. |
+| [Table to CSV](./table-to-csv) | Export a warehouse table or view to a CSV file, with optional row filters. |
+
+### Finance and Accounting
+
+| Job type | What it does |
+| --- | --- |
+| [Aga Sync](./aga-sync) | Synchronize with AGA for automated fund accounting operations. |
+| [Backstop to File](./backstop-to-file) | Run Backstop reports/returns and export to files. |
+| [Bloomberg Historical to File](./bloomberg-historical-to-file) | Retrieve historical Bloomberg data for a date range and export to files. |
+| [Bloomberg to File](./bloomberg-to-file) | Pull Bloomberg data for securities (list or CSV) and write files. |
+| [Custom Bloomberg to File](./custom-bloomberg-to-file) | Run custom Bloomberg pricing queries and export formatted files. |
+| [Eze Analytics API to File](./eze-analytics-api-to-file) | Retrieve EZE analytics via API and export to files. |
+| [Geneva Loader](./geneva-loader) | Load data into Geneva for fund accounting or operations. |
+| [Geneva Query to File](./geneva-query-to-file) | Run a Geneva query for a knowledge date and export results to files. |
+| [Geneva RSL to File](./geneva-rsl-to-file) | Run an RSL report and save it to a directory. |
+| [Geneva Security Check](./geneva-security-check) | Validate security data integrity / compliance checks in Geneva. |
+| [Global Relay SMTP Archive](./global-relay-smtp-archive) | Archive email through Global Relay SMTP for compliance. |
+| [MAPS API](./maps-api) | Call MAPS API for alternative investment data. |
+| [Run Rep RSL](./run-rep-rsl) | Run a Runrep RSL and save output for regulatory or client reporting. |
+| [S3 Blacklight to File](./s3-blacklight-to-file) | Extract S3 Partners Blacklight data to files. |
+
+### Other
+
+| Job type | What it does |
+| --- | --- |
+| [Demo Job](./demo-job) | Sleeps for a set time to confirm the bridge is alive. |
+| [Group](./group) | Organizes a workflow and gives it a title. |
+| [Web Watcher](./web-watcher) | Monitor a website for content changes or availability. |
+
+## Related
+
+- [Configure workflow trees](../workflow-trees)
+- [Examples](../examples)

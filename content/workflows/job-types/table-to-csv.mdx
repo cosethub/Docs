@@ -1,0 +1,43 @@
+import { Callout } from 'nextra/components'
+
+# Table to CSV
+
+Export a warehouse **table or view** to a CSV file, with optional row filters.
+
+> Also labeled **Export Table Data to CSV** in some places. **Database views are available** in the same picker as tables.
+
+| | |
+| --- | --- |
+| **Category** | Database and Reporting |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. Under **Choose a table to query**, pick **What database should we use?**
+2. Under **What table should we use?**, pick a table **or** a view — views show as **`View: schema.name`**.
+3. Optionally add **Filter conditions** to limit rows.
+4. Fill in **Destination CSV File Settings** (folder / file name).
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-table-to-csv-picker.png`)
+
+  Placeholder: Job type picker with Table to CSV selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-table-to-csv-config.png`)
+
+  Placeholder: Database + table/view dropdown showing View: entries, filters, destination.
+</Callout>
+
+## Views as CSV sources
+
+If you already shaped data with a warehouse view (joins, where, columns), select that view here. The CSV is the view result — you do not rebuild the logic in the job.
+
+Walkthrough: [Table to CSV (views)](../examples/table-to-csv-view).
+
+## In a workflow tree
+
+Common pattern: schedule Table to CSV → **Email** or **FTP Transmit** on success → optional **Data Review Task**.
+
+See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

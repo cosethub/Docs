@@ -1,0 +1,36 @@
+import { Callout } from 'nextra/components'
+
+# Bloomberg to File
+
+Pull Bloomberg data for securities (list or CSV) and write files.
+
+| | |
+| --- | --- |
+| **Category** | Finance and Accounting |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. Configure Bloomberg account settings.
+2. Provide securities list or CSV.
+3. Save output for pricing/repair workflows.
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-bloomberg-to-file-picker.png`)
+
+  Placeholder: Job type picker with Bloomberg to File selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-bloomberg-to-file-config.png`)
+
+  Placeholder: Configure Job Fields for Bloomberg to File.
+</Callout>
+
+## In a workflow tree
+
+- Add as a child under a **Group** (or under another job).
+- Give it a schedule, or **Run job based on parent status** (**On success** / **On failure** / **Always**).
+- Add children for the next step after this job finishes.
+
+See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

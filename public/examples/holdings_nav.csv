@@ -1,0 +1,9 @@
+HoldingId,Security,AssetClass,MarketValue
+H1,AAPL,Equity,18500
+H2,MSFT,Equity,19500
+H3,US10Y,FixedIncome,98500
+H4,CORP1,FixedIncome,50000
+H5,GOLD,Commodity,12000
+H6,OIL,Commodity,8000
+H7,SPXPUT,Derivative,2500
+H8,CASHUSD,Cash,10000

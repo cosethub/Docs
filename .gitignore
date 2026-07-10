@@ -1,0 +1,8 @@
+node_modules
+.next
+out
+_pagefind
+.DS_Store
+*.log
+.env*.local
+content/api/read.full.mdx

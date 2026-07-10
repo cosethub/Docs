@@ -1,0 +1,36 @@
+import { Callout } from 'nextra/components'
+
+# FTP Download
+
+Download one or more files from **FTP or SFTP** to a local destination.
+
+> Use FTP/SFTP credentials from **Credential Hub**. Pair with [FTP Monitor](./ftp-monitor) when you must wait for the remote file to appear.
+
+| | |
+| --- | --- |
+| **Category** | Email and Communication |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. **FTP Settings** — FTP/SFTP server credentials.
+2. **Source Settings** — remote folder, file name / pattern, date naming if needed.
+3. **Destination Settings** — local folder for the downloaded files.
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-ftp-download-picker.png`)
+
+  Placeholder: Job type picker with FTP Download selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-ftp-download-config.png`)
+
+  Placeholder: FTP Settings, Source Settings, Destination Settings.
+</Callout>
+
+## In a workflow tree
+
+Often: FTP Monitor → **FTP Download** → decrypt / Excel→CSV / SQL Bulk Load.
+
+Walkthrough: [SFTP download](../examples/sftp-download).

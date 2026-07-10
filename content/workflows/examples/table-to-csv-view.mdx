@@ -1,0 +1,70 @@
+import { Callout } from 'nextra/components'
+
+# Table to CSV (database views)
+
+**Goal:** Export a **warehouse view** (not only a raw table) to a CSV, then send it out.
+
+**Table to CSV** (also labeled **Export Table Data to CSV**) lists tables **and** views in the same picker. Views appear as **`View: …`**.
+
+## Why views matter here
+
+If you already built a [warehouse view](/views) (joins, filters, columns), you can download **that shaped result** as CSV — no need to re-join in the job.
+
+## Tree
+
+```
+Group: Export Positions View
+ └── Table to CSV              [schedule: weekdays 6:30]
+      └── Email                [On success]   ← attach the CSV
+```
+
+Or transmit instead of email:
+
+```
+ └── Table to CSV
+      └── FTP Transmit         [On success]
+```
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-table-to-csv-tree.png`)
+
+  Placeholder: Group with Table to CSV and Email On success.
+</Callout>
+
+## 1. Table to CSV
+
+Job type: [Table to CSV](../job-types/table-to-csv)
+
+| Section | What to set |
+| --- | --- |
+| **What database should we use?** | Your warehouse |
+| **What table should we use?** | Pick **`View: ref.PositionsReady`** (example name) — not only base tables |
+| **Filter conditions (optional)** | Extra row filters if needed (for example, AsOfDate = today) |
+| **Destination CSV File Settings** | Folder + file name for the CSV |
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-table-to-csv-view-picker.png`)
+
+  Placeholder: “What table should we use?” dropdown showing View: entries mixed with tables.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-table-to-csv-destination.png`)
+
+  Placeholder: Destination CSV File Settings filled in.
+</Callout>
+
+## 2. Send the file (On success)
+
+- [Email](../job-types/email) — attach the CSV to ops / PMs  
+- or [FTP Transmit](../job-types/ftp-transmit) — drop on a counterparty SFTP  
+
+## Tiny sample idea
+
+Reuse a warehouse view you already built (recon, priced positions, and so on): export that view instead of the raw tables.
+
+## What you practiced
+
+- **Table to CSV** with a **database view** as the source  
+- Optional filters on top of the view  
+- Email or SFTP distribution of the CSV  

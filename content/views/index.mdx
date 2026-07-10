@@ -1,0 +1,65 @@
+---
+asIndexPage: true
+---
+
+import { Callout } from 'nextra/components'
+
+# Views
+
+Views let you shape warehouse data into reusable, queryable datasets — combining tables, filtering rows, selecting columns, and optionally aggregating results.
+
+Use this section to learn how to build views in the warehouse **Views** tab.
+
+## Running example: daily position reconciliation
+
+Throughout these pages we use a classic ops scenario from [CoSet, your Ops Assistant](https://www.cosethub.com/blog/coset-your-ops-assistant/): reconcile yesterday’s positions between a Prime Broker and a Fund Administrator.
+
+| Source | Example tables (after workflows land the files) |
+| --- | --- |
+| Apex Prime (PB) | `ApexPrime_Positions` |
+| Summit Fund Services (FA) | `SummitFA_Positions` |
+
+Workflows pull the raw SFTP files into those tables. A **View** then joins them on asset identifiers, calculates a **Breaks** column, and filters to only the discrepancies — so a downstream workflow can email the reconciliation owner a tight break list instead of a noisy full extract.
+
+| Step in the walkthrough | Where it shows up in Views docs |
+| --- | --- |
+| Stitch PB + FA tables | [Joins](./joins) |
+| Flag quantity / MV / cash differences | [Column types](./column-types) (calculated + conditional) |
+| Keep only break rows / as-of date | [Where clauses](./where-clauses) |
+| Summarize breaks by fund or strategy | [Group by & aggregates](./group-by) |
+| Draft the whole view from a sentence | [Create with AI](./ai-views) |
+
+## What you can do
+
+| Topic | Description |
+| --- | --- |
+| [Getting started](./getting-started) | Open the Views tab, name a view, pick a base table, and save |
+| [Joins](./joins) | Combine additional tables with INNER, LEFT, RIGHT, or FULL joins |
+| [Where clauses](./where-clauses) | Filter rows with conditions and nested AND/OR groups |
+| [Group by & aggregates](./group-by) | Roll up rows and use SUM, COUNT, AVG, MIN, MAX |
+| [Column types](./column-types) | Reference, calculated, conditional, and aggregate columns |
+| [Create with AI](./ai-views) | Draft a view by chatting with the AI View Assistant |
+| [Examples](./examples) | Tiny CSV walkthroughs: reconciliation, price backfill, conditionals |
+
+## Anatomy of a view
+
+Every view is built from these sections in the form:
+
+1. **Schema & name** — where the view lives and what it is called
+2. **Table** — the primary (base) table
+3. **Join criteria** — optional related tables
+4. **I want to…** — all matching rows, or aggregated / rolled-up groups
+5. **Select columns** — what appears in the result
+6. **Where conditions** — optional row filters
+
+<Callout type="info">
+  **Screenshot placeholder** (`views-overview.png`)
+
+  Placeholder: Views tab with the create/edit form open, showing the main sections.
+</Callout>
+
+## Before you begin
+
+- You need access to **Database Views** for the warehouse.
+- Tables (and columns) you use must be available through your screen access.
+- Schema and view names may only contain letters, numbers, and underscores. Names must start with a letter or underscore.

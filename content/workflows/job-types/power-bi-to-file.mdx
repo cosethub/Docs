@@ -1,0 +1,36 @@
+import { Callout } from 'nextra/components'
+
+# Power BI to File
+
+Export Power BI report data/visuals to files for distribution or archive.
+
+| | |
+| --- | --- |
+| **Category** | Database and Reporting |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. Select workspace/report.
+2. Choose export format and destination.
+3. Distribute via Email or FTP.
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-power-bi-to-file-picker.png`)
+
+  Placeholder: Job type picker with Power BI to File selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-power-bi-to-file-config.png`)
+
+  Placeholder: Configure Job Fields for Power BI to File.
+</Callout>
+
+## In a workflow tree
+
+- Add as a child under a **Group** (or under another job).
+- Give it a schedule, or **Run job based on parent status** (**On success** / **On failure** / **Always**).
+- Add children for the next step after this job finishes.
+
+See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

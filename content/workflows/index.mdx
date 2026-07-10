@@ -1,0 +1,43 @@
+---
+asIndexPage: true
+---
+
+import { Callout } from 'nextra/components'
+
+# Workflows
+
+Workflows chain jobs into a **tree**: a parent runs, then children run based on success, failure, or always.
+
+Open **Workflow Automation** to create, edit, and run workflows.
+
+## In this section
+
+| Page | What you’ll learn |
+| --- | --- |
+| [Configure workflow trees](./workflow-trees) | Groups, children, schedules, On success / On failure / Always |
+| [Job types](./job-types) | One page per job type — what it does and how it works |
+| [Examples](./examples) | Simple trees for email gathering, SFTP, Table to CSV + views, Data Review |
+
+## Big picture
+
+```
+Group (workflow title)
+ └── Job A   [schedule or trigger]
+      └── Job B   [On success]
+           └── Job C   [On success]
+      └── Notify   [On failure]
+```
+
+Each node is a **job type** (Email Check, FTP Download, Table to CSV, Data Review Task, and many more).
+
+<Callout type="info">
+  **Screenshot placeholder** (`workflows-list.png`)
+
+  Placeholder: Workflow Automation list with folders and workflows.
+</Callout>
+
+## Before you begin
+
+- You need access to **Job Workflow** / Process Server.
+- Jobs that talk to mail, FTP, or databases need credentials in **Credential Hub**.
+- A **Bridge** must be available to run the jobs.

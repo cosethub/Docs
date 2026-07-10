@@ -1,0 +1,42 @@
+---
+asIndexPage: true
+---
+
+# Examples
+
+Tiny, made-up datasets you can load and follow along. Each example uses about **5–10 rows** and **fewer than 10 columns**.
+
+## Sample files
+
+Downloadable CSVs:
+
+| File | Used by |
+| --- | --- |
+| [`book_positions.csv`](/examples/book_positions.csv) | [Reconciliation](./reconciliation) |
+| [`custodian_positions.csv`](/examples/custodian_positions.csv) | [Reconciliation](./reconciliation) |
+| [`positions.csv`](/examples/positions.csv) | [Bloomberg price backfill](./bloomberg-price-backfill) |
+| [`bloomberg_px_last.csv`](/examples/bloomberg_px_last.csv) | [Bloomberg price backfill](./bloomberg-price-backfill) |
+| [`trades_long_short.csv`](/examples/trades_long_short.csv) | [Conditional columns](./conditional-columns) (long / short) |
+| [`holdings_nav.csv`](/examples/holdings_nav.csv) | [Conditional columns](./conditional-columns) (asset class → NAV bucket) |
+| [`positions_by_fund.csv`](/examples/positions_by_fund.csv) | [Group by & aggregates](./group-by-aggregates) |
+| [`lots_cost.csv`](/examples/lots_cost.csv) | [Calculated columns](./calculated-columns) |
+| [`active_positions.csv`](/examples/active_positions.csv) | [Where filters](./where-filters) |
+
+## Walkthroughs
+
+| Example | What you practice |
+| --- | --- |
+| [Reconciliation](./reconciliation) | Join book vs custodian, compare quantities |
+| [Bloomberg price backfill](./bloomberg-price-backfill) | Left join prices by security + date |
+| [Conditional columns](./conditional-columns) | CASE-style When / Then (long-short + asset class) |
+| [Group by & aggregates](./group-by-aggregates) | SUM / COUNT rolled up by Fund (and Strategy) |
+| [Calculated columns](./calculated-columns) | MarketValue and PnL from Quantity × Price − Cost |
+| [Where filters](./where-filters) | Active-only rows for a single as-of date |
+
+## How to use them
+
+1. Load the CSVs into tables in a test warehouse (any names you like — the docs use simple names).
+2. Build the view as described on each page.
+3. Compare your result to the expected output table on that page.
+
+These are teaching toys, not production schemas.

@@ -1,0 +1,36 @@
+import { Callout } from 'nextra/components'
+
+# Unix Command
+
+Run a Unix command on the bridge host or target environment.
+
+| | |
+| --- | --- |
+| **Category** | Email and Communication |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. Enter the command.
+2. Set working directory if needed.
+3. Use exit code for success/failure branching.
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-unix-command-picker.png`)
+
+  Placeholder: Job type picker with Unix Command selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-unix-command-config.png`)
+
+  Placeholder: Configure Job Fields for Unix Command.
+</Callout>
+
+## In a workflow tree
+
+- Add as a child under a **Group** (or under another job).
+- Give it a schedule, or **Run job based on parent status** (**On success** / **On failure** / **Always**).
+- Add children for the next step after this job finishes.
+
+See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

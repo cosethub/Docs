@@ -1,0 +1,84 @@
+import { Callout } from 'nextra/components'
+
+# Group by & aggregates
+
+Use group by when you want one output row per combination of category columns, with measures rolled up using aggregate functions.
+
+## Choose aggregate mode
+
+Under **I want to:**, select:
+
+**Create a view that aggregates or rolls up groups of rows**
+
+This enables the **Group by** section and unlocks aggregate column types (SUM, COUNT, AVG, MIN, MAX).
+
+<Callout type="info">
+  **Screenshot placeholder** (`groupby-mode.png`)
+
+  Placeholder: “I want to” with the aggregates / roll-up option selected.
+</Callout>
+
+## All matching rows vs aggregates
+
+| Mode | Result |
+| --- | --- |
+| All matching rows | One row per matching input row. Aggregate column types are not available. Primary-key columns may be included so the view stays editable when browsing. |
+| Aggregates / roll-up | Rows are grouped; select columns are either group-by categories or aggregates. |
+
+Switching modes changes which column types you can add — see [Column types](./column-types).
+
+## Add group-by columns
+
+1. Under **Group by**, choose **Column**.
+2. Pick a table and column that define a category (for example, Fund, Account, or AsOfDate).
+3. Add more columns if you need a finer grain (for example, Fund **and** Strategy).
+4. Drag to reorder.
+
+The description in the form: *Aggregate row data when the following categories are consistent.*
+
+<Callout type="info">
+  **Screenshot placeholder** (`groupby-columns.png`)
+
+  Placeholder: Group by section with one or more category columns.
+</Callout>
+
+## Select columns when grouping
+
+In aggregate mode:
+
+- **Reference** columns typically align with your group-by categories (the dimensions you are keeping).
+- **SUM**, **COUNT**, **AVG**, **MIN**, and **MAX** measure columns summarize the rows in each group.
+- Calculated and conditional columns are for the non-aggregate (all rows) mode — use aggregates here instead for rolled-up measures.
+
+<Callout type="info">
+  **Screenshot placeholder** (`groupby-select-columns.png`)
+
+  Placeholder: Select columns showing group dimensions plus aggregate measures.
+</Callout>
+
+## Distinct aggregates
+
+For **SUM**, **COUNT**, and **AVG**, you can enable **Distinct** so the function applies to distinct values of the selected column only (for example, `COUNT(DISTINCT AccountId)`).
+
+Distinct requires a source column. For **COUNT**, leaving the column empty counts all rows in the group (`COUNT(*)`).
+
+<Callout type="info">
+  **Screenshot placeholder** (`groupby-distinct.png`)
+
+  Placeholder: Aggregate column with Distinct checked.
+</Callout>
+
+## Example patterns
+
+| Goal | Group by | Measures |
+| --- | --- | --- |
+| Positions by fund | Fund | SUM(MarketValue), COUNT(PositionId) |
+| Daily totals | AsOfDate | SUM(Amount) |
+| Unique accounts per strategy | Strategy | COUNT Distinct AccountId |
+
+## Tips
+
+- Every non-aggregated select column should be part of the grouping logic you intend — otherwise results can be misleading.
+- Combine with [where clauses](./where-clauses) to filter before aggregation (for example, only active rows).
+- Combine with [joins](./joins) when categories or measures live on related tables.
+- Display names must still be unique across all select columns.

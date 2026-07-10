@@ -1,0 +1,36 @@
+import { Callout } from 'nextra/components'
+
+# Batch File
+
+Run a .bat or .cmd file from a directory on the bridge.
+
+| | |
+| --- | --- |
+| **Category** | Systems and Security |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. Point at the batch file path.
+2. Optionally pass arguments.
+3. Use for legacy Windows automation.
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-batch-file-picker.png`)
+
+  Placeholder: Job type picker with Batch File selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-batch-file-config.png`)
+
+  Placeholder: Configure Job Fields for Batch File.
+</Callout>
+
+## In a workflow tree
+
+- Add as a child under a **Group** (or under another job).
+- Give it a schedule, or **Run job based on parent status** (**On success** / **On failure** / **Always**).
+- Add children for the next step after this job finishes.
+
+See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

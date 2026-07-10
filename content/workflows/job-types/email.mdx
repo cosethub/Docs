@@ -1,0 +1,36 @@
+import { Callout } from 'nextra/components'
+
+# Email
+
+Send an email from RyanEyes, with optional attachments, recipients, and subject/body.
+
+| | |
+| --- | --- |
+| **Category** | Email and Communication |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. Pick recipients and subject.
+2. Optionally attach files produced earlier in the tree.
+3. Schedule or run after a parent succeeds.
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-email-picker.png`)
+
+  Placeholder: Job type picker with Email selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-email-config.png`)
+
+  Placeholder: Configure Job Fields for Email.
+</Callout>
+
+## In a workflow tree
+
+- Add as a child under a **Group** (or under another job).
+- Give it a schedule, or **Run job based on parent status** (**On success** / **On failure** / **Always**).
+- Add children for the next step after this job finishes.
+
+See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

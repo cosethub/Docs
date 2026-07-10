@@ -1,0 +1,36 @@
+import { Callout } from 'nextra/components'
+
+# Unix Health Monitor
+
+Check SSH server health (CPU, memory, disk, processes).
+
+| | |
+| --- | --- |
+| **Category** | Systems and Security |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. Configure SSH credentials.
+2. Set thresholds / checks.
+3. Alert or branch on unhealthy results.
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-unix-health-monitor-picker.png`)
+
+  Placeholder: Job type picker with Unix Health Monitor selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-unix-health-monitor-config.png`)
+
+  Placeholder: Configure Job Fields for Unix Health Monitor.
+</Callout>
+
+## In a workflow tree
+
+- Add as a child under a **Group** (or under another job).
+- Give it a schedule, or **Run job based on parent status** (**On success** / **On failure** / **Always**).
+- Add children for the next step after this job finishes.
+
+See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

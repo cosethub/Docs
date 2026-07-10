@@ -1,0 +1,36 @@
+import { Callout } from 'nextra/components'
+
+# SQL Text/Procedure
+
+Run SQL text or a stored procedure in your database.
+
+| | |
+| --- | --- |
+| **Category** | Database and Reporting |
+| **Where you pick it** | Step 1: Choose Your Job Type |
+
+## How it works
+
+1. Choose connection.
+2. Enter SQL or procedure name.
+3. Use for transforms, checks, or housekeeping.
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-sql-text-procedure-picker.png`)
+
+  Placeholder: Job type picker with SQL Text/Procedure selected.
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`job-sql-text-procedure-config.png`)
+
+  Placeholder: Configure Job Fields for SQL Text/Procedure.
+</Callout>
+
+## In a workflow tree
+
+- Add as a child under a **Group** (or under another job).
+- Give it a schedule, or **Run job based on parent status** (**On success** / **On failure** / **Always**).
+- Add children for the next step after this job finishes.
+
+See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

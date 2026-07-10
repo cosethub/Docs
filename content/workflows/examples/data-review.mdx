@@ -1,0 +1,85 @@
+import { Callout } from 'nextra/components'
+
+# Data review
+
+**Goal:** Produce a CSV (or point at live table/view data), ask a person to **approve or reject**, then continue only if approved.
+
+Job type in the tree: **Data Review Task** (picker may also say **Send Data for Review**).
+
+## Tree
+
+```
+Group: Monthly Trades Sign-off
+ └── Table to CSV                 [schedule: 1st business day]
+      └── Data Review Task        [On success]
+           └── SQL Bulk Load      [On success]   ← approved
+           └── Email (ops alert)  [On failure]   ← rejected
+```
+
+You can skip Table to CSV and use **Link to filtered data (table or view)** on the review job instead of an attachment.
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-data-review-tree.png`)
+
+  Placeholder: Table to CSV → Data Review Task with On success and On failure children.
+</Callout>
+
+## 1. Table to CSV (optional but common)
+
+Export the dataset reviewers should see — ideally from a **view** (see [Table to CSV (views)](./table-to-csv-view)).
+
+## 2. Data Review Task
+
+Job type: [Data Review Task](../job-types/data-review-task)
+
+| Section | What to set |
+| --- | --- |
+| **Recipients** | **Users to Email** and/or **Groups to Email** |
+| **Message & Instructions** | What to check (“Confirm breaks under 5 lots”, etc.) |
+| **Data to Review** | **Link to filtered data (table or view)** *or* **Attach a file** |
+
+### Link vs attachment
+
+| Method | Best when |
+| --- | --- |
+| **Link to filtered data (table or view)** | Reviewers should open live warehouse rows (table or view + filters) |
+| **Attach a file** | Reviewers should get a snapshot file (for example, the CSV you just exported) |
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-data-review-config.png`)
+
+  Placeholder: Recipients, Message, and Data to Review (link vs attach).
+</Callout>
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-data-review-approve.png`)
+
+  Placeholder: Recipient “Approve or reject data” screen.
+</Callout>
+
+## 3. Branch on the decision
+
+| Reviewer action | Parent result | Child to run |
+| --- | --- | --- |
+| **Approve** | Success | **On success** — load, transmit, continue |
+| **Reject** | Failure | **On failure** — email ops, stop the happy path |
+
+The workflow **waits** on the review task until someone responds (or it times out per your task settings).
+
+## Minimal “link only” variant
+
+```
+Group: Positions Review
+ └── Data Review Task     [schedule]
+      (Link → View: PositionsReady, filter AsOfDate = today)
+      └── Email confirm   [On success]
+      └── Email rejected  [On failure]
+```
+
+No CSV step — reviewers open the view in product.
+
+## What you practiced
+
+- Placing **Data Review Task** after data is ready  
+- Link to **table or view** vs file attachment  
+- **On success** / **On failure** branching on approve / reject  

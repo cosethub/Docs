@@ -1,0 +1,149 @@
+import { Callout } from 'nextra/components'
+
+# Conditional columns
+
+**Goal:** Use a **conditional** (CASE-style) select column: **When** something is true, **Then** output a label (or value).
+
+Two tiny examples:
+
+1. **Long / short** from trade quantity sign  
+2. **NAV bucket** from asset class  
+
+Both use **all matching rows** mode (not group by).
+
+---
+
+## Example 1 — Long / short
+
+### Sample data
+
+[`trades_long_short.csv`](/examples/trades_long_short.csv) — 8 rows, 3 columns
+
+| TradeId | Security | Quantity |
+| --- | --- | --- |
+| T1 | AAPL | 100 |
+| T2 | MSFT | -50 |
+| T3 | GOOG | 25 |
+| T4 | TSLA | -10 |
+| T5 | AMZN | 40 |
+| T6 | META | -15 |
+| T7 | NVDA | 80 |
+| T8 | NFLX | -5 |
+
+Rule of thumb:
+
+- Quantity **> 0** → Long  
+- Quantity **< 0** → Short  
+- anything else → Flat  
+
+### Build the view
+
+1. **Table** = `trades_long_short`
+2. **I want to** = all matching rows
+3. **Select columns**
+   - Reference: TradeId, Security, Quantity
+   - **Conditional** column, display name `Side`:
+     - **When** `Quantity` `>` `0` → **Then** `Long`
+     - **When** `Quantity` `<` `0` → **Then** `Short`
+     - **Default** → `Flat`
+4. **Save**
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-long-short.png`)
+
+  Placeholder: Conditional column with When Quantity > 0 / < 0 and Default Flat.
+</Callout>
+
+### Expected result
+
+| TradeId | Security | Quantity | Side |
+| --- | --- | --- | --- |
+| T1 | AAPL | 100 | Long |
+| T2 | MSFT | -50 | Short |
+| T3 | GOOG | 25 | Long |
+| T4 | TSLA | -10 | Short |
+| T5 | AMZN | 40 | Long |
+| T6 | META | -15 | Short |
+| T7 | NVDA | 80 | Long |
+| T8 | NFLX | -5 | Short |
+
+---
+
+## Example 2 — Asset class → NAV bucket
+
+Map each holding’s asset class into a simple NAV reporting bucket.
+
+### Sample data
+
+[`holdings_nav.csv`](/examples/holdings_nav.csv) — 8 rows, 4 columns
+
+| HoldingId | Security | AssetClass | MarketValue |
+| --- | --- | --- | --- |
+| H1 | AAPL | Equity | 18500 |
+| H2 | MSFT | Equity | 19500 |
+| H3 | US10Y | FixedIncome | 98500 |
+| H4 | CORP1 | FixedIncome | 50000 |
+| H5 | GOLD | Commodity | 12000 |
+| H6 | OIL | Commodity | 8000 |
+| H7 | SPXPUT | Derivative | 2500 |
+| H8 | CASHUSD | Cash | 10000 |
+
+Mapping we want:
+
+| AssetClass | NavBucket |
+| --- | --- |
+| Equity | Equity |
+| FixedIncome | Fixed Income |
+| Commodity | Alternatives |
+| Derivative | Alternatives |
+| Cash | Cash |
+| anything else | Other |
+
+### Build the view
+
+1. **Table** = `holdings_nav`
+2. **I want to** = all matching rows
+3. **Select columns**
+   - Reference: HoldingId, Security, AssetClass, MarketValue
+   - **Conditional** column, display name `NavBucket`:
+     - **When** `AssetClass` `=` `Equity` → **Then** `Equity`
+     - **When** `AssetClass` `=` `FixedIncome` → **Then** `Fixed Income`
+     - **When** `AssetClass` `=` `Commodity` → **Then** `Alternatives`
+     - **When** `AssetClass` `=` `Derivative` → **Then** `Alternatives`
+     - **When** `AssetClass` `=` `Cash` → **Then** `Cash`
+     - **Default** → `Other`
+4. **Save**
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-nav-bucket.png`)
+
+  Placeholder: Conditional column mapping AssetClass to NavBucket.
+</Callout>
+
+### Expected result
+
+| HoldingId | Security | AssetClass | MarketValue | NavBucket |
+| --- | --- | --- | --- | --- |
+| H1 | AAPL | Equity | 18500 | Equity |
+| H2 | MSFT | Equity | 19500 | Equity |
+| H3 | US10Y | FixedIncome | 98500 | Fixed Income |
+| H4 | CORP1 | FixedIncome | 50000 | Fixed Income |
+| H5 | GOLD | Commodity | 12000 | Alternatives |
+| H6 | OIL | Commodity | 8000 | Alternatives |
+| H7 | SPXPUT | Derivative | 2500 | Alternatives |
+| H8 | CASHUSD | Cash | 10000 | Cash |
+
+### Optional next step — NAV by bucket
+
+Switch **I want to** to aggregates / roll-up:
+
+- **Group by** `NavBucket`
+- **SUM** `MarketValue`
+
+You get one total per NAV bucket.
+
+## What you practiced
+
+- [Conditional columns](../column-types) (When / Then / Default)
+- Labels from numbers (long/short) and from categories (asset class)
+- Optional [group by](../group-by) to sum MarketValue by NavBucket

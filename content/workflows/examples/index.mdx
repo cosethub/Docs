@@ -1,0 +1,25 @@
+---
+asIndexPage: true
+---
+
+# Examples
+
+Short, realistic workflow trees. Each page shows the shape of the tree, which job types to pick, and the few settings that matter.
+
+## Walkthroughs
+
+| Example | Job types you’ll use |
+| --- | --- |
+| [Email data gathering](./email-data-gathering) | Email Check → Convert Excel to CSV → SQL Bulk Load |
+| [SFTP download](./sftp-download) | FTP Monitor → FTP Download → (optional) decrypt / load |
+| [Table to CSV (views)](./table-to-csv-view) | Table to CSV using a **database view**, then Email or FTP Transmit |
+| [Data review](./data-review) | Table to CSV → **Data Review Task** → continue or alert |
+
+## How to practice
+
+1. Create a **Group** named after the example.
+2. Add the child jobs in order.
+3. Wire **On success** / **On failure** as shown.
+4. Run once manually, then add a schedule on the first real job.
+
+Job type reference: [Job types](../job-types). Tree basics: [Configure workflow trees](../workflow-trees).
