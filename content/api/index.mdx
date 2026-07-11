@@ -21,6 +21,29 @@ All paths in this section are relative to `/api/v1` unless noted.
 
 Issue a token with [`POST /oauth/token`](./auth#post-oauthtoken), then call [`GET /me`](./auth#get-me) to confirm scopes.
 
+Manage org API keys and IP restrictions in the product **API** dashboard (**Manage API Keys**).
+
+![API dashboard — Manage API Keys and IP restriction](./images/api-dashboard-keys.png)
+
+## API key permissions
+
+Each API key has one of three permission types:
+
+| Permission | Behavior |
+| --- | --- |
+| **Users** | Key is tied to a user account. It matches the permissions specified on that user’s account (pick the user in the Permissions dropdown). |
+| **Full Access** | Unrestricted API access for the organization. Recommended **only for testing or staging** accounts — not production. |
+| **Read Only** | Read access only. Cannot create, update, delete, or otherwise mutate resources. |
+
+## Successful requests
+
+For a request to succeed, **both** must be true:
+
+1. **Permission** — The API key’s permission type must allow the action (for **Users**, that means the linked user account must allow it; **Read Only** keys cannot perform writes).
+2. **IP allow list** — When IP restriction is enabled in the API dashboard, the caller’s IP must be on the allow list: either an exact **IP address** or within a configured **CIDR block**.
+
+If IP restriction is turned off (`I do not want to restrict API access by IP`), only the key’s permission applies. When restriction is on, requests from IPs outside the allow list are rejected even if the key would otherwise allow the action.
+
 ## Legend
 
 | Label | Meaning |
@@ -41,12 +64,3 @@ Issue a token with [`POST /oauth/token`](./auth#post-oauthtoken), then call [`GE
 | [Jobs & workflows — write](./jobs-workflows-write) | Run jobs, create workflows, mutate AI chats |
 | [Webhooks & events](./webhooks) | Subscriptions and outbound event payloads |
 | [Coordinator & AI views](./coordinator-ai-views) | Coordinator chats, AI view chats, schema index |
-
-## Priority (v1)
-
-| Priority | Endpoints |
-| --- | --- |
-| **P0 — read** | Auth, credentials list (names/metadata), warehouses list, tables/schema, query rows, file-store list/download, job run status |
-| **P0 — write** | Credentials create/update/test, insert/update/delete row, file upload, PUT settings, run job |
-| **P1** | Bulk rows, async export, webhooks |
-| **P2** | Workflows / AI / coordinator surfaces |
