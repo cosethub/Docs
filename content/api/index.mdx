@@ -1,0 +1,51 @@
+# Public API
+
+Programmatic access to warehouses, file stores, jobs, workflows, and automation hooks.
+
+Use this section when you need REST contracts for schedulers, ETL scripts, internal tools, or MCP clients.
+
+## Base URL
+
+```
+https://{tenant}.ryanplatform.com/api/v1
+```
+
+All paths in this section are relative to `/api/v1` unless noted.
+
+## Authentication
+
+| Mechanism | Header | When |
+| --- | --- | --- |
+| OAuth2 access token | `Authorization: Bearer {token}` | Default for org-scoped endpoints |
+| Job API key | `X-Access-Key: {key}` | Job run / status (legacy and v1 job trigger) |
+
+Issue a token with [`POST /oauth/token`](./auth#post-oauthtoken), then call [`GET /me`](./auth#get-me) to confirm scopes.
+
+## Legend
+
+| Label | Meaning |
+| --- | --- |
+| **Exists** | Live today (path/shape may differ; legacy noted per endpoint) |
+| **New** | Expose or normalize for the public API |
+
+## Sections
+
+| Topic | Description |
+| --- | --- |
+| [Conventions](./conventions) | Errors, pagination, IDs, dates, versioning |
+| [Auth & account](./auth) | Health, OAuth token, `/me`, organizations |
+| [Warehouses](./warehouses) | List warehouses, tables, schema, rows, exports |
+| [File stores](./file-stores) | Browse, download, upload, rename, move, delete |
+| [Jobs & workflows — read](./jobs-workflows-read) | Job types, definitions, runs, workflows, AI chats |
+| [Jobs & workflows — write](./jobs-workflows-write) | Run jobs, create workflows, mutate AI chats |
+| [Webhooks & events](./webhooks) | Subscriptions and outbound event payloads |
+| [Coordinator & AI views](./coordinator-ai-views) | Coordinator chats, AI view chats, schema index |
+
+## Priority (v1)
+
+| Priority | Endpoints |
+| --- | --- |
+| **P0 — read** | Auth, warehouses list, tables/schema, query rows, file-store list/download, job run status |
+| **P0 — write** | Insert/update/delete row, file upload, PUT settings, run job |
+| **P1** | Bulk rows, async export, webhooks |
+| **P2** | Workflows / AI / coordinator surfaces |

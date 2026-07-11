@@ -1,18 +1,148 @@
-# Getting Started
+# Getting started
 
-## Project structure
+Use this page to go from first login to a small working loop: **credential → workflow → warehouse/view → (optional) export**.
+
+You do not need every step on day one. Stop when you have something useful running, then deepen with the section docs linked below.
+
+## Before you begin
+
+Confirm with your admin that you have:
+
+- Access to the Ryan Platform site for your organization
+- Permission for **Credentials** (ReadWrite if you will create connections)
+- Access to **Workflow Automation** / Process Server, and a **Bridge** available to run jobs
+- Access to at least one **data warehouse** if you will load or query data
+- Access to **Database Views** if you will build views
+
+Base URL pattern for the site and API:
 
 ```
-content/          MDX documentation pages
-app/              Next.js app router + Nextra layout
-mdx-components.js Theme component overrides
-next.config.mjs   Next.js + Nextra configuration
+https://{tenant}.ryanplatform.com
 ```
 
-## Writing pages
+## 1. Sign in and orient
 
-Create `.mdx` files in `content/`. Use `_meta.js` files to control sidebar order and labels.
+1. Open your tenant URL and sign in.
+2. Note these areas in navigation (names may vary slightly by permission):
+   - **Workflow Automation** — build and run job trees
+   - **Administration → Security & Credentials → Credential Hub** — connections
+   - **Warehouses / Databases** — tables and the **Views** tab
+   - **File stores** — files produced or consumed by jobs
 
-## Deploying to GitHub Pages
+{/* SCREENSHOT: Home / main nav — add content/images/getting-started-nav.png when available */}
 
-Push this repo to GitHub, enable **GitHub Pages** with source set to **GitHub Actions**, and the included workflow will build and deploy on every push to `main`.
+## 2. Create a credential
+
+Jobs and warehouses select credentials **by name**. Create the connection once in Credential Hub.
+
+1. Go to **Administration** → **Security & Credentials** → **Credential Hub**.
+2. Choose **Create Credential**.
+3. Set a clear name (for example `Prod PB SFTP`), pick a **Credential Type**, and fill connection settings.
+4. Turn on **Share Credential with Organization?** for production workflows others will run.
+5. Prefer **Create & Validate** when the type supports it.
+
+Full walkthrough: [Credentials — Getting started](/credentials/getting-started)
+
+Common first types:
+
+| Need | Credential type |
+| --- | --- |
+| Pull/push files | FTP/SFTP |
+| Mailbox watch | Email - IMAP |
+| Send mail | Email - SMTP |
+| Warehouse / Table to CSV | SQL Server or PostgreSQL (often on the warehouse itself) |
+
+## 3. Build a simple workflow
+
+1. Open **Workflow Automation**.
+2. Create a workflow / **Group** with a clear title (for example `Daily Broker Files`).
+3. Add a child job — start with something concrete:
+   - [SFTP download](/workflows/examples/sftp-download) if files arrive on a counterparty server
+   - [Email data gathering](/workflows/examples/email-data-gathering) if files arrive by mail
+4. In the job form, pick the credential you created.
+5. Save, then **run** the job (or wait for its schedule) and confirm the Bridge reports success.
+
+Tree shape reminder:
+
+```
+Group: Daily Broker Files
+ └── FTP Download     [schedule or manual]
+      └── … next step [On success]
+```
+
+How trees, schedules, and On success / On failure work: [Configure workflow trees](/workflows/workflow-trees)
+
+## 4. Land data in a warehouse (optional but common)
+
+Once files are in a **file store** (or ready for load):
+
+1. Add a follow-on job that loads into your warehouse (for example SQL Bulk Load or a vendor-specific loader).
+2. Confirm the warehouse credential / staging account is set on the warehouse where required.
+3. Open the warehouse **Databases** area and verify tables and row counts look right.
+
+SQL credentials for warehouse-backed jobs: [SQL for warehouse / Table to CSV](/credentials/examples/sql-warehouse)
+
+## 5. Create a view (optional)
+
+If you need joins, filters, or rolled-up columns — not just raw tables:
+
+1. Open the warehouse → **Views** tab.
+2. **Create View**, set schema and name, pick a base table.
+3. Add joins, where clauses, and columns as needed — or draft with [Create with AI](/views/ai-views).
+4. Save and preview.
+
+Step-by-step: [Views — Getting started](/views/getting-started)
+
+## 6. Export and distribute (optional)
+
+Close the loop by sending a shaped result:
+
+```
+Group: Export Positions View
+ └── Table to CSV          [schedule]
+      └── Email            [On success]
+```
+
+Or SFTP instead of email. Table to CSV can pick a **view** (shown as `View: …`) the same way it picks a table.
+
+Example: [Table to CSV (database views)](/workflows/examples/table-to-csv-view)
+
+## Suggested first path
+
+Pick one path that matches how your data arrives:
+
+| Your situation | Do this first |
+| --- | --- |
+| Files on SFTP | Credential → FTP Download → confirm file store |
+| Files by email | IMAP credential → Email Check → save attachments |
+| Data already in SQL | Open warehouse → create a view → Table to CSV |
+| Exploring the product | Create a credential, run one job, open the run history |
+
+## Using the API later
+
+When you need scripts or external systems to trigger the same work:
+
+1. Obtain OAuth credentials for your org.
+2. Call `POST /oauth/token`, then `GET /me`.
+3. Use warehouse, file-store, and job endpoints under `/api/v1`.
+
+→ [Public API](/api) · [Auth & account](/api/auth)
+
+## Checklist
+
+- [ ] Signed in to the correct tenant
+- [ ] At least one shared credential created and validated
+- [ ] One workflow with a job that runs successfully on the Bridge
+- [ ] (Optional) Rows visible in a warehouse table
+- [ ] (Optional) One view saved and previewed
+- [ ] (Optional) Export path (Table to CSV + Email/SFTP) working
+
+## Dig deeper
+
+| Section | Start here |
+| --- | --- |
+| [Introduction](/) | How capabilities connect |
+| [Credentials](/credentials) | Types, sharing, validation |
+| [Workflows](/workflows) | Job types and examples |
+| [Views](/views) | Joins, filters, aggregates, AI |
+| [Public API](/api) | REST contracts |

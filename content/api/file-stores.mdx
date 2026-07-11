@@ -1,0 +1,471 @@
+# File stores
+
+Browse, download, upload, and manage file store objects.
+
+> **Base:** `/api/v1`  
+> **Auth:** `Authorization: Bearer {token}`  
+> **Scopes:** `file-stores:read` / `file-stores:write`  
+> **Legacy prefix:** `/api/file-store/stores`
+
+---
+
+## Shared types
+
+### `FileStore`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `integer` / `string` | Store ID |
+| `user_defined_name` | `string` | Display name |
+| `bucket_name` | `string` | Underlying bucket |
+| `description` | `string \| null` | |
+| `default_folder_path` | `string \| null` | Default browse path |
+| `is_default` | `boolean` | Org default store |
+| `store_type` | `string` | e.g. `FileStore` |
+| `permissions` | `PermissionRule[]` | Access rules |
+
+### `FileStoreItem`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | File or folder name |
+| `path` | `string` | Full path within store |
+| `is_folder` | `boolean` | |
+| `file_count` | `integer` | For folders |
+| `size_bytes` | `integer \| null` | For files |
+| `description` | `string \| null` | |
+| `created_by` | `string \| null` | |
+| `created_utc` | `string` | ISO 8601 |
+
+### `PermissionRule`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `principal_type` | `string` | `user`, `group`, `role` |
+| `principal_id` | `integer` / `string` | |
+| `access` | `string` | `read`, `write`, `admin` |
+
+---
+
+## Read
+
+### `GET /file-stores`
+
+List stores for the organization.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `GET /api/file-store/stores` |
+| **Scopes** | `file-stores:read` |
+
+#### Query parameters
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `store_type` | `string` | `FileStore` | Filter by store type |
+
+#### Response `200 OK`
+
+```json
+{
+  "stores": [
+    {
+      "id": 3,
+      "user_defined_name": "Ops Files",
+      "bucket_name": "acme-ops-files",
+      "description": "Daily drops",
+      "default_folder_path": "inbound/",
+      "is_default": true,
+      "store_type": "FileStore",
+      "permissions": []
+    }
+  ]
+}
+```
+
+> Legacy returns a raw array of store DTOs (PascalCase). v1 wraps as `{ stores: […] }` with snake_case.
+
+```bash
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "https://{tenant}.ryanplatform.com/api/v1/file-stores?store_type=FileStore"
+```
+
+---
+
+### `GET /file-stores/{storeId}/items`
+
+List files and folders under a path.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `GET /api/file-store/stores/{storeId}/items` |
+| **Scopes** | `file-stores:read` |
+
+#### Query parameters
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `path` | `string` | `""` | Folder path |
+| `search` | `string` | — | Name search within path |
+
+#### Response `200 OK`
+
+```json
+{
+  "path": "inbound/",
+  "items": [
+    {
+      "name": "orders",
+      "path": "inbound/orders/",
+      "is_folder": true,
+      "file_count": 4,
+      "size_bytes": null,
+      "description": null,
+      "created_by": "ops@acme.com",
+      "created_utc": "2026-07-01T10:00:00Z"
+    },
+    {
+      "name": "positions.csv",
+      "path": "inbound/positions.csv",
+      "is_folder": false,
+      "file_count": 0,
+      "size_bytes": 20480,
+      "description": "EOD positions",
+      "created_by": "ops@acme.com",
+      "created_utc": "2026-07-11T08:15:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### `GET /file-stores/{storeId}/download-url`
+
+Presigned download URL for a file path.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `GET /api/file-store/stores/{storeId}/download-url` |
+| **Scopes** | `file-stores:read` |
+
+#### Query parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `path` | `string` | Yes | Full file path |
+
+#### Response `200 OK`
+
+```json
+{
+  "url": "https://…presigned…",
+  "expires_at": "2026-07-11T17:00:00Z"
+}
+```
+
+> Legacy: `{ "Url": "…" }` only. v1 adds snake_case `url` and optional `expires_at`.
+
+```bash
+curl -sS -G \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  --data-urlencode "path=inbound/positions.csv" \
+  "https://{tenant}.ryanplatform.com/api/v1/file-stores/3/download-url"
+```
+
+---
+
+### `GET /file-stores/{storeId}/settings`
+
+Store settings and permissions.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `GET /api/file-store/stores/{storeId}/settings` |
+| **Scopes** | `file-stores:read` |
+
+#### Response `200 OK`
+
+Same shape as a single `FileStore` object (name, default path, permissions, etc.).
+
+---
+
+## Write
+
+### `POST /file-stores`
+
+Create a store.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `POST /api/file-store/stores` |
+| **Scopes** | `file-stores:write` |
+
+#### Request body
+
+```json
+{
+  "user_defined_name": "Research Drop",
+  "description": "Vendor research files",
+  "is_default": false,
+  "store_type": "FileStore",
+  "default_folder_path": "",
+  "permissions": []
+}
+```
+
+#### Response `201 Created`
+
+```json
+{
+  "id": 9,
+  "user_defined_name": "Research Drop",
+  "bucket_name": "acme-research-drop",
+  "description": "Vendor research files",
+  "default_folder_path": "",
+  "is_default": false,
+  "store_type": "FileStore",
+  "permissions": []
+}
+```
+
+> Legacy may return `200` with empty body after create. v1 returns the created store.
+
+---
+
+### `PUT /file-stores/{storeId}/settings`
+
+Update store settings.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `PUT /api/file-store/stores/{storeId}/settings` |
+| **Scopes** | `file-stores:write` |
+
+#### Request body
+
+```json
+{
+  "id": 3,
+  "user_defined_name": "Ops Files",
+  "description": "Updated",
+  "default_folder_path": "inbound/",
+  "is_default": true,
+  "store_type": "FileStore",
+  "permissions": [
+    {
+      "principal_type": "group",
+      "principal_id": 12,
+      "access": "write"
+    }
+  ]
+}
+```
+
+#### Response `200 OK`
+
+Empty body or updated `FileStore`.
+
+---
+
+### `POST /file-stores/{storeId}/folders`
+
+Create a folder.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `POST /api/file-store/stores/{storeId}/folders` |
+| **Scopes** | `file-stores:write` |
+
+#### Request body
+
+```json
+{
+  "path": "inbound/",
+  "name": "july",
+  "description": "July drops"
+}
+```
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `path` | `string` | No | Parent folder (default root) |
+| `name` | `string` | Yes | New folder name |
+| `description` | `string` | No | |
+
+#### Response `201 Created` / `200 OK`
+
+Empty body on success (legacy).
+
+---
+
+### `POST /file-stores/{storeId}/upload`
+
+Multipart file upload into a folder path.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `POST /api/file-store/stores/{storeId}/upload` |
+| **Scopes** | `file-stores:write` |
+| **Content-Type** | `multipart/form-data` |
+
+#### Form fields
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `path` | `string` | No | Destination folder |
+| `file` | `file` | Yes | One or more files (`file`, `file[]`, or multiple parts) |
+
+#### Response `200 OK`
+
+Empty body on success.
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -F "path=inbound/july/" \
+  -F "file=@./positions.csv" \
+  "https://{tenant}.ryanplatform.com/api/v1/file-stores/3/upload"
+```
+
+---
+
+### `PUT /file-stores/{storeId}/objects`
+
+Upload or replace a single object at an exact path (normalized put).
+
+| | |
+| --- | --- |
+| **Status** | **New** (normalize upload) |
+| **Scopes** | `file-stores:write` |
+
+Supports either:
+
+1. **JSON** with base64 body (small files), or  
+2. **multipart** with `path` + `file`
+
+#### JSON request
+
+```json
+{
+  "path": "inbound/july/positions.csv",
+  "content_base64": "U3ltYm9sLFByaWNlCg==",
+  "content_type": "text/csv",
+  "description": "EOD positions"
+}
+```
+
+#### Response `200 OK`
+
+```json
+{
+  "path": "inbound/july/positions.csv",
+  "size_bytes": 14,
+  "content_type": "text/csv"
+}
+```
+
+---
+
+### `POST /file-stores/{storeId}/rename`
+
+Rename a file or folder.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `POST /api/file-store/stores/{storeId}/rename` |
+| **Scopes** | `file-stores:write` |
+
+#### Request body
+
+```json
+{
+  "path": "inbound/positions.csv",
+  "name": "positions-2026-07-11.csv",
+  "description": "Renamed EOD file"
+}
+```
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `path` | `string` | Yes | Current full path |
+| `name` | `string` | Yes | New name (not full path) |
+| `description` | `string` | No | |
+
+#### Response `200 OK`
+
+Empty body.
+
+---
+
+### `POST /file-stores/{storeId}/move`
+
+Move a file or folder to another folder.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `POST /api/file-store/stores/{storeId}/move` |
+| **Scopes** | `file-stores:write` |
+
+#### Request body
+
+```json
+{
+  "source_path": "inbound/positions.csv",
+  "destination_folder_path": "archive/2026/"
+}
+```
+
+#### Response `200 OK`
+
+Empty body.
+
+---
+
+### `DELETE /file-stores/{storeId}/items`
+
+Delete a file or folder.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** as `POST .../delete-item` → normalize to **DELETE** |
+| **Scopes** | `file-stores:write` |
+
+#### Request body
+
+```json
+{
+  "path": "inbound/old-file.csv"
+}
+```
+
+#### Response `204 No Content`
+
+Empty body.
+
+```bash
+curl -sS -X DELETE \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"path":"inbound/old-file.csv"}' \
+  "https://{tenant}.ryanplatform.com/api/v1/file-stores/3/items"
+```
+
+---
+
+## Endpoint index
+
+| Method | Path | Action | Status |
+| --- | --- | --- | --- |
+| `GET` | `/file-stores` | List stores | **Exists** |
+| `GET` | `/file-stores/{storeId}/items` | List folder | **Exists** |
+| `GET` | `/file-stores/{storeId}/download-url` | Presigned URL | **Exists** |
+| `GET` | `/file-stores/{storeId}/settings` | Settings | **Exists** |
+| `POST` | `/file-stores` | Create store | **Exists** |
+| `PUT` | `/file-stores/{storeId}/settings` | Update settings | **Exists** |
+| `POST` | `/file-stores/{storeId}/folders` | Create folder | **Exists** |
+| `POST` | `/file-stores/{storeId}/upload` | Multipart upload | **Exists** |
+| `PUT` | `/file-stores/{storeId}/objects` | Put/replace object | **New** |
+| `POST` | `/file-stores/{storeId}/rename` | Rename | **Exists** |
+| `POST` | `/file-stores/{storeId}/move` | Move | **Exists** |
+| `DELETE` | `/file-stores/{storeId}/items` | Delete | **Exists** (normalize) |

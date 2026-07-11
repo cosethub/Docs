@@ -1,0 +1,448 @@
+# Jobs & workflows — read
+
+Discover job types, inspect definitions, poll runs, list workflows, and load AI workflow builder chats.
+
+> **Base:** `/api/v1`  
+> **Auth:** `Authorization: Bearer {token}`  
+> See also: [Jobs & workflows — write](./jobs-workflows-write)
+
+---
+
+## Shared types
+
+### `JobTypeSummary`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | Display name |
+| `description` | `string` | |
+| `job_type` | `string` | Internal key (`ETLJob`, `Group`, …) |
+
+### `JobParameterSchema`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | |
+| `type` | `string` | `string`, `integer`, `boolean`, `enumeration`, `foreign_key`, … |
+| `default_value` | `any` | |
+| `description` | `string` | |
+| `options` | `string[]` | Enum values |
+| `foreign_key_options` | `{ id, name }[]` | |
+| `is_required` | `boolean` | |
+| `is_output` | `boolean` | |
+
+### `WorkflowJob` / `WorkflowJobParameter` / `WorkflowOutputMapping`
+
+Same shapes used on create/get workflow — see [write](./jobs-workflows-write#createworkflowrequest).
+
+### `WorkflowSummary`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `integer` | Root or node ID |
+| `parent_id` | `integer \| null` | |
+| `name` | `string` | |
+| `key` | `string` | Encoded job key |
+| `job_type_display` | `string` | |
+| `is_enabled` | `boolean` | |
+| `has_schedule` | `boolean` | |
+| `status` | `{ id, name }` | |
+| `status_time` | `string` | ISO 8601 |
+| `children` | `WorkflowSummary[]` | |
+
+### `JobRunSummary` / `JobRunDetail`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `run_id` | `string` | Opaque ID |
+| `job_id` | `integer` | |
+| `name` | `string` | |
+| `status` | `string` | `Running`, `Completed`, `Failed`, `Cancelled` |
+| `start_time` | `string` | |
+| `end_time` | `string \| null` | |
+| `is_manual_run` | `boolean` | |
+| `exception` | `string \| null` | Detail only |
+| `has_children` | `boolean` | Detail only |
+| `children` | `JobRunDetail[]` | Detail only |
+| `output_refs` | `{ parameter_name, value, download_url }[]` | Detail only |
+
+### `ChatSummary` / `ChatMessage`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `chat_id` | `string` | UUID |
+| `title` | `string` | |
+| `message_count` | `integer` | |
+| `last_message` | `string` | |
+| `last_message_role` | `string` | `user` / `assistant` |
+| `created_at` / `updated_at` | `string` | |
+| `role` / `content` / `timestamp` | — | Message fields |
+
+---
+
+## `GET /jobs`
+
+List runnable job types for the organization.
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Legacy** | `GET /api/ai-workflow/jobs` |
+| **Scopes** | `jobs:read` |
+
+### Response `200 OK`
+
+```json
+{
+  "jobs": [
+    {
+      "name": "ETL Job",
+      "description": "Extract, Transform, and Load data between systems.",
+      "job_type": "ETLJob"
+    },
+    {
+      "name": "Group",
+      "description": "Container node for workflow structure and scheduling.",
+      "job_type": "Group"
+    }
+  ]
+}
+```
+
+> Legacy root key: `job_list`.
+
+```bash
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "https://{tenant}.ryanplatform.com/api/v1/jobs"
+```
+
+---
+
+## `GET /jobs/{jobId}`
+
+Job definition + parameter schema.
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Legacy** | `GET /api/ai-workflow/jobs/{jobTreeId}/detail` + `POST /api/ai-workflow/jobs/parameters` |
+| **Scopes** | `jobs:read` |
+
+### Query parameters
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `include_output` | `boolean` | `false` | Include output params in schema |
+
+### Response `200 OK`
+
+```json
+{
+  "id": 1042,
+  "parent_id": 1001,
+  "name": "Load warehouse table",
+  "key": "xAccessKeyEncoded…",
+  "parent_key": "parentKeyEncoded…",
+  "job_type": "ETLJob",
+  "is_enabled": true,
+  "allow_concurrent_runs": true,
+  "fire_on_success": "RunOnSuccess",
+  "bridge_id": 12,
+  "bridge_name": "Production Bridge",
+  "parameters": [
+    { "name": "SourceTable", "value": "raw_orders" }
+  ],
+  "parameter_schema": [
+    {
+      "name": "SourceTable",
+      "type": "string",
+      "default_value": null,
+      "description": "Source table name",
+      "options": [],
+      "foreign_key_options": [],
+      "is_required": true,
+      "is_output": false
+    }
+  ]
+}
+```
+
+---
+
+## `GET /jobs/{jobId}/runs`
+
+Run history (newest first).
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Legacy** | ProcessServer history (no public REST today) |
+| **Scopes** | `jobs:read` |
+
+### Query parameters
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `page` | `integer` | `1` | |
+| `page_size` | `integer` | `25` | Max `100` |
+| `status` | `string` | — | `running`, `completed`, `failed`, `cancelled` |
+| `since` | `string` | — | ISO 8601 |
+
+### Response `200 OK`
+
+```json
+{
+  "runs": [
+    {
+      "run_id": "rjh_8f3a…",
+      "job_id": 1042,
+      "name": "Load warehouse table",
+      "status": "Completed",
+      "start_time": "2026-07-09T14:22:11Z",
+      "end_time": "2026-07-09T14:23:04Z",
+      "is_manual_run": true
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 25,
+    "total_count": 142,
+    "has_more": true
+  }
+}
+```
+
+---
+
+## `GET /job-runs/{runId}`
+
+Run status + output refs.
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Legacy** | `GET/POST /api/job/GetStatus` with `X-Access-Key` + history key |
+| **Scopes** | `jobs:read` |
+
+### Response `200 OK`
+
+```json
+{
+  "run_id": "rjh_8f3a…",
+  "job_id": 1042,
+  "name": "Load warehouse table",
+  "status": "Completed",
+  "start_time": "2026-07-09T14:22:11Z",
+  "end_time": "2026-07-09T14:23:04Z",
+  "is_manual_run": true,
+  "exception": null,
+  "has_children": true,
+  "children": [],
+  "output_refs": [
+    {
+      "parameter_name": "RowsProcessed",
+      "value": 12840,
+      "download_url": null
+    }
+  ]
+}
+```
+
+> Legacy: `{ "JobHistories": [ … ] }` PascalCase, no `output_refs`.
+
+---
+
+## `GET /workflows`
+
+List workflows.
+
+| | |
+| --- | --- |
+| **Status** | **New** (today: `GET /api/ai-workflow/job-workflows`) |
+| **Scopes** | `workflows:read` |
+
+### Query parameters
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `roots` | `boolean` | `false` | Roots only |
+| `folder_id` | `integer` | — | With `roots=true` |
+| `q` | `string` | — | Name search |
+
+### Response `200 OK`
+
+```json
+{
+  "workflows": [
+    {
+      "id": 1001,
+      "parent_id": null,
+      "name": "Nightly ETL",
+      "key": "xAccessKeyEncoded…",
+      "job_type_display": "FakeJob",
+      "is_enabled": true,
+      "has_schedule": true,
+      "status": { "id": 3, "name": "Completed" },
+      "status_time": "2026-07-09T06:00:12Z",
+      "children": []
+    }
+  ]
+}
+```
+
+> Legacy: `{ "Workflows": [ … ] }`.
+
+---
+
+## `GET /workflows/{workflowId}`
+
+Full definition: jobs, parameters, output mappings.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `GET /api/ai-workflow/{id}` |
+| **Scopes** | `workflows:read` |
+
+### Response `200 OK`
+
+```json
+{
+  "jobs_with_parameters": [
+    {
+      "id": 1001,
+      "job_type": "Group",
+      "job_name": "Nightly ETL",
+      "access_key": "00000000-0000-0000-0000-0000000003e9",
+      "parent_access_key": null,
+      "job_key": "encodedRootKey…",
+      "parent_job_key": null,
+      "fire_on_success": null,
+      "parameters": [
+        { "name": "RecurrencePeriod", "value": "Daily" }
+      ]
+    }
+  ],
+  "output_mappings": []
+}
+```
+
+---
+
+## `GET /workflows/{workflowId}/jobs/{jobTreeId}/detail`
+
+Single job node detail inside a workflow.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `GET /api/ai-workflow/jobs/{jobTreeId}/detail` |
+| **Scopes** | `workflows:read` |
+
+> v1 adds `workflowId` for hierarchy; legacy only required `jobTreeId`.
+
+### Response `200 OK`
+
+```json
+{
+  "id": 1042,
+  "parent_id": 1001,
+  "organization_id": 55,
+  "name": "Load warehouse table",
+  "key": "encodedKey…",
+  "parent_key": "encodedParentKey…",
+  "job_type_display": "ETLJob",
+  "is_enabled": true,
+  "allow_concurrent_runs": true,
+  "bridge_id": 12,
+  "bridge_name": "Production Bridge",
+  "fire_on_success": "RunOnSuccess",
+  "job_data_info": [
+    { "data_key": "SourceTable", "data_value": "raw_orders" }
+  ],
+  "job_schedules": [],
+  "tags": ["etl"]
+}
+```
+
+---
+
+## `GET /ai-workflow/chats`
+
+List workflow builder chats for the user.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `GET /api/ai-workflow/chats` |
+| **Scopes** | `ai-workflow:read` |
+
+### Response `200 OK`
+
+```json
+{
+  "chats": [
+    {
+      "chat_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "title": "Nightly ETL draft",
+      "message_count": 6,
+      "last_message": "I've added a validation step after the load.",
+      "last_message_role": "assistant",
+      "created_at": "2026-07-08T10:15:00Z",
+      "updated_at": "2026-07-09T12:01:33Z"
+    }
+  ]
+}
+```
+
+---
+
+## `GET /ai-workflow/chats/{chatId}`
+
+Messages + draft workflow.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `GET /api/ai-workflow/chats/{chatId}` |
+| **Scopes** | `ai-workflow:read` |
+
+### Response `200 OK`
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Build a workflow that loads orders nightly.",
+      "timestamp": "2026-07-08T10:15:00Z"
+    }
+  ],
+  "draft_workflow": [
+    {
+      "id": null,
+      "job_type": "Group",
+      "job_name": "Nightly orders load",
+      "job_instance_id": "inst_root_01",
+      "access_key": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "parent_access_key": null,
+      "parameters": [
+        { "name": "RecurrencePeriod", "value": "Daily" }
+      ]
+    }
+  ],
+  "output_mappings": []
+}
+```
+
+---
+
+## Endpoint index
+
+| Method | Path | Action | Status |
+| --- | --- | --- | --- |
+| `GET` | `/jobs` | List job types | **New** |
+| `GET` | `/jobs/{jobId}` | Definition + schema | **New** |
+| `GET` | `/jobs/{jobId}/runs` | Run history | **New** |
+| `GET` | `/job-runs/{runId}` | Run status + outputs | **New** |
+| `GET` | `/workflows` | List workflows | **New** |
+| `GET` | `/workflows/{workflowId}` | Workflow detail | **Exists** |
+| `GET` | `/workflows/{workflowId}/jobs/{jobTreeId}/detail` | Job tree detail | **Exists** |
+| `GET` | `/ai-workflow/chats` | List chats | **Exists** |
+| `GET` | `/ai-workflow/chats/{chatId}` | Chat detail | **Exists** |

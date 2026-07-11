@@ -1,0 +1,389 @@
+# Jobs & workflows — write
+
+Trigger runs, create workflows, and mutate AI workflow builder chats.
+
+> **Base:** `/api/v1`  
+> **Auth:** Bearer token, except job run which also accepts / requires `X-Access-Key`  
+> See also: [Jobs & workflows — read](./jobs-workflows-read)
+
+---
+
+## Shared types (write)
+
+### `RunJobRequest`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `run_only_this_job` | `boolean` | If `true`, do not cascade children |
+| `parameter_overrides` | `object` | Map of parameter name → value (API version 2) |
+
+### `RunJobResponse`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `run_id` | `string` | Opaque run ID — poll with `GET /job-runs/{runId}` |
+| `job_id` | `integer` | Job that was triggered |
+
+### `CreateWorkflowRequest`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `jobs_with_parameters` | `WorkflowJob[]` | Ordered jobs (root first) |
+| `output_mappings` | `WorkflowOutputMapping[]` | Parameter bindings |
+
+### `CreateWorkflowResponse`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `workflow_id` | `integer` | Root job tree ID |
+| `workflow_name` | `string` | Name |
+| `workflow_url` | `string` | Deep link into product UI |
+
+### `ParameterUpdate`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `job_instance_id` | `string` | Draft job instance ID |
+| `parameters` | `{ name, value }[]` | Updated parameters |
+
+---
+
+## `POST /jobs/{jobId}/run`
+
+Trigger a job (or workflow root) run.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `GET/POST /api/job` — normalize to POST + API key header |
+| **Scopes** | `jobs:write` |
+| **Auth** | Bearer **and/or** `X-Access-Key` for the job |
+
+### Path parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `jobId` | `integer` | Job tree ID (must match the API key’s job when using `X-Access-Key`) |
+
+### Headers
+
+| Header | Required | Description |
+| --- | --- | --- |
+| `X-Access-Key` | Yes (v1 job-key mode) | Encoded job API key |
+| `X-Api-Version` | No | `1` (default) or `2` (parameter overrides) |
+| `Authorization` | Preferred | Bearer token with `jobs:write` |
+
+### Request body
+
+```json
+{
+  "run_only_this_job": false,
+  "parameter_overrides": {
+    "AsOfDate": "2026-07-11",
+    "ForceReload": true
+  }
+}
+```
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `run_only_this_job` | `boolean` | `false` | Skip child cascade |
+| `parameter_overrides` | `object` | — | Requires API version `2` |
+
+### Response `202 Accepted`
+
+```json
+{
+  "run_id": "rjh_8f3a…",
+  "job_id": 1042
+}
+```
+
+> Legacy returns `{ "RunJobHistoryKey": "…" }`. v1 uses `run_id`. Poll with [`GET /job-runs/{runId}`](./jobs-workflows-read#get-job-runsrunid).
+
+### Examples
+
+```bash
+# Trigger with API key + overrides (v2)
+curl -sS -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "X-Access-Key: $JOB_ACCESS_KEY" \
+  -H "X-Api-Version: 2" \
+  -H "Content-Type: application/json" \
+  -d '{"run_only_this_job":false,"parameter_overrides":{"AsOfDate":"2026-07-11"}}' \
+  "https://{tenant}.ryanplatform.com/api/v1/jobs/1042/run"
+```
+
+### Legacy notes
+
+- `POST /api/job` body: `{ "RunOnlyThisJob": bool, "ParameterOverrides": "<json-string>" }`
+- `GET /api/job?xAccessKey=…&runOnlyThisJob=…&version=2&parameterOverrides=…`
+- Host whitelist on the API key may reject callers outside allowed IPs/hostnames
+
+---
+
+## `POST /workflows`
+
+Create a workflow from a full job graph.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `POST /api/ai-workflow/create` |
+| **Scopes** | `workflows:write` |
+
+### Request body
+
+```json
+{
+  "jobs_with_parameters": [
+    {
+      "job_type": "Group",
+      "job_name": "Nightly ETL",
+      "access_key": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "parent_access_key": null,
+      "fire_on_success": null,
+      "parameters": [
+        { "name": "RecurrencePeriod", "value": "Daily" },
+        { "name": "StartDate", "value": "2026-01-01T09:00:00" }
+      ]
+    },
+    {
+      "job_type": "ETLJob",
+      "job_name": "Load orders",
+      "access_key": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "parent_access_key": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "fire_on_success": "RunOnSuccess",
+      "parameters": [
+        { "name": "SourceTable", "value": "raw_orders" },
+        { "name": "TargetTable", "value": "orders" }
+      ]
+    }
+  ],
+  "output_mappings": []
+}
+```
+
+### Notes
+
+- `access_key` / `parent_access_key` are **request-local** UUIDs used to wire parent/child edges before IDs exist.
+- First job may carry schedule parameters (`RecurrencePeriod`, `StartDate`, …).
+- `job_type` `Group` maps to internal `FakeJob`.
+- Creation can take up to ~120s while ProcessServer finishes the async create.
+
+### Response `201 Created` / `200 OK`
+
+```json
+{
+  "workflow_id": 1001,
+  "workflow_name": "Nightly ETL",
+  "workflow_url": "/NewExperience/workflow/job-workflow/details/1001"
+}
+```
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d @workflow.json \
+  "https://{tenant}.ryanplatform.com/api/v1/workflows"
+```
+
+---
+
+## `POST /ai-workflow/chats`
+
+Create a workflow builder chat (optionally seeded from an existing workflow).
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `POST /api/ai-workflow/chats` |
+| **Scopes** | `ai-workflow:write` |
+
+### Request body
+
+```json
+{
+  "workflow_id": 1001
+}
+```
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `workflow_id` | `integer` | No* | Seed chat from existing workflow (*required by current implementation when provided must be &gt; 0) |
+
+Omit or send `0` for a blank chat, depending on assistant support.
+
+### Response `200 OK`
+
+```json
+{
+  "chat_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "workflow_id": "1001",
+  "draft_workflow": [],
+  "output_mappings": []
+}
+```
+
+---
+
+## `POST /ai-workflow/chats/{chatId}`
+
+Send a user message; returns assistant reply and updated draft.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `POST /api/ai-workflow/chats/{chatId}` |
+| **Scopes** | `ai-workflow:write` |
+
+### Request body
+
+```json
+{
+  "message": "Add an email notification that fires when the ETL fails."
+}
+```
+
+### Response `200 OK`
+
+```json
+{
+  "assistant_message": "I've added an Email job that runs on failure after the ETL step.",
+  "draft_workflow": [
+    {
+      "job_type": "Group",
+      "job_name": "Nightly orders load",
+      "job_instance_id": "inst_root_01",
+      "access_key": "…",
+      "parent_access_key": null,
+      "parameters": []
+    }
+  ],
+  "output_mappings": []
+}
+```
+
+> Exact assistant response field names may include `assistant_message` and nested draft objects. Treat extra fields as additive.
+
+---
+
+## `PATCH /ai-workflow/chats/{chatId}/parameters`
+
+Update dirty parameters on draft jobs.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `PATCH /api/ai-workflow/chats/{chatId}/parameters` |
+| **Scopes** | `ai-workflow:write` |
+
+### Request body
+
+Array of updates:
+
+```json
+[
+  {
+    "job_instance_id": "inst_etl_01",
+    "parameters": [
+      { "name": "SourceTable", "value": "raw_orders_v2" },
+      { "name": "TargetTable", "value": "orders" }
+    ]
+  }
+]
+```
+
+### Response `200 OK`
+
+Empty body on success.
+
+```bash
+curl -sS -X PATCH \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '[{"job_instance_id":"inst_etl_01","parameters":[{"name":"SourceTable","value":"raw_orders_v2"}]}]' \
+  "https://{tenant}.ryanplatform.com/api/v1/ai-workflow/chats/$CHAT_ID/parameters"
+```
+
+---
+
+## `POST /ai-workflow/chats/{chatId}/workflows`
+
+Materialize the draft into a real workflow.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `POST /api/ai-workflow/chats/{chatId}/workflows` |
+| **Scopes** | `ai-workflow:write` |
+
+### Request body
+
+Empty object `{}` (draft is server-side).
+
+### Response `200 OK`
+
+```json
+{
+  "workflow_id": 1001,
+  "workflow_name": "Nightly orders load",
+  "workflow_url": "/NewExperience/workflow/job-workflow/details/1001"
+}
+```
+
+> May take up to ~130s while creation completes.
+
+---
+
+## `POST /ai-workflow/chats/{chatId}/context`
+
+Load / switch chat context to an existing workflow.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `POST /api/ai-workflow/chats/{chatId}/context` |
+| **Scopes** | `ai-workflow:write` |
+
+### Request body
+
+```json
+{
+  "workflow_id": 1001
+}
+```
+
+### Response `200 OK`
+
+```json
+{
+  "workflow_id": 1001,
+  "draft_workflow": [ … ],
+  "output_mappings": [ … ]
+}
+```
+
+---
+
+## `DELETE /ai-workflow/chats/{chatId}`
+
+Delete a workflow builder chat.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `DELETE /api/ai-workflow/chats/{chatId}` |
+| **Scopes** | `ai-workflow:write` |
+
+### Response `200 OK` / `204 No Content`
+
+Empty body.
+
+---
+
+## Endpoint index
+
+| Method | Path | Action | Status |
+| --- | --- | --- | --- |
+| `POST` | `/jobs/{jobId}/run` | Trigger job | **Exists** (normalize) |
+| `POST` | `/workflows` | Create workflow | **Exists** |
+| `POST` | `/ai-workflow/chats` | Create chat | **Exists** |
+| `POST` | `/ai-workflow/chats/{chatId}` | Send message | **Exists** |
+| `PATCH` | `/ai-workflow/chats/{chatId}/parameters` | Update parameters | **Exists** |
+| `POST` | `/ai-workflow/chats/{chatId}/workflows` | Generate workflow | **Exists** |
+| `POST` | `/ai-workflow/chats/{chatId}/context` | Load workflow context | **Exists** |
+| `DELETE` | `/ai-workflow/chats/{chatId}` | Delete chat | **Exists** |

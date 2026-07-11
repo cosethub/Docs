@@ -1,0 +1,197 @@
+# Auth & account
+
+Health checks, token issuance, and org identity.
+
+> **Base:** `/api/v1`  
+> **Auth:** none for `/health` and `/oauth/token`; Bearer for `/me` and organizations
+
+---
+
+## `GET /health`
+
+Liveness probe for load balancers and monitors.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `GET /api/health` |
+| **Auth** | None |
+
+### Response `200 OK`
+
+```json
+{
+  "status": "ok",
+  "version": "1.0.0",
+  "time": "2026-07-11T16:30:00Z"
+}
+```
+
+### Example
+
+```bash
+curl -sS "https://{tenant}.ryanplatform.com/api/v1/health"
+```
+
+---
+
+## `POST /oauth/token`
+
+Issue an access token via OAuth2 client credentials.
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Auth** | Client ID + secret (body or Basic) |
+| **Scopes issued** | Configured on the API client |
+
+### Request body
+
+```json
+{
+  "grant_type": "client_credentials",
+  "client_id": "cli_abc123",
+  "client_secret": "sec_…",
+  "scope": "warehouses:read file-stores:read jobs:write"
+}
+```
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `grant_type` | `string` | Yes | Must be `client_credentials` |
+| `client_id` | `string` | Yes* | API client ID (*or HTTP Basic) |
+| `client_secret` | `string` | Yes* | API client secret |
+| `scope` | `string` | No | Space-separated scopes; defaults to client default |
+
+Also accepted as `application/x-www-form-urlencoded` (standard OAuth2).
+
+### Response `200 OK`
+
+```json
+{
+  "access_token": "eyJhbGciOi…",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "scope": "warehouses:read file-stores:read jobs:write"
+}
+```
+
+### Errors
+
+| HTTP | `code` | When |
+| --- | --- | --- |
+| `400` | `bad_request` | Missing `grant_type` or unsupported grant |
+| `401` | `unauthorized` | Invalid client credentials |
+
+### Example
+
+```bash
+curl -sS -X POST \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET&scope=warehouses:read" \
+  "https://{tenant}.ryanplatform.com/api/v1/oauth/token"
+```
+
+---
+
+## `GET /me`
+
+Current principal: user (or service account), organization, and granted scopes.
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Scopes** | Any valid token |
+
+### Response `200 OK`
+
+```json
+{
+  "user": {
+    "id": 881,
+    "user_name": "integration@acme.com",
+    "display_name": "Acme Integration",
+    "email": "integration@acme.com"
+  },
+  "organization": {
+    "id": 55,
+    "name": "Acme Capital",
+    "slug": "acme"
+  },
+  "scopes": [
+    "warehouses:read",
+    "warehouses:write",
+    "file-stores:read",
+    "jobs:write"
+  ],
+  "token_expires_at": "2026-07-11T17:30:00Z"
+}
+```
+
+### Example
+
+```bash
+curl -sS \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "https://{tenant}.ryanplatform.com/api/v1/me"
+```
+
+---
+
+## `GET /organizations/{orgId}`
+
+Organization metadata for the authenticated tenant.
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Scopes** | Any valid token for that org |
+
+### Path parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `orgId` | `integer` | Organization ID (must match token org) |
+
+### Response `200 OK`
+
+```json
+{
+  "id": 55,
+  "name": "Acme Capital",
+  "slug": "acme",
+  "timezone": "America/New_York",
+  "created_at": "2020-03-12T00:00:00Z",
+  "features": {
+    "warehouses": true,
+    "file_stores": true,
+    "ai_workflow": true,
+    "coordinator": true
+  }
+}
+```
+
+### Errors
+
+| HTTP | When |
+| --- | --- |
+| `403` | Token org does not match `orgId` |
+| `404` | Unknown organization |
+
+### Example
+
+```bash
+curl -sS \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "https://{tenant}.ryanplatform.com/api/v1/organizations/55"
+```
+
+---
+
+## Endpoint index
+
+| Method | Path | Action | Status |
+| --- | --- | --- | --- |
+| `GET` | `/health` | Liveness | **Exists** |
+| `POST` | `/oauth/token` | Issue access token | **New** |
+| `GET` | `/me` | Current user + org + scopes | **New** |
+| `GET` | `/organizations/{orgId}` | Org metadata | **New** |

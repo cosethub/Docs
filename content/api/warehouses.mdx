@@ -1,0 +1,692 @@
+# Warehouses
+
+Read and write warehouse metadata, schemas, rows, and exports.
+
+> **Base:** `/api/v1`  
+> **Auth:** `Authorization: Bearer {token}`  
+> **Scopes:** `warehouses:read` / `warehouses:write`
+
+Today, many warehouse operations go through ProcessServer websockets. Public REST wraps those ops under `/warehouses/*`.
+
+---
+
+## Shared types
+
+### `WarehouseSummary`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `integer` | Warehouse ID |
+| `name` | `string` | Display name |
+| `description` | `string \| null` | Optional description |
+| `is_enabled` | `boolean` | Available for use |
+| `created_at` | `string` | ISO 8601 |
+| `updated_at` | `string \| null` | ISO 8601 |
+
+### `TableSummary`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | Schema-qualified or warehouse table name |
+| `display_name` | `string \| null` | UI label |
+| `row_count` | `integer \| null` | Approximate count when known |
+| `has_screen_access` | `boolean` | Caller can see this table |
+
+### `ViewSummary`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | View name |
+| `schema` | `string \| null` | Schema |
+| `description` | `string \| null` | |
+
+### `ColumnSchema`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | Column name |
+| `data_type` | `string` | e.g. `varchar`, `int`, `decimal`, `datetime` |
+| `is_nullable` | `boolean` | |
+| `is_primary_key` | `boolean` | |
+| `max_length` | `integer \| null` | |
+| `precision` | `integer \| null` | |
+| `scale` | `integer \| null` | |
+| `default_value` | `any` | |
+
+### `Row`
+
+Object map of column name → value. Primary key columns identify the row for GET/PUT/PATCH/DELETE.
+
+```json
+{
+  "Id": 12,
+  "Symbol": "AAPL",
+  "Price": 192.5,
+  "AsOf": "2026-07-10T00:00:00Z"
+}
+```
+
+### `ExportJob`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `export_id` | `string` | Opaque ID |
+| `status` | `string` | `pending`, `running`, `ready`, `failed` |
+| `format` | `string` | `csv` or `json` |
+| `download_url` | `string \| null` | Presigned URL when `ready` |
+| `error` | `string \| null` | Failure message |
+| `created_at` | `string` | ISO 8601 |
+| `completed_at` | `string \| null` | ISO 8601 |
+
+---
+
+## Read
+
+### `GET /warehouses`
+
+List warehouses for the authenticated organization.
+
+| | |
+| --- | --- |
+| **Status** | **New** (today: websocket `GetAllWarehouses`) |
+| **Scopes** | `warehouses:read` |
+
+#### Response `200 OK`
+
+```json
+{
+  "warehouses": [
+    {
+      "id": 7,
+      "name": "Ops Warehouse",
+      "description": "Production ops data",
+      "is_enabled": true,
+      "created_at": "2024-01-15T12:00:00Z",
+      "updated_at": "2026-06-01T09:00:00Z"
+    }
+  ]
+}
+```
+
+```bash
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "https://{tenant}.ryanplatform.com/api/v1/warehouses"
+```
+
+---
+
+### `GET /warehouses/{warehouseId}`
+
+Warehouse detail.
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Scopes** | `warehouses:read` |
+
+#### Path parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `warehouseId` | `integer` | Warehouse ID |
+
+#### Response `200 OK`
+
+```json
+{
+  "id": 7,
+  "name": "Ops Warehouse",
+  "description": "Production ops data",
+  "is_enabled": true,
+  "connection": {
+    "engine": "sqlserver",
+    "database": "OpsDW"
+  },
+  "created_at": "2024-01-15T12:00:00Z",
+  "updated_at": "2026-06-01T09:00:00Z"
+}
+```
+
+> Connection secrets are never returned. Only non-sensitive metadata.
+
+---
+
+### `GET /warehouses/{warehouseId}/tables`
+
+List tables visible to the caller (screen access applied).
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `GET /api/warehouses/{id}/tables` |
+| **Scopes** | `warehouses:read` |
+
+#### Response `200 OK`
+
+```json
+{
+  "tables": [
+    {
+      "name": "dbo.Positions",
+      "display_name": "Positions",
+      "row_count": null,
+      "has_screen_access": true
+    }
+  ]
+}
+```
+
+> Legacy root key: `Tables` (PascalCase records). v1 normalizes to `tables` + snake_case summaries.
+
+---
+
+### `GET /warehouses/{warehouseId}/views`
+
+List warehouse views.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `GET /api/warehouses/{id}/views` |
+| **Scopes** | `warehouses:read` |
+
+#### Response `200 OK`
+
+```json
+{
+  "views": [
+    {
+      "name": "v_recon_breaks",
+      "schema": "dbo",
+      "description": "Open reconciliation breaks"
+    }
+  ]
+}
+```
+
+> Legacy root key: `Views`.
+
+---
+
+### `GET /warehouses/{warehouseId}/tables/{tableName}/schema`
+
+Column definitions for a table.
+
+| | |
+| --- | --- |
+| **Status** | **Exists** — `GET /api/warehouses/{id}/tables/{tableName}/schema` |
+| **Scopes** | `warehouses:read` |
+
+#### Path parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `warehouseId` | `integer` | Warehouse ID |
+| `tableName` | `string` | Table name (URL-encode if schema-qualified, e.g. `dbo.Positions`) |
+
+#### Response `200 OK`
+
+```json
+{
+  "table_name": "dbo.Positions",
+  "columns": [
+    {
+      "name": "Id",
+      "data_type": "int",
+      "is_nullable": false,
+      "is_primary_key": true,
+      "max_length": null,
+      "precision": null,
+      "scale": null,
+      "default_value": null
+    },
+    {
+      "name": "Symbol",
+      "data_type": "varchar",
+      "is_nullable": false,
+      "is_primary_key": false,
+      "max_length": 32,
+      "precision": null,
+      "scale": null,
+      "default_value": null
+    }
+  ]
+}
+```
+
+> Legacy returns a raw screen-definition record array. v1 wraps as `{ table_name, columns }`.
+
+---
+
+### `GET /warehouses/{warehouseId}/tables/{tableName}/rows`
+
+Query table rows with filter, sort, and pagination.
+
+| | |
+| --- | --- |
+| **Status** | **New** (today: websocket entity read) |
+| **Scopes** | `warehouses:read` |
+
+#### Query parameters
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `filter` | `string` | — | Expression or structured filter (see below) |
+| `sort` | `string` | — | `Column:asc` or `Column:desc`; comma-separated |
+| `page` | `integer` | `1` | Page number |
+| `page_size` | `integer` | `50` | Max `500` |
+| `columns` | `string` | — | Comma-separated column subset |
+
+#### Filter examples
+
+Simple:
+
+```
+?filter=Symbol:eq:AAPL
+?filter=Price:gte:100
+```
+
+Combined (AND):
+
+```
+?filter=Symbol:eq:AAPL,AsOf:gte:2026-01-01
+```
+
+#### Response `200 OK`
+
+```json
+{
+  "rows": [
+    { "Id": 12, "Symbol": "AAPL", "Price": 192.5, "AsOf": "2026-07-10T00:00:00Z" }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 50,
+    "total_count": 1,
+    "has_more": false
+  }
+}
+```
+
+```bash
+curl -sS -G \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  --data-urlencode "filter=Symbol:eq:AAPL" \
+  --data-urlencode "sort=AsOf:desc" \
+  --data-urlencode "page=1" \
+  --data-urlencode "page_size=50" \
+  "https://{tenant}.ryanplatform.com/api/v1/warehouses/7/tables/dbo.Positions/rows"
+```
+
+---
+
+### `GET /warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}`
+
+Single row by primary key.
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Scopes** | `warehouses:read` |
+
+#### Path parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `rowId` | `string` | Primary key value (composite keys: encode as `k1=v1&k2=v2` URL-encoded, or use query `?key=…`) |
+
+#### Response `200 OK`
+
+```json
+{
+  "row": {
+    "Id": 12,
+    "Symbol": "AAPL",
+    "Price": 192.5,
+    "AsOf": "2026-07-10T00:00:00Z"
+  }
+}
+```
+
+---
+
+### `GET /warehouses/{warehouseId}/views/{viewName}/rows`
+
+Query view rows (same query params as table rows).
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Scopes** | `warehouses:read` |
+
+#### Response `200 OK`
+
+Same shape as table rows (`rows` + `pagination`). Views are read-only — write endpoints are not available on views.
+
+---
+
+### `POST /warehouses/{warehouseId}/query`
+
+Structured or ad-hoc query. May return rows inline or an async job id for large results.
+
+| | |
+| --- | --- |
+| **Status** | **New** (P2 / defer for ad-hoc SQL) |
+| **Scopes** | `warehouses:read` |
+
+#### Request body
+
+```json
+{
+  "mode": "structured",
+  "table": "dbo.Positions",
+  "columns": ["Id", "Symbol", "Price"],
+  "filter": { "Symbol": { "eq": "AAPL" } },
+  "sort": [{ "column": "AsOf", "direction": "desc" }],
+  "limit": 1000,
+  "async": false
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `mode` | `string` | `structured` (v1). `sql` deferred |
+| `table` / `view` | `string` | Target |
+| `columns` | `string[]` | Projection |
+| `filter` | `object` | Structured filters |
+| `sort` | `object[]` | Sort specs |
+| `limit` | `integer` | Max rows for sync |
+| `async` | `boolean` | If true, returns export-style job |
+
+#### Response `200 OK` (sync)
+
+```json
+{
+  "rows": [ … ],
+  "truncated": false
+}
+```
+
+#### Response `202 Accepted` (async)
+
+```json
+{
+  "export_id": "exp_9c2…",
+  "status": "pending",
+  "poll_url": "/api/v1/warehouses/7/exports/exp_9c2…"
+}
+```
+
+---
+
+### `GET /warehouses/{warehouseId}/exports/{exportId}`
+
+Poll or download a bulk export.
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Scopes** | `warehouses:read` |
+
+#### Response `200 OK`
+
+```json
+{
+  "export_id": "exp_9c2…",
+  "status": "ready",
+  "format": "csv",
+  "download_url": "https://…presigned…",
+  "error": null,
+  "created_at": "2026-07-11T16:00:00Z",
+  "completed_at": "2026-07-11T16:01:12Z"
+}
+```
+
+When `status` is `ready`, fetch `download_url` (short-lived).
+
+---
+
+## Write
+
+### `POST /warehouses/{warehouseId}/tables/{tableName}/rows`
+
+Insert a row.
+
+| | |
+| --- | --- |
+| **Status** | **New** (today: websocket `SaveUpdateEntity`) |
+| **Scopes** | `warehouses:write` |
+
+#### Request body
+
+```json
+{
+  "row": {
+    "Symbol": "MSFT",
+    "Price": 425.1,
+    "AsOf": "2026-07-11T00:00:00Z"
+  }
+}
+```
+
+#### Response `201 Created`
+
+```json
+{
+  "row": {
+    "Id": 13,
+    "Symbol": "MSFT",
+    "Price": 425.1,
+    "AsOf": "2026-07-11T00:00:00Z"
+  }
+}
+```
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"row":{"Symbol":"MSFT","Price":425.1,"AsOf":"2026-07-11T00:00:00Z"}}' \
+  "https://{tenant}.ryanplatform.com/api/v1/warehouses/7/tables/dbo.Positions/rows"
+```
+
+---
+
+### `PUT /warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}`
+
+Full replace of a row (all writable columns).
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Scopes** | `warehouses:write` |
+
+#### Request body
+
+```json
+{
+  "row": {
+    "Id": 12,
+    "Symbol": "AAPL",
+    "Price": 193.0,
+    "AsOf": "2026-07-11T00:00:00Z"
+  }
+}
+```
+
+#### Response `200 OK`
+
+```json
+{ "row": { … } }
+```
+
+---
+
+### `PATCH /warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}`
+
+Partial update — only supplied fields change.
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Scopes** | `warehouses:write` |
+
+#### Request body
+
+```json
+{
+  "row": {
+    "Price": 193.25
+  }
+}
+```
+
+#### Response `200 OK`
+
+```json
+{
+  "row": {
+    "Id": 12,
+    "Symbol": "AAPL",
+    "Price": 193.25,
+    "AsOf": "2026-07-10T00:00:00Z"
+  }
+}
+```
+
+---
+
+### `DELETE /warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}`
+
+Delete a row by primary key.
+
+| | |
+| --- | --- |
+| **Status** | **New** (today: websocket `DeleteEntity`) |
+| **Scopes** | `warehouses:write` |
+
+#### Response `204 No Content`
+
+Empty body.
+
+---
+
+### `POST /warehouses/{warehouseId}/tables/{tableName}/rows/bulk`
+
+Batch insert and/or update.
+
+| | |
+| --- | --- |
+| **Status** | **New** (today: websocket `SaveUpdateEntities`) |
+| **Scopes** | `warehouses:write` |
+
+#### Request body
+
+```json
+{
+  "mode": "upsert",
+  "key_columns": ["Id"],
+  "rows": [
+    { "Id": 12, "Symbol": "AAPL", "Price": 193.25 },
+    { "Symbol": "GOOG", "Price": 178.4, "AsOf": "2026-07-11T00:00:00Z" }
+  ]
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `mode` | `string` | `insert`, `update`, or `upsert` |
+| `key_columns` | `string[]` | Match keys for update/upsert |
+| `rows` | `object[]` | Row payloads |
+
+#### Response `200 OK`
+
+```json
+{
+  "inserted": 1,
+  "updated": 1,
+  "failed": 0,
+  "errors": []
+}
+```
+
+---
+
+### `POST /warehouses/{warehouseId}/exports`
+
+Start an async CSV/JSON export.
+
+| | |
+| --- | --- |
+| **Status** | **New** |
+| **Scopes** | `warehouses:write` (or `warehouses:read` if export is treated as read) |
+
+#### Request body
+
+```json
+{
+  "source": {
+    "type": "table",
+    "name": "dbo.Positions"
+  },
+  "format": "csv",
+  "filter": "AsOf:gte:2026-01-01",
+  "columns": ["Id", "Symbol", "Price", "AsOf"]
+}
+```
+
+#### Response `202 Accepted`
+
+```json
+{
+  "export_id": "exp_9c2…",
+  "status": "pending",
+  "poll_url": "/api/v1/warehouses/7/exports/exp_9c2…"
+}
+```
+
+---
+
+### `PUT /warehouses/{warehouseId}/metadata`
+
+Update warehouse UI / display metadata (not connection secrets).
+
+| | |
+| --- | --- |
+| **Status** | **New** (today: websocket; deferred in priority) |
+| **Scopes** | `warehouses:write` |
+
+#### Request body
+
+```json
+{
+  "name": "Ops Warehouse",
+  "description": "Updated description"
+}
+```
+
+#### Response `200 OK`
+
+Returns updated `WarehouseSummary`.
+
+---
+
+## Endpoint index
+
+| Method | Path | Action | Status |
+| --- | --- | --- | --- |
+| `GET` | `/warehouses` | List warehouses | **New** |
+| `GET` | `/warehouses/{warehouseId}` | Detail | **New** |
+| `GET` | `/warehouses/{warehouseId}/tables` | List tables | **Exists** |
+| `GET` | `/warehouses/{warehouseId}/views` | List views | **Exists** |
+| `GET` | `/warehouses/{warehouseId}/tables/{tableName}/schema` | Schema | **Exists** |
+| `GET` | `/warehouses/{warehouseId}/tables/{tableName}/rows` | Query rows | **New** |
+| `GET` | `/warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}` | Get row | **New** |
+| `GET` | `/warehouses/{warehouseId}/views/{viewName}/rows` | Query view | **New** |
+| `POST` | `/warehouses/{warehouseId}/query` | Structured query | **New** |
+| `GET` | `/warehouses/{warehouseId}/exports/{exportId}` | Poll export | **New** |
+| `POST` | `/warehouses/{warehouseId}/tables/{tableName}/rows` | Insert | **New** |
+| `PUT` | `/warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}` | Replace | **New** |
+| `PATCH` | `/warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}` | Partial update | **New** |
+| `DELETE` | `/warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}` | Delete | **New** |
+| `POST` | `/warehouses/{warehouseId}/tables/{tableName}/rows/bulk` | Bulk upsert | **New** |
+| `POST` | `/warehouses/{warehouseId}/exports` | Start export | **New** |
+| `PUT` | `/warehouses/{warehouseId}/metadata` | UI metadata | **New** |

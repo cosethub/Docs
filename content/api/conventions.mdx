@@ -1,0 +1,119 @@
+# Conventions
+
+Shared rules for every public API endpoint.
+
+## Headers
+
+| Header | Required | Description |
+| --- | --- | --- |
+| `Authorization` | Usually | `Bearer {access_token}` |
+| `Content-Type` | On bodies | `application/json` (or `multipart/form-data` for uploads) |
+| `Accept` | Optional | Prefer `application/json` |
+| `X-Access-Key` | Job run/status | Encoded job API key (legacy `/api/job`, v1 run) |
+| `X-Api-Version` | Optional | Job run API version (`1` or `2` for parameter overrides) |
+| `Idempotency-Key` | Optional | UUID for safe retries on writes that support it |
+
+## Field naming
+
+Public v1 uses **snake_case** JSON.
+
+Legacy endpoints often return **PascalCase**. Callouts under each endpoint note the mapping when normalizing.
+
+## Dates
+
+ISO 8601, preferably UTC with `Z`:
+
+```
+2026-07-11T16:30:00Z
+```
+
+## Identifiers
+
+| Kind | Type | Example |
+| --- | --- | --- |
+| Numeric resource IDs | `integer` | Warehouse `42`, workflow `1001` |
+| Opaque run IDs | `string` | `rjh_8f3a…` |
+| Chat IDs | `string` (UUID) | `a1b2c3d4-…` |
+| Job access keys | `string` (encoded) | Used with `X-Access-Key` |
+
+## Pagination
+
+List endpoints that page return:
+
+```json
+{
+  "items": [],
+  "pagination": {
+    "page": 1,
+    "page_size": 25,
+    "total_count": 142,
+    "has_more": true
+  }
+}
+```
+
+| Query | Type | Default | Notes |
+| --- | --- | --- |
+| `page` | `integer` | `1` | 1-based |
+| `page_size` | `integer` | `25` | Max usually `100` |
+
+Some domains use domain-specific wrappers (`workflows`, `runs`, `chats`) instead of `items`.
+
+## Filtering & sorting
+
+| Query | Example | Notes |
+| --- | --- | --- |
+| `q` | `?q=nightly` | Free-text name search where supported |
+| `filter` | `?filter=status:eq:Active` | Warehouse row filters (v1) |
+| `sort` | `?sort=created_at:desc` | Comma-separated `field:asc|desc` |
+| `since` | `?since=2026-07-01T00:00:00Z` | Events / runs after timestamp |
+
+## Error envelope
+
+```json
+{
+  "error": {
+    "code": "not_found",
+    "message": "Warehouse 99 was not found in this organization.",
+    "details": {}
+  }
+}
+```
+
+| HTTP | `code` | When |
+| --- | --- | --- |
+| `400` | `bad_request` | Invalid parameters or body |
+| `401` | `unauthorized` | Missing or invalid token |
+| `403` | `forbidden` | Token lacks required scope |
+| `404` | `not_found` | Resource missing for org |
+| `409` | `conflict` | Duplicate or state conflict |
+| `422` | `validation_error` | Schema / field validation failed |
+| `429` | `rate_limited` | Too many requests |
+| `500` | `internal_error` | Unexpected server error |
+
+## Scopes
+
+| Scope | Access |
+| --- | --- |
+| `warehouses:read` | List warehouses, tables, schema, query rows |
+| `warehouses:write` | Insert / update / delete rows, exports, metadata |
+| `file-stores:read` | List stores, browse, download URLs, settings |
+| `file-stores:write` | Create stores, upload, rename, move, delete |
+| `jobs:read` | Job types, definitions, run history, run status |
+| `jobs:write` | Trigger runs |
+| `workflows:read` | List / get workflows and job tree detail |
+| `workflows:write` | Create workflows |
+| `ai-workflow:read` | List / get workflow builder chats |
+| `ai-workflow:write` | Create / update / delete chats, generate workflows |
+| `webhooks:read` | List webhooks and poll events |
+| `webhooks:write` | Register / update / delete webhooks |
+| `coordinator:read` | List / get coordinator chats |
+| `coordinator:write` | Create chats, send messages |
+| `ai-views:read` | List AI view chats |
+| `ai-views:write` | Message view chats, manage schema index |
+
+## Versioning
+
+- Path prefix `/api/v1` is the public contract.
+- Breaking changes ship as `/api/v2`.
+- Additive fields may appear without a major bump; treat unknown fields as ignorable.

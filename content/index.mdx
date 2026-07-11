@@ -1,16 +1,111 @@
-# Welcome
+# Introduction
 
-This is your documentation site, built with [Nextra](https://nextra.site).
+Ryan Platform connects **credentials**, **workflows**, **warehouses**, **views**, and **file stores** so operations teams can move data securely — on a schedule or on demand — without hard-coding passwords into every job.
 
-## Getting started
+This section explains what the product is for and how the main pieces fit together. For a first hands-on path, see [Getting started](./getting-started).
 
-Edit `content/index.mdx` to update this page. Add more `.mdx` files under `content/` to grow your docs.
+## What Ryan Platform does
 
-## Local development
+| Capability | What it is for |
+| --- | --- |
+| **Credential Hub** | Store logins, connection strings, and API details once; jobs and warehouses pick them by name |
+| **Workflows** | Chain jobs into trees (download → transform → load → notify) with schedules and success/failure branches |
+| **Warehouses** | Hold structured data (SQL Server, PostgreSQL, and related staging) that jobs load into and export from |
+| **Views** | Shape warehouse tables into reusable datasets — joins, filters, calculated columns, aggregates |
+| **File stores** | Browse, upload, download, and organize files that workflows produce or consume |
+| **Public API** | Call the same surfaces from schedulers, scripts, internal tools, or MCP clients |
+| **Coordinator & AI** | Plan setup work and draft warehouse views in natural language |
 
-```bash
-npm install
-npm run dev
+## How the pieces work together
+
+Most day-to-day automation follows this loop:
+
+```
+Credential Hub
+      │
+      ▼
+Workflows (Bridge runs jobs)
+      │
+      ├──► File stores   (raw files in / out)
+      │
+      └──► Warehouses    (tables loaded / queried)
+                │
+                ▼
+              Views      (shaped datasets)
+                │
+                ▼
+         Workflows again (e.g. Table to CSV → Email / SFTP)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to preview.
+1. **Credentials** unlock mail, FTP/SFTP, databases, Geneva, Bloomberg, OAuth providers, and more.
+2. **Workflows** use those credentials. A **Bridge** (process agent) executes each job.
+3. Jobs land files in a **file store**, load rows into a **warehouse**, or both.
+4. **Views** turn warehouse tables into the shapes ops and reporting need.
+5. Later workflows can **export a view** (for example Table to CSV) and send it out.
+
+The **Public API** and **Coordinator** sit alongside this loop: they read and write the same warehouses, jobs, chats, and file stores your UI uses.
+
+## Core building blocks
+
+### Credentials
+
+**Credential Hub** is the secure place for connection details. Prefer shared org credentials for production workflows so jobs do not embed secrets.
+
+→ [Credentials](/credentials)
+
+### Workflows
+
+A workflow is a **tree of jobs**. The root is usually a **Group**. Children run on a schedule or when the parent finishes (**On success**, **On failure**, or **Always**). Job types cover email, FTP, encryption, Geneva, Bloomberg, SQL loads, Table to CSV, Data Review, and many more.
+
+→ [Workflows](/workflows)
+
+### Warehouses and views
+
+Warehouses store the structured data your pipelines produce. **Views** live on a warehouse: pick a base table, optional joins and where clauses, then select columns (reference, calculated, conditional, aggregate). Workflows can export a view the same way they export a table.
+
+→ [Views](/views)
+
+### File stores
+
+File stores hold the documents and extracts workflows download, transform, or transmit. Browse and manage them in the UI or through the [file stores API](/api/file-stores).
+
+### API and AI surfaces
+
+| Surface | Use when |
+| --- | --- |
+| [Public API](/api) | You need REST access to warehouses, file stores, jobs, workflows, and webhooks |
+| Coordinator | You want guided plans for credentials, warehouses, and related setup |
+| [AI views](/views/ai-views) | You want to draft a warehouse view by chatting |
+
+## Typical journeys
+
+| Goal | Path |
+| --- | --- |
+| Pull counterparty files daily | Credential (SFTP) → FTP Download → optional decrypt/convert → File store |
+| Load files into SQL | File in store → SQL Bulk Load / related job → Warehouse table |
+| Publish a shaped extract | View on warehouse → Table to CSV → Email or FTP Transmit |
+| Review exceptions | Workflow → Data Review Task → notify on failure |
+| Automate from outside the UI | OAuth token → Public API run job / query warehouse |
+
+## Words you’ll see
+
+| Term | Meaning |
+| --- | --- |
+| **Organization / tenant** | Your Ryan Platform site (often `{tenant}.ryanplatform.com`) |
+| **Credential** | Named connection stored in Credential Hub |
+| **Workflow / Group** | Tree of jobs under a title |
+| **Job** | One step (a job type) in a workflow |
+| **Bridge** | Agent/machine that executes jobs |
+| **Warehouse** | Database used for staging and querying structured data |
+| **View** | Saved query definition over warehouse tables |
+| **File store** | File area workflows and users read/write |
+
+## Where to go next
+
+| Page | Description |
+| --- | --- |
+| [Getting started](./getting-started) | First login through a small end-to-end path |
+| [Credentials](/credentials) | Create and reuse connections |
+| [Workflows](/workflows) | Build and schedule job trees |
+| [Views](/views) | Shape warehouse data |
+| [Public API](/api) | Programmatic access |
