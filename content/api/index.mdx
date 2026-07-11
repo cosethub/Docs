@@ -1,6 +1,6 @@
 # Public API
 
-Programmatic access to warehouses, file stores, jobs, workflows, and automation hooks.
+Programmatic access to credentials, warehouses, file stores, jobs, workflows, and automation hooks.
 
 Use this section when you need REST contracts for schedulers, ETL scripts, internal tools, or MCP clients.
 
@@ -34,6 +34,7 @@ Issue a token with [`POST /oauth/token`](./auth#post-oauthtoken), then call [`GE
 | --- | --- |
 | [Conventions](./conventions) | Errors, pagination, IDs, dates, versioning |
 | [Auth & account](./auth) | Health, OAuth token, `/me`, organizations |
+| [Credentials](./credentials) | Create, update, delete, and test Credential Hub entries |
 | [Warehouses](./warehouses) | List warehouses, tables, schema, rows, exports |
 | [File stores](./file-stores) | Browse, download, upload, rename, move, delete |
 | [Jobs & workflows — read](./jobs-workflows-read) | Job types, definitions, runs, workflows, AI chats |
@@ -46,6 +47,6 @@ Issue a token with [`POST /oauth/token`](./auth#post-oauthtoken), then call [`GE
 | Priority | Endpoints |
 | --- | --- |
 | **P0 — read** | Auth, warehouses list, tables/schema, query rows, file-store list/download, job run status |
-| **P0 — write** | Insert/update/delete row, file upload, PUT settings, run job |
+| **P0 — write** | Credentials create/update/test, insert/update/delete row, file upload, PUT settings, run job |
 | **P1** | Bulk rows, async export, webhooks |
 | **P2** | Workflows / AI / coordinator surfaces |
