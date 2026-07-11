@@ -49,7 +49,7 @@ The **Public API** and **Coordinator** sit alongside this loop: they read and wr
 
 ### Credentials
 
-**Credential Hub** is the secure place for connection details. Prefer shared org credentials for production workflows so jobs do not embed secrets.
+**Credential Hub** is the secure place for connection details. Prefer shared org credentials for production workflows so jobs do not embed secrets. Secrets are stored for job use and are **never returned** when you list or open a credential.
 
 → [Credentials](/credentials)
 

@@ -51,7 +51,7 @@ Issue an access token via OAuth2 client credentials.
   "grant_type": "client_credentials",
   "client_id": "cli_abc123",
   "client_secret": "sec_…",
-  "scope": "credentials:write warehouses:read file-stores:read jobs:write"
+  "scope": "credentials:read credentials:write warehouses:read file-stores:read jobs:write"
 }
 ```
 
@@ -71,7 +71,7 @@ Also accepted as `application/x-www-form-urlencoded` (standard OAuth2).
   "access_token": "eyJhbGciOi…",
   "token_type": "Bearer",
   "expires_in": 3600,
-  "scope": "credentials:write warehouses:read file-stores:read jobs:write"
+  "scope": "credentials:read credentials:write warehouses:read file-stores:read jobs:write"
 }
 ```
 
@@ -118,6 +118,7 @@ Current principal: user (or service account), organization, and granted scopes.
     "slug": "acme"
   },
   "scopes": [
+    "credentials:read",
     "credentials:write",
     "warehouses:read",
     "warehouses:write",
