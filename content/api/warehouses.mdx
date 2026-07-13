@@ -10,6 +10,28 @@ Today, many warehouse operations go through ProcessServer websockets. Public RES
 
 ---
 
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `GET` | [`/warehouses`](#get-warehouses) | List warehouses |
+| `GET` | [`/warehouses/{warehouseId}`](#get-warehouseswarehouseid) | Detail |
+| `GET` | [`/warehouses/{warehouseId}/tables`](#get-warehouseswarehouseidtables) | List tables |
+| `GET` | [`/warehouses/{warehouseId}/views`](#get-warehouseswarehouseidviews) | List views |
+| `GET` | [`/warehouses/{warehouseId}/tables/{tableName}/schema`](#get-warehouseswarehouseidtablestablenameschema) | Schema |
+| `GET` | [`/warehouses/{warehouseId}/tables/{tableName}/rows`](#get-warehouseswarehouseidtablestablenamerows) | Query rows |
+| `GET` | [`/warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}`](#get-warehouseswarehouseidtablestablenamerowsrowid) | Get row |
+| `GET` | [`/warehouses/{warehouseId}/views/{viewName}/rows`](#get-warehouseswarehouseidviewsviewnamerows) | Query view |
+| `POST` | [`/warehouses/{warehouseId}/query`](#post-warehouseswarehouseidquery) | Structured query |
+| `GET` | [`/warehouses/{warehouseId}/exports/{exportId}`](#get-warehouseswarehouseidexportsexportid) | Poll export |
+| `POST` | [`/warehouses/{warehouseId}/tables/{tableName}/rows`](#post-warehouseswarehouseidtablestablenamerows) | Insert |
+| `PUT` | [`/warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}`](#put-warehouseswarehouseidtablestablenamerowsrowid) | Replace |
+| `PATCH` | [`/warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}`](#patch-warehouseswarehouseidtablestablenamerowsrowid) | Partial update |
+| `DELETE` | [`/warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}`](#delete-warehouseswarehouseidtablestablenamerowsrowid) | Delete |
+| `POST` | [`/warehouses/{warehouseId}/tables/{tableName}/rows/bulk`](#post-warehouseswarehouseidtablestablenamerowsbulk) | Bulk upsert |
+| `POST` | [`/warehouses/{warehouseId}/exports`](#post-warehouseswarehouseidexports) | Start export |
+| `PUT` | [`/warehouses/{warehouseId}/metadata`](#put-warehouseswarehouseidmetadata) | UI metadata |
+
 ## Shared types
 
 ### `WarehouseSummary`
@@ -88,7 +110,7 @@ List warehouses for the authenticated organization.
 
 | | |
 | --- | --- |
-| **Status** | **New** (today: websocket `GetAllWarehouses`) |
+| **Status** | Planned (today: websocket `GetAllWarehouses`) |
 | **Scopes** | `warehouses:read` |
 
 #### Response `200 OK`
@@ -121,7 +143,7 @@ Warehouse detail.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | `warehouses:read` |
 
 #### Path parameters
@@ -157,7 +179,7 @@ List tables visible to the caller (screen access applied).
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/warehouses/{id}/tables` |
+| **Status** | Planned (today: `GET /api/warehouses/{id}/tables`) |
 | **Scopes** | `warehouses:read` |
 
 #### Response `200 OK`
@@ -185,7 +207,7 @@ List warehouse views.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/warehouses/{id}/views` |
+| **Status** | Planned (today: `GET /api/warehouses/{id}/views`) |
 | **Scopes** | `warehouses:read` |
 
 #### Response `200 OK`
@@ -212,7 +234,7 @@ Column definitions for a table.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/warehouses/{id}/tables/{tableName}/schema` |
+| **Status** | Planned (today: `GET /api/warehouses/{id}/tables/{tableName}/schema`) |
 | **Scopes** | `warehouses:read` |
 
 #### Path parameters
@@ -262,7 +284,7 @@ Query table rows with filter, sort, and pagination.
 
 | | |
 | --- | --- |
-| **Status** | **New** (today: websocket entity read) |
+| **Status** | Planned (today: websocket entity read) |
 | **Scopes** | `warehouses:read` |
 
 #### Query parameters
@@ -324,7 +346,7 @@ Single row by primary key.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | `warehouses:read` |
 
 #### Path parameters
@@ -354,7 +376,7 @@ Query view rows (same query params as table rows).
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | `warehouses:read` |
 
 #### Response `200 OK`
@@ -369,7 +391,7 @@ Structured or ad-hoc query. May return rows inline or an async job id for large 
 
 | | |
 | --- | --- |
-| **Status** | **New** (defer for ad-hoc SQL) |
+| **Status** | Planned (defer for ad-hoc SQL) |
 | **Scopes** | `warehouses:read` |
 
 #### Request body
@@ -423,7 +445,7 @@ Poll or download a bulk export.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | `warehouses:read` |
 
 #### Response `200 OK`
@@ -452,7 +474,7 @@ Insert a row.
 
 | | |
 | --- | --- |
-| **Status** | **New** (today: websocket `SaveUpdateEntity`) |
+| **Status** | Planned (today: websocket `SaveUpdateEntity`) |
 | **Scopes** | `warehouses:write` |
 
 #### Request body
@@ -496,7 +518,7 @@ Full replace of a row (all writable columns).
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | `warehouses:write` |
 
 #### Request body
@@ -526,7 +548,7 @@ Partial update — only supplied fields change.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | `warehouses:write` |
 
 #### Request body
@@ -560,7 +582,7 @@ Delete a row by primary key.
 
 | | |
 | --- | --- |
-| **Status** | **New** (today: websocket `DeleteEntity`) |
+| **Status** | Planned (today: websocket `DeleteEntity`) |
 | **Scopes** | `warehouses:write` |
 
 #### Response `204 No Content`
@@ -575,7 +597,7 @@ Batch insert and/or update.
 
 | | |
 | --- | --- |
-| **Status** | **New** (today: websocket `SaveUpdateEntities`) |
+| **Status** | Planned (today: websocket `SaveUpdateEntities`) |
 | **Scopes** | `warehouses:write` |
 
 #### Request body
@@ -616,7 +638,7 @@ Start an async CSV/JSON export.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | `warehouses:write` (or `warehouses:read` if export is treated as read) |
 
 #### Request body
@@ -651,7 +673,7 @@ Update warehouse UI / display metadata (not connection secrets).
 
 | | |
 | --- | --- |
-| **Status** | **New** (today: websocket) |
+| **Status** | Planned (today: websocket) |
 | **Scopes** | `warehouses:write` |
 
 #### Request body
@@ -669,24 +691,3 @@ Returns updated `WarehouseSummary`.
 
 ---
 
-## Endpoint index
-
-| Method | Path | Action | Status |
-| --- | --- | --- | --- |
-| `GET` | `/warehouses` | List warehouses | **New** |
-| `GET` | `/warehouses/{warehouseId}` | Detail | **New** |
-| `GET` | `/warehouses/{warehouseId}/tables` | List tables | **Exists** |
-| `GET` | `/warehouses/{warehouseId}/views` | List views | **Exists** |
-| `GET` | `/warehouses/{warehouseId}/tables/{tableName}/schema` | Schema | **Exists** |
-| `GET` | `/warehouses/{warehouseId}/tables/{tableName}/rows` | Query rows | **New** |
-| `GET` | `/warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}` | Get row | **New** |
-| `GET` | `/warehouses/{warehouseId}/views/{viewName}/rows` | Query view | **New** |
-| `POST` | `/warehouses/{warehouseId}/query` | Structured query | **New** |
-| `GET` | `/warehouses/{warehouseId}/exports/{exportId}` | Poll export | **New** |
-| `POST` | `/warehouses/{warehouseId}/tables/{tableName}/rows` | Insert | **New** |
-| `PUT` | `/warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}` | Replace | **New** |
-| `PATCH` | `/warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}` | Partial update | **New** |
-| `DELETE` | `/warehouses/{warehouseId}/tables/{tableName}/rows/{rowId}` | Delete | **New** |
-| `POST` | `/warehouses/{warehouseId}/tables/{tableName}/rows/bulk` | Bulk upsert | **New** |
-| `POST` | `/warehouses/{warehouseId}/exports` | Start export | **New** |
-| `PUT` | `/warehouses/{warehouseId}/metadata` | UI metadata | **New** |

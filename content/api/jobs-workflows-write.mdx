@@ -8,6 +8,19 @@ Trigger runs, create workflows, and mutate AI workflow builder chats.
 
 ---
 
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `POST` | [`/jobs/{jobId}/run`](#post-jobsjobidrun) | Trigger job |
+| `POST` | [`/workflows`](#post-workflows) | Create workflow |
+| `POST` | [`/ai-workflow/chats`](#post-ai-workflowchats) | Create chat |
+| `POST` | [`/ai-workflow/chats/{chatId}`](#post-ai-workflowchatschatid) | Send message |
+| `PATCH` | [`/ai-workflow/chats/{chatId}/parameters`](#patch-ai-workflowchatschatidparameters) | Update parameters |
+| `POST` | [`/ai-workflow/chats/{chatId}/workflows`](#post-ai-workflowchatschatidworkflows) | Generate workflow |
+| `POST` | [`/ai-workflow/chats/{chatId}/context`](#post-ai-workflowchatschatidcontext) | Load workflow context |
+| `DELETE` | [`/ai-workflow/chats/{chatId}`](#delete-ai-workflowchatschatid) | Delete chat |
+
 ## Shared types (write)
 
 ### `RunJobRequest`
@@ -54,7 +67,7 @@ Trigger a job (or workflow root) run.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET/POST /api/job` — normalize to POST + API key header |
+| **Status** | Planned (today: `GET/POST /api/job` — normalize to POST + API key header) |
 | **Scopes** | `jobs:write` |
 | **Auth** | Bearer **and/or** `X-Access-Key` for the job |
 
@@ -127,7 +140,7 @@ Create a workflow from a full job graph.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/ai-workflow/create` |
+| **Status** | Planned (today: `POST /api/ai-workflow/create`) |
 | **Scopes** | `workflows:write` |
 
 ### Request body
@@ -195,7 +208,7 @@ Create a workflow builder chat (optionally seeded from an existing workflow).
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/ai-workflow/chats` |
+| **Status** | Planned (today: `POST /api/ai-workflow/chats`) |
 | **Scopes** | `ai-workflow:write` |
 
 ### Request body
@@ -231,7 +244,7 @@ Send a user message; returns assistant reply and updated draft.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/ai-workflow/chats/{chatId}` |
+| **Status** | Planned (today: `POST /api/ai-workflow/chats/{chatId}`) |
 | **Scopes** | `ai-workflow:write` |
 
 ### Request body
@@ -271,7 +284,7 @@ Update dirty parameters on draft jobs.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `PATCH /api/ai-workflow/chats/{chatId}/parameters` |
+| **Status** | Planned (today: `PATCH /api/ai-workflow/chats/{chatId}/parameters`) |
 | **Scopes** | `ai-workflow:write` |
 
 ### Request body
@@ -310,7 +323,7 @@ Materialize the draft into a real workflow.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/ai-workflow/chats/{chatId}/workflows` |
+| **Status** | Planned (today: `POST /api/ai-workflow/chats/{chatId}/workflows`) |
 | **Scopes** | `ai-workflow:write` |
 
 ### Request body
@@ -337,7 +350,7 @@ Load / switch chat context to an existing workflow.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/ai-workflow/chats/{chatId}/context` |
+| **Status** | Planned (today: `POST /api/ai-workflow/chats/{chatId}/context`) |
 | **Scopes** | `ai-workflow:write` |
 
 ### Request body
@@ -366,7 +379,7 @@ Delete a workflow builder chat.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `DELETE /api/ai-workflow/chats/{chatId}` |
+| **Status** | Planned (today: `DELETE /api/ai-workflow/chats/{chatId}`) |
 | **Scopes** | `ai-workflow:write` |
 
 ### Response `200 OK` / `204 No Content`
@@ -375,15 +388,3 @@ Empty body.
 
 ---
 
-## Endpoint index
-
-| Method | Path | Action | Status |
-| --- | --- | --- | --- |
-| `POST` | `/jobs/{jobId}/run` | Trigger job | **Exists** (normalize) |
-| `POST` | `/workflows` | Create workflow | **Exists** |
-| `POST` | `/ai-workflow/chats` | Create chat | **Exists** |
-| `POST` | `/ai-workflow/chats/{chatId}` | Send message | **Exists** |
-| `PATCH` | `/ai-workflow/chats/{chatId}/parameters` | Update parameters | **Exists** |
-| `POST` | `/ai-workflow/chats/{chatId}/workflows` | Generate workflow | **Exists** |
-| `POST` | `/ai-workflow/chats/{chatId}/context` | Load workflow context | **Exists** |
-| `DELETE` | `/ai-workflow/chats/{chatId}` | Delete chat | **Exists** |

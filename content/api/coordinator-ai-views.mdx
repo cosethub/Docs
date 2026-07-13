@@ -4,10 +4,27 @@ Optional v1 surfaces for the Coordinator agent and AI View Assistant.
 
 > **Base:** `/api/v1`  
 > **Auth:** `Authorization: Bearer {token}`  
-> **Status:** **Exists** under legacy prefixes (listed per endpoint)  
+> **Status:** Planned (coming soon)
 > These endpoints are session-oriented and may stream.
 
 ---
+
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `GET` | [`/coordinator/chats`](#get-coordinatorchats) | List chats |
+| `POST` | [`/coordinator/chats`](#post-coordinatorchats) | Create chat |
+| `GET` | [`/coordinator/chats/{chatId}`](#get-coordinatorchatschatid) | Chat detail |
+| `POST` | [`/coordinator/chats/{chatId}/messages`](#post-coordinatorchatschatidmessages) | Send message (stream optional) |
+| `DELETE` | [`/coordinator/chats/{chatId}`](#delete-coordinatorchatschatid) | Delete chat |
+| `GET` | [`/warehouses/{warehouseId}/view-chats`](#get-warehouseswarehouseidview-chats) | List AI view chats |
+| `POST` | [`/warehouses/{warehouseId}/view-chats`](#post-warehouseswarehouseidview-chats) | Create view chat |
+| `GET` | [`/warehouses/{warehouseId}/view-chats/{chatId}`](#get-warehouseswarehouseidview-chatschatid) | View chat detail |
+| `POST` | [`/warehouses/{warehouseId}/view-chats/{chatId}/message`](#post-warehouseswarehouseidview-chatschatidmessage) | Query / draft via chat |
+| `DELETE` | [`/warehouses/{warehouseId}/view-chats/{chatId}`](#delete-warehouseswarehouseidview-chatschatid) | Delete view chat |
+| `POST` | [`/warehouses/{warehouseId}/schema-index`](#post-warehouseswarehouseidschema-index) | Index table for AI |
+| `DELETE` | [`/warehouses/{warehouseId}/schema-index/{tableName}`](#delete-warehouseswarehouseidschema-indextablename) | Remove index |
 
 ## Coordinator chats
 
@@ -40,7 +57,7 @@ List coordinator chats for the current user.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/coordinator-chats` |
+| **Status** | Planned (today: `GET /api/coordinator-chats`) |
 | **Scopes** | `coordinator:read` |
 
 #### Response `200 OK`
@@ -66,7 +83,7 @@ Create a new coordinator chat.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/coordinator-chats` |
+| **Status** | Planned (today: `POST /api/coordinator-chats`) |
 | **Scopes** | `coordinator:write` |
 
 #### Request body
@@ -91,7 +108,7 @@ Chat detail including message history.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/coordinator-chats/{chatId}` |
+| **Status** | Planned (today: `GET /api/coordinator-chats/{chatId}`) |
 | **Scopes** | `coordinator:read` |
 
 #### Response `200 OK`
@@ -114,7 +131,7 @@ Send a message (non-stream or buffered response).
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/coordinator-chats/{chatId}` (legacy posts to chat root) |
+| **Status** | Planned (today: `POST /api/coordinator-chats/{chatId}` (legacy posts to chat root)) |
 | **Scopes** | `coordinator:write` |
 
 #### Request body
@@ -147,7 +164,7 @@ Stream assistant tokens / events.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/coordinator-chats/{chatId}/stream` |
+| **Status** | Planned (today: `POST /api/coordinator-chats/{chatId}/stream`) |
 | **Scopes** | `coordinator:write` |
 | **Accept** | Prefer `text/event-stream` |
 
@@ -189,7 +206,7 @@ Delete a coordinator chat.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `DELETE /api/coordinator-chats/{chatId}` |
+| **Status** | Planned (today: `DELETE /api/coordinator-chats/{chatId}`) |
 | **Scopes** | `coordinator:write` |
 
 #### Response `200 OK` / `204 No Content`
@@ -207,7 +224,7 @@ List AI view chats for a warehouse.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** |
+| **Status** | Planned |
 | **Scopes** | `ai-views:read` |
 
 #### Response `200 OK`
@@ -233,7 +250,7 @@ Create a view chat.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/warehouses/{warehouseId}/view-chats` |
+| **Status** | Planned (today: `POST /api/warehouses/{warehouseId}/view-chats`) |
 | **Scopes** | `ai-views:write` |
 
 #### Request body
@@ -258,7 +275,7 @@ Chat detail (messages + draft view definition when present).
 
 | | |
 | --- | --- |
-| **Status** | **Exists** |
+| **Status** | Planned |
 | **Scopes** | `ai-views:read` |
 
 ---
@@ -269,7 +286,7 @@ Send a message to draft or refine a warehouse view.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** |
+| **Status** | Planned |
 | **Scopes** | `ai-views:write` |
 
 #### Request body
@@ -311,7 +328,7 @@ Delete a view chat.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** |
+| **Status** | Planned |
 | **Scopes** | `ai-views:write` |
 
 ---
@@ -328,7 +345,7 @@ Index one or more tables for AI retrieval.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** |
+| **Status** | Planned |
 | **Scopes** | `ai-views:write` |
 
 #### Request body
@@ -364,7 +381,7 @@ Remove a table from the AI schema index.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** |
+| **Status** | Planned |
 | **Scopes** | `ai-views:write` |
 
 #### Path parameters
@@ -383,19 +400,3 @@ curl -sS -X DELETE \
 
 ---
 
-## Endpoint index
-
-| Method | Path | Action | Status |
-| --- | --- | --- | --- |
-| `GET` | `/coordinator/chats` | List chats | **Exists** |
-| `POST` | `/coordinator/chats` | Create chat | **Exists** |
-| `GET` | `/coordinator/chats/{chatId}` | Chat detail | **Exists** |
-| `POST` | `/coordinator/chats/{chatId}/messages` | Send message (stream optional) | **Exists** |
-| `DELETE` | `/coordinator/chats/{chatId}` | Delete chat | **Exists** |
-| `GET` | `/warehouses/{warehouseId}/view-chats` | List AI view chats | **Exists** |
-| `POST` | `/warehouses/{warehouseId}/view-chats` | Create view chat | **Exists** |
-| `GET` | `/warehouses/{warehouseId}/view-chats/{chatId}` | View chat detail | **Exists** |
-| `POST` | `/warehouses/{warehouseId}/view-chats/{chatId}/message` | Query / draft via chat | **Exists** |
-| `DELETE` | `/warehouses/{warehouseId}/view-chats/{chatId}` | Delete view chat | **Exists** |
-| `POST` | `/warehouses/{warehouseId}/schema-index` | Index table for AI | **Exists** |
-| `DELETE` | `/warehouses/{warehouseId}/schema-index/{tableName}` | Remove index | **Exists** |

@@ -1,8 +1,14 @@
+import { Callout } from 'nextra/components'
+
 # Public API
 
 Programmatic access to credentials, warehouses, file stores, jobs, workflows, and automation hooks.
 
 Use this section when you need REST contracts for schedulers, ETL scripts, internal tools, or MCP clients.
+
+<Callout type="warning">
+  **Coming soon.** The `/api/v1` REST surface documented in this section is **not available yet**. These pages describe the planned public contract for design and integration planning. Use the product UI today (including the API keys dashboard below). Do not build production clients against these paths until they ship.
+</Callout>
 
 ## Base URL
 
@@ -17,11 +23,11 @@ All paths in this section are relative to `/api/v1` unless noted.
 | Mechanism | Header | When |
 | --- | --- | --- |
 | OAuth2 access token | `Authorization: Bearer {token}` | Default for org-scoped endpoints |
-| Job API key | `X-Access-Key: {key}` | Job run / status (legacy and v1 job trigger) |
+| Job API key | `X-Access-Key: {key}` | Job run / status |
 
 Issue a token with [`POST /oauth/token`](./auth#post-oauthtoken), then call [`GET /me`](./auth#get-me) to confirm scopes.
 
-Manage org API keys and IP restrictions in the product **API** dashboard (**Manage API Keys**).
+Manage org API keys and IP restrictions in the product **API** dashboard (**Manage API Keys**). Key management and IP allow lists are available in the UI today; the REST endpoints in the section pages below are still coming soon.
 
 ![API dashboard — Manage API Keys and IP restriction](./images/api-dashboard-keys.png)
 
@@ -43,13 +49,6 @@ For a request to succeed, **both** must be true:
 2. **IP allow list** — When IP restriction is enabled in the API dashboard, the caller’s IP must be on the allow list: either an exact **IP address** or within a configured **CIDR block**.
 
 If IP restriction is turned off (`I do not want to restrict API access by IP`), only the key’s permission applies. When restriction is on, requests from IPs outside the allow list are rejected even if the key would otherwise allow the action.
-
-## Legend
-
-| Label | Meaning |
-| --- | --- |
-| **Exists** | Live today (path/shape may differ; legacy noted per endpoint) |
-| **New** | Expose or normalize for the public API |
 
 ## Sections
 

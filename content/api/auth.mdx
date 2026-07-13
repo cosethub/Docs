@@ -7,13 +7,22 @@ Health checks, token issuance, and org identity.
 
 ---
 
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `GET` | [`/health`](#get-health) | Liveness |
+| `POST` | [`/oauth/token`](#post-oauthtoken) | Issue access token |
+| `GET` | [`/me`](#get-me) | Current user + org + scopes |
+| `GET` | [`/organizations/{orgId}`](#get-organizationsorgid) | Org metadata |
+
 ## `GET /health`
 
 Liveness probe for load balancers and monitors.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/health` |
+| **Status** | Planned (today: `GET /api/health`) |
 | **Auth** | None |
 
 ### Response `200 OK`
@@ -40,7 +49,7 @@ Issue an access token via OAuth2 client credentials.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Auth** | Client ID + secret (body or Basic) |
 | **Scopes issued** | Configured on the API client |
 
@@ -99,7 +108,7 @@ Current principal: user (or service account), organization, and granted scopes.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | Any valid token |
 
 ### Response `200 OK`
@@ -145,7 +154,7 @@ Organization metadata for the authenticated tenant.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | Any valid token for that org |
 
 ### Path parameters
@@ -189,11 +198,3 @@ curl -sS \
 
 ---
 
-## Endpoint index
-
-| Method | Path | Action | Status |
-| --- | --- | --- | --- |
-| `GET` | `/health` | Liveness | **Exists** |
-| `POST` | `/oauth/token` | Issue access token | **New** |
-| `GET` | `/me` | Current user + org + scopes | **New** |
-| `GET` | `/organizations/{orgId}` | Org metadata | **New** |

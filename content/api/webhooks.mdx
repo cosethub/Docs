@@ -5,9 +5,19 @@ Subscribe to outbound events and poll an event stream.
 > **Base:** `/api/v1`  
 > **Auth:** `Authorization: Bearer {token}`  
 > **Scopes:** `webhooks:read` / `webhooks:write`  
-> **Status:** all endpoints **New** for public API
+> **Status:** Planned (coming soon)
 
 ---
+
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `GET` | [`/webhooks`](#get-webhooks) | List subscriptions |
+| `POST` | [`/webhooks`](#post-webhooks) | Register webhook |
+| `PATCH` | [`/webhooks/{webhookId}`](#patch-webhookswebhookid) | Update subscription |
+| `DELETE` | [`/webhooks/{webhookId}`](#delete-webhookswebhookid) | Remove subscription |
+| `GET` | [`/events`](#get-events) | Poll events |
 
 ## Shared types
 
@@ -51,7 +61,7 @@ List webhook subscriptions for the organization.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | `webhooks:read` |
 
 ### Response `200 OK`
@@ -80,7 +90,7 @@ Register a webhook.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | `webhooks:write` |
 
 ### Request body
@@ -135,7 +145,7 @@ Update URL, events, or enabled flag.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | `webhooks:write` |
 
 ### Request body
@@ -162,7 +172,7 @@ Remove a subscription.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | `webhooks:write` |
 
 ### Response `204 No Content`
@@ -175,7 +185,7 @@ Poll recent events (alternative to push webhooks).
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Scopes** | `webhooks:read` |
 
 ### Query parameters
@@ -330,12 +340,3 @@ Compare `expected` to `X-Ryan-Signature` using a constant-time compare.
 
 ---
 
-## Endpoint index
-
-| Method | Path | Action | Status |
-| --- | --- | --- | --- |
-| `GET` | `/webhooks` | List subscriptions | **New** |
-| `POST` | `/webhooks` | Register webhook | **New** |
-| `PATCH` | `/webhooks/{webhookId}` | Update subscription | **New** |
-| `DELETE` | `/webhooks/{webhookId}` | Remove subscription | **New** |
-| `GET` | `/events` | Poll events | **New** |

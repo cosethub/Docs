@@ -9,6 +9,23 @@ Browse, download, upload, and manage file store objects.
 
 ---
 
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `GET` | [`/file-stores`](#get-file-stores) | List stores |
+| `GET` | [`/file-stores/{storeId}/items`](#get-file-storesstoreiditems) | List folder |
+| `GET` | [`/file-stores/{storeId}/download-url`](#get-file-storesstoreiddownload-url) | Presigned URL |
+| `GET` | [`/file-stores/{storeId}/settings`](#get-file-storesstoreidsettings) | Settings |
+| `POST` | [`/file-stores`](#post-file-stores) | Create store |
+| `PUT` | [`/file-stores/{storeId}/settings`](#put-file-storesstoreidsettings) | Update settings |
+| `POST` | [`/file-stores/{storeId}/folders`](#post-file-storesstoreidfolders) | Create folder |
+| `POST` | [`/file-stores/{storeId}/upload`](#post-file-storesstoreidupload) | Multipart upload |
+| `PUT` | [`/file-stores/{storeId}/objects`](#put-file-storesstoreidobjects) | Put/replace object |
+| `POST` | [`/file-stores/{storeId}/rename`](#post-file-storesstoreidrename) | Rename |
+| `POST` | [`/file-stores/{storeId}/move`](#post-file-storesstoreidmove) | Move |
+| `DELETE` | [`/file-stores/{storeId}/items`](#delete-file-storesstoreiditems) | Delete |
+
 ## Shared types
 
 ### `FileStore`
@@ -55,7 +72,7 @@ List stores for the organization.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/file-store/stores` |
+| **Status** | Planned (today: `GET /api/file-store/stores`) |
 | **Scopes** | `file-stores:read` |
 
 #### Query parameters
@@ -98,7 +115,7 @@ List files and folders under a path.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/file-store/stores/{storeId}/items` |
+| **Status** | Planned (today: `GET /api/file-store/stores/{storeId}/items`) |
 | **Scopes** | `file-stores:read` |
 
 #### Query parameters
@@ -146,7 +163,7 @@ Presigned download URL for a file path.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/file-store/stores/{storeId}/download-url` |
+| **Status** | Planned (today: `GET /api/file-store/stores/{storeId}/download-url`) |
 | **Scopes** | `file-stores:read` |
 
 #### Query parameters
@@ -181,7 +198,7 @@ Store settings and permissions.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/file-store/stores/{storeId}/settings` |
+| **Status** | Planned (today: `GET /api/file-store/stores/{storeId}/settings`) |
 | **Scopes** | `file-stores:read` |
 
 #### Response `200 OK`
@@ -198,7 +215,7 @@ Create a store.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/file-store/stores` |
+| **Status** | Planned (today: `POST /api/file-store/stores`) |
 | **Scopes** | `file-stores:write` |
 
 #### Request body
@@ -239,7 +256,7 @@ Update store settings.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `PUT /api/file-store/stores/{storeId}/settings` |
+| **Status** | Planned (today: `PUT /api/file-store/stores/{storeId}/settings`) |
 | **Scopes** | `file-stores:write` |
 
 #### Request body
@@ -274,7 +291,7 @@ Create a folder.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/file-store/stores/{storeId}/folders` |
+| **Status** | Planned (today: `POST /api/file-store/stores/{storeId}/folders`) |
 | **Scopes** | `file-stores:write` |
 
 #### Request body
@@ -305,7 +322,7 @@ Multipart file upload into a folder path.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/file-store/stores/{storeId}/upload` |
+| **Status** | Planned (today: `POST /api/file-store/stores/{storeId}/upload`) |
 | **Scopes** | `file-stores:write` |
 | **Content-Type** | `multipart/form-data` |
 
@@ -336,7 +353,7 @@ Upload or replace a single object at an exact path (normalized put).
 
 | | |
 | --- | --- |
-| **Status** | **New** (normalize upload) |
+| **Status** | Planned (normalize upload) |
 | **Scopes** | `file-stores:write` |
 
 Supports either:
@@ -373,7 +390,7 @@ Rename a file or folder.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/file-store/stores/{storeId}/rename` |
+| **Status** | Planned (today: `POST /api/file-store/stores/{storeId}/rename`) |
 | **Scopes** | `file-stores:write` |
 
 #### Request body
@@ -404,7 +421,7 @@ Move a file or folder to another folder.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `POST /api/file-store/stores/{storeId}/move` |
+| **Status** | Planned (today: `POST /api/file-store/stores/{storeId}/move`) |
 | **Scopes** | `file-stores:write` |
 
 #### Request body
@@ -428,7 +445,7 @@ Delete a file or folder.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** as `POST .../delete-item` → normalize to **DELETE** |
+| **Status** | Planned — as `POST .../delete-item` → normalize to **DELETE** |
 | **Scopes** | `file-stores:write` |
 
 #### Request body
@@ -453,19 +470,3 @@ curl -sS -X DELETE \
 
 ---
 
-## Endpoint index
-
-| Method | Path | Action | Status |
-| --- | --- | --- | --- |
-| `GET` | `/file-stores` | List stores | **Exists** |
-| `GET` | `/file-stores/{storeId}/items` | List folder | **Exists** |
-| `GET` | `/file-stores/{storeId}/download-url` | Presigned URL | **Exists** |
-| `GET` | `/file-stores/{storeId}/settings` | Settings | **Exists** |
-| `POST` | `/file-stores` | Create store | **Exists** |
-| `PUT` | `/file-stores/{storeId}/settings` | Update settings | **Exists** |
-| `POST` | `/file-stores/{storeId}/folders` | Create folder | **Exists** |
-| `POST` | `/file-stores/{storeId}/upload` | Multipart upload | **Exists** |
-| `PUT` | `/file-stores/{storeId}/objects` | Put/replace object | **New** |
-| `POST` | `/file-stores/{storeId}/rename` | Rename | **Exists** |
-| `POST` | `/file-stores/{storeId}/move` | Move | **Exists** |
-| `DELETE` | `/file-stores/{storeId}/items` | Delete | **Exists** (normalize) |

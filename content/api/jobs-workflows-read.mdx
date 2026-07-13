@@ -8,6 +8,20 @@ Discover job types, inspect definitions, poll runs, list workflows, and load AI 
 
 ---
 
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `GET` | [`/jobs`](#get-jobs) | List job types |
+| `GET` | [`/jobs/{jobId}`](#get-jobsjobid) | Definition + schema |
+| `GET` | [`/jobs/{jobId}/runs`](#get-jobsjobidruns) | Run history |
+| `GET` | [`/job-runs/{runId}`](#get-job-runsrunid) | Run status + outputs |
+| `GET` | [`/workflows`](#get-workflows) | List workflows |
+| `GET` | [`/workflows/{workflowId}`](#get-workflowsworkflowid) | Workflow detail |
+| `GET` | [`/workflows/{workflowId}/jobs/{jobTreeId}/detail`](#get-workflowsworkflowidjobsjobtreeiddetail) | Job tree detail |
+| `GET` | [`/ai-workflow/chats`](#get-ai-workflowchats) | List chats |
+| `GET` | [`/ai-workflow/chats/{chatId}`](#get-ai-workflowchatschatid) | Chat detail |
+
 ## Shared types
 
 ### `JobTypeSummary`
@@ -86,7 +100,7 @@ List runnable job types for the organization.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Legacy** | `GET /api/ai-workflow/jobs` |
 | **Scopes** | `jobs:read` |
 
@@ -124,7 +138,7 @@ Job definition + parameter schema.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Legacy** | `GET /api/ai-workflow/jobs/{jobTreeId}/detail` + `POST /api/ai-workflow/jobs/parameters` |
 | **Scopes** | `jobs:read` |
 
@@ -175,7 +189,7 @@ Run history (newest first).
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Legacy** | ProcessServer history (no public REST today) |
 | **Scopes** | `jobs:read` |
 
@@ -220,7 +234,7 @@ Run status + output refs.
 
 | | |
 | --- | --- |
-| **Status** | **New** |
+| **Status** | Planned |
 | **Legacy** | `GET/POST /api/job/GetStatus` with `X-Access-Key` + history key |
 | **Scopes** | `jobs:read` |
 
@@ -258,7 +272,7 @@ List workflows.
 
 | | |
 | --- | --- |
-| **Status** | **New** (today: `GET /api/ai-workflow/job-workflows`) |
+| **Status** | Planned (today: `GET /api/ai-workflow/job-workflows`) |
 | **Scopes** | `workflows:read` |
 
 ### Query parameters
@@ -300,7 +314,7 @@ Full definition: jobs, parameters, output mappings.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/ai-workflow/{id}` |
+| **Status** | Planned (today: `GET /api/ai-workflow/{id}`) |
 | **Scopes** | `workflows:read` |
 
 ### Response `200 OK`
@@ -334,7 +348,7 @@ Single job node detail inside a workflow.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/ai-workflow/jobs/{jobTreeId}/detail` |
+| **Status** | Planned (today: `GET /api/ai-workflow/jobs/{jobTreeId}/detail`) |
 | **Scopes** | `workflows:read` |
 
 > v1 adds `workflowId` for hierarchy; legacy only required `jobTreeId`.
@@ -371,7 +385,7 @@ List workflow builder chats for the user.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/ai-workflow/chats` |
+| **Status** | Planned (today: `GET /api/ai-workflow/chats`) |
 | **Scopes** | `ai-workflow:read` |
 
 ### Response `200 OK`
@@ -400,7 +414,7 @@ Messages + draft workflow.
 
 | | |
 | --- | --- |
-| **Status** | **Exists** — `GET /api/ai-workflow/chats/{chatId}` |
+| **Status** | Planned (today: `GET /api/ai-workflow/chats/{chatId}`) |
 | **Scopes** | `ai-workflow:read` |
 
 ### Response `200 OK`
@@ -433,16 +447,3 @@ Messages + draft workflow.
 
 ---
 
-## Endpoint index
-
-| Method | Path | Action | Status |
-| --- | --- | --- | --- |
-| `GET` | `/jobs` | List job types | **New** |
-| `GET` | `/jobs/{jobId}` | Definition + schema | **New** |
-| `GET` | `/jobs/{jobId}/runs` | Run history | **New** |
-| `GET` | `/job-runs/{runId}` | Run status + outputs | **New** |
-| `GET` | `/workflows` | List workflows | **New** |
-| `GET` | `/workflows/{workflowId}` | Workflow detail | **Exists** |
-| `GET` | `/workflows/{workflowId}/jobs/{jobTreeId}/detail` | Job tree detail | **Exists** |
-| `GET` | `/ai-workflow/chats` | List chats | **Exists** |
-| `GET` | `/ai-workflow/chats/{chatId}` | Chat detail | **Exists** |
