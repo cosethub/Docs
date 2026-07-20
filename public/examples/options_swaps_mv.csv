@@ -1,0 +1,9 @@
+AsOfDate,Fund,Underlier,InstrumentType,MarketValue,PriorMarketValue
+2024-01-31,Alpha,SPX,Swap,125000,120000
+2024-01-31,Alpha,SPX,Call,8500,7000
+2024-01-31,Alpha,SPX,Put,3200,4100
+2024-01-31,Alpha,NDX,Swap,-45000,-42000
+2024-01-31,Beta,SPX,Swap,98000,100000
+2024-01-31,Beta,SPX,Call,2100,1500
+2024-01-31,Beta,AAPL,Put,-900,-600
+2024-01-31,Gamma,EUR,Swap,55000,53000

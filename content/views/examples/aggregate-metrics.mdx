@@ -1,0 +1,101 @@
+import { Callout } from 'nextra/components'
+
+# Aggregate metrics — options & swaps
+
+**Goal:** Roll derivative positions up by fund and practice the three aggregate **inners**:
+
+| Inner | Measure in this example |
+| --- | --- |
+| **Column** | `SUM(MarketValue)` |
+| **Calculated** | `SUM(MarketValue - PriorMarketValue)` — day-over-day MV change |
+| **Conditional** | `SUM(CASE WHEN InstrumentType = 'Call' …)` — call MV only |
+
+Also uses empty-column **COUNT(\*)** and optional **Distinct**.
+
+## Sample data
+
+[`options_swaps_mv.csv`](/examples/options_swaps_mv.csv) — 8 rows, 6 columns
+
+Tiny book of swaps and listed options with today’s MV and yesterday’s MV:
+
+| AsOfDate | Fund | Underlier | InstrumentType | MarketValue | PriorMarketValue |
+| --- | --- | --- | --- | --- | --- |
+| 2024-01-31 | Alpha | SPX | Swap | 125000 | 120000 |
+| 2024-01-31 | Alpha | SPX | Call | 8500 | 7000 |
+| 2024-01-31 | Alpha | SPX | Put | 3200 | 4100 |
+| 2024-01-31 | Alpha | NDX | Swap | -45000 | -42000 |
+| 2024-01-31 | Beta | SPX | Swap | 98000 | 100000 |
+| 2024-01-31 | Beta | SPX | Call | 2100 | 1500 |
+| 2024-01-31 | Beta | AAPL | Put | -900 | -600 |
+| 2024-01-31 | Gamma | EUR | Swap | 55000 | 53000 |
+
+Per-row MV change (`MarketValue - PriorMarketValue`): Alpha +5000 / +1500 / −900 / −3000; Beta −2000 / +600 / −300; Gamma +2000.
+
+## Build the view — MV and change by fund
+
+1. **Create View**
+2. **Table** = `options_swaps_mv`
+3. **I want to** = aggregates / rolls up groups of rows
+4. **Group by** → add **Fund**
+5. **Select columns**
+   - Reference: Fund
+   - **SUM**, inner = **Column** MarketValue → display name `TotalMV`
+   - **SUM**, inner = **Calculated** → display name `MvChange`:
+     - MarketValue `-` PriorMarketValue
+   - **COUNT** (leave column empty for `COUNT(*)`) → display name `PositionCount`
+6. **Save**
+
+<Callout type="info">
+  **Screenshot placeholder** (`example-aggregate-inners-fund.png`)
+
+  Placeholder: Group by Fund with SUM(column), SUM(calculated MV change), and COUNT(*).
+</Callout>
+
+### Expected result
+
+| Fund | TotalMV | MvChange | PositionCount |
+| --- | --- | --- | --- |
+| Alpha | 91700 | 2600 | 4 |
+| Beta | 99200 | -1700 | 3 |
+| Gamma | 55000 | 2000 | 1 |
+
+Alpha’s `TotalMV` is `125000 + 8500 + 3200 + (-45000)`. `MvChange` is the sum of the four row-level changes above.
+
+## Optional: call MV only (conditional inner)
+
+Keep the same group-by. Add another measure:
+
+- **SUM**, inner = **Conditional** → display name `CallMV`
+  - **When** `InstrumentType` `=` `Call` → **Then** `MarketValue`
+  - **Default** → `0`
+
+### Expected CallMV by fund
+
+| Fund | CallMV |
+| --- | --- |
+| Alpha | 8500 |
+| Beta | 2100 |
+| Gamma | 0 |
+
+Shape: `SUM(CASE WHEN InstrumentType = 'Call' THEN MarketValue ELSE 0 END)`.
+
+## Optional: distinct underliers
+
+To count unique underliers per fund (not rows):
+
+- **COUNT**, inner = **Column** Underlier, **Distinct** checked → display name `UnderlierCount`
+
+| Fund | UnderlierCount |
+| --- | --- |
+| Alpha | 2 |
+| Beta | 2 |
+| Gamma | 1 |
+
+Distinct needs a column (or other inner) — do not combine Distinct with empty-column `COUNT(*)`.
+
+## What you practiced
+
+- [Aggregate metrics](../aggregate-metrics) — column, calculated, and conditional inners
+- `COUNT(*)` vs `COUNT(DISTINCT …)`
+- Day-over-day MV change as `SUM(MarketValue - PriorMarketValue)`
+- Filtering a measure with a CASE inner (calls only)
