@@ -48,7 +48,7 @@ Available in both all-rows and aggregate modes. In aggregate mode, reference col
 - Values can be columns or custom literals
 - Nest **groups** to control order of operations
 
-Use calculated columns in **all matching rows** mode (not for rolled-up aggregates — use SUM/AVG/etc. there instead).
+In **all matching rows** mode, add a calculated column as its own select column. In **aggregate** mode, use the same expression builder as the **inner** of a SUM / COUNT / AVG / MIN / MAX measure — see [Aggregate metrics](./aggregate-metrics).
 
 <Callout type="info">
   **Screenshot placeholder** (`columns-calculated.png`)
@@ -69,7 +69,7 @@ Use calculated columns in **all matching rows** mode (not for rolled-up aggregat
 1. Add one or more **When** / **Then** cases (each When is a condition group, similar to where logic).
 2. Optionally set a **Default** result when no case matches.
 
-Use conditional columns in **all matching rows** mode.
+In **all matching rows** mode, add a conditional column as its own select column. In **aggregate** mode, use the same When / Then builder as the **inner** of an aggregate measure — see [Aggregate metrics](./aggregate-metrics).
 
 <Callout type="info">
   **Screenshot placeholder** (`columns-conditional.png`)
@@ -83,13 +83,15 @@ Available when [group by](./group-by) is enabled:
 
 | Type | Purpose |
 | --- | --- |
-| **SUM** | Total of a numeric column |
-| **COUNT** | Count of rows, or of a column’s values. Leave column empty for `COUNT(*)` |
-| **AVG** | Average of a numeric column |
+| **SUM** | Total of a numeric inner (column, calculated, or conditional) |
+| **COUNT** | Count of rows (`COUNT(*)` with no column) or of an inner expression |
+| **AVG** | Average of a numeric inner |
 | **MIN** | Minimum value |
 | **MAX** | Maximum value |
 
-For **SUM**, **COUNT**, and **AVG**, enable **Distinct** to aggregate distinct values only.
+For **SUM**, **COUNT**, and **AVG**, enable **Distinct** to aggregate distinct values only (requires a column or other inner — not with empty `COUNT(*)`).
+
+Each aggregate can wrap a **column**, a **calculated** expression, or a **conditional** CASE. Full rules, examples, and SQL shapes: [Aggregate metrics](./aggregate-metrics).
 
 <Callout type="info">
   **Screenshot placeholder** (`columns-aggregates.png`)

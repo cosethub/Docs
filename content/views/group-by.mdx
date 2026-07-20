@@ -48,7 +48,7 @@ In aggregate mode:
 
 - **Reference** columns typically align with your group-by categories (the dimensions you are keeping).
 - **SUM**, **COUNT**, **AVG**, **MIN**, and **MAX** measure columns summarize the rows in each group.
-- Calculated and conditional columns are for the non-aggregate (all rows) mode — use aggregates here instead for rolled-up measures.
+- Each measure can wrap a plain **column**, a **calculated** expression, or a **conditional** CASE — see [Aggregate metrics](./aggregate-metrics).
 
 <Callout type="info">
   **Screenshot placeholder** (`groupby-select-columns.png`)
@@ -56,11 +56,13 @@ In aggregate mode:
   Placeholder: Select columns showing group dimensions plus aggregate measures.
 </Callout>
 
-## Distinct aggregates
+## Distinct and COUNT(*)
 
-For **SUM**, **COUNT**, and **AVG**, you can enable **Distinct** so the function applies to distinct values of the selected column only (for example, `COUNT(DISTINCT AccountId)`).
+For **SUM**, **COUNT**, and **AVG**, enable **Distinct** so the function applies to distinct values only (for example, `COUNT(DISTINCT AccountId)`). Distinct requires an inner expression — it is not valid with empty-column `COUNT(*)`.
 
-Distinct requires a source column. For **COUNT**, leaving the column empty counts all rows in the group (`COUNT(*)`).
+For **COUNT**, leaving the column empty counts all rows in the group (`COUNT(*)`).
+
+Full rules for inners, Distinct, and examples: [Aggregate metrics](./aggregate-metrics).
 
 <Callout type="info">
   **Screenshot placeholder** (`groupby-distinct.png`)
@@ -72,8 +74,9 @@ Distinct requires a source column. For **COUNT**, leaving the column empty count
 
 | Goal | Group by | Measures |
 | --- | --- | --- |
-| Positions by fund | Fund | SUM(MarketValue), COUNT(PositionId) |
-| Daily totals | AsOfDate | SUM(Amount) |
+| Positions by fund | Fund | SUM(MarketValue), COUNT(*) |
+| Net by strategy | Strategy | SUM(MarketValue - CostBasis) |
+| Long qty only | Symbol | SUM(CASE WHEN Side = 'L' THEN Qty ELSE 0 END) |
 | Unique accounts per strategy | Strategy | COUNT Distinct AccountId |
 
 ## Tips
