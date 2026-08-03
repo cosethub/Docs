@@ -1,0 +1,67 @@
+# Data monitors
+
+Data monitors watch a warehouse **table** or **view** and react when row conditions match — emit a status (for ops dashboards / alerts) and optionally **trigger a job**.
+
+Use them for exception flags that already live in data (for example a repair view where `marl = 0`, missing prices, or unmapped securities).
+
+## Open a table or view
+
+1. Open **CoSet DB** (or your warehouse **Databases** area).
+2. Go to **Tables / Views**.
+3. Select the table or view to monitor (for example `v_bbg_price_repair`).
+4. Stay on the **Data** tab so the grid and toolbar are visible.
+
+## Open Add data monitor
+
+1. In the toolbar above the data grid, choose **Data monitors**.
+2. The **Add data monitor** panel opens on the right.
+
+![Add data monitor panel on a warehouse view, with conditions, status, and trigger job](./images/add-data-monitor.png)
+
+## Configure the monitor
+
+### 1. Choose the monitor
+
+At the top of the panel, pick the data monitor definition to use (org-configured monitors appear in the dropdown).
+
+### 2. Set conditions
+
+Under **Conditions**, build rules that must match before the monitor fires:
+
+1. Keep or add a condition group (**When the following conditions are met:**).
+2. For each rule, set:
+   - **Field** — column on the table/view (for example `marl`)
+   - **Operator** — for example `=`
+   - **Value** — comparison value (for example `0`)
+3. Use **+ Add rule or group** for additional rules or nested AND/OR groups.
+4. Remove a single rule with the trash icon, or the whole group with **Remove condition**.
+
+![Data monitor conditions: field, operator, value, emit status, and trigger job](./images/data-monitor-conditions.png)
+
+### 3. Emit a status
+
+When conditions are met, choose the status to emit under **emit the following status** (for example **Data Monitor Alert**).
+
+Use **Manage status codes** if you need to add or edit status definitions for your org.
+
+### 4. Optionally trigger a job
+
+Under **Trigger job**, select a workflow job to run when the condition fires, or leave `-` for status-only monitoring.
+
+## Example
+
+| Setting | Example |
+| --- | --- |
+| Object | View `v_bbg_price_repair` |
+| Condition | `marl` `=` `0` |
+| Status | **Data Monitor Alert** |
+| Trigger job | (none, or a follow-on repair / notify job) |
+
+When rows in the view have `marl = 0`, the monitor emits the alert status and runs the selected job if configured.
+
+## Tips
+
+- Prefer monitoring a **view** that already isolates exceptions (breaks, null prices, unmapped IDs) so rules stay simple.
+- Match column names and types to the grid — the field picker lists columns from the open table/view.
+- Pair a status with a **Trigger job** when someone should be emailed or a downstream workflow should run automatically.
+- Some monitors use credentials (for example AWS IAM) configured elsewhere — see [Amazon IAM](/credentials/credential-types/amazon-iam).

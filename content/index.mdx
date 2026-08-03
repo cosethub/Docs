@@ -10,7 +10,7 @@ This section explains what the product is for and how the main pieces fit togeth
 | --- | --- |
 | **Credential Hub** | Store logins, connection strings, and API details once; jobs and warehouses pick them by name |
 | **Workflows** | Chain jobs into trees (download → transform → load → notify) with schedules and success/failure branches |
-| **Warehouses** | Hold structured data (SQL Server, PostgreSQL, and related staging) that jobs load into and export from |
+| **Warehouses** | Hold structured data (SQL Server, PostgreSQL, and related staging); browse tables/views and set data monitors |
 | **Views** | Shape warehouse tables into reusable datasets — joins, filters, calculated columns, aggregates |
 | **File stores** | Browse, upload, download, and organize files that workflows produce or consume |
 | **Public API** | Call the same surfaces from schedulers, scripts, internal tools, or MCP clients |
@@ -61,9 +61,9 @@ A workflow is a **tree of jobs**. The root is usually a **Group**. Children run 
 
 ### Warehouses and views
 
-Warehouses store the structured data your pipelines produce. **Views** live on a warehouse: pick a base table, optional joins and where clauses, then select columns (reference, calculated, conditional, aggregate). Workflows can export a view the same way they export a table.
+Warehouses store the structured data your pipelines produce. Browse **Tables / Views** in CoSet DB, set [data monitors](/warehouses/data-monitors) on exception rows, and build **Views** (joins, filters, calculated and aggregate columns). Workflows can export a view the same way they export a table.
 
-→ [Views](/views)
+→ [Warehouses](/warehouses) · [Views](/views)
 
 ### File stores
 
@@ -85,6 +85,7 @@ File stores hold the documents and extracts workflows download, transform, or tr
 | Load files into SQL | File in store → SQL Bulk Load / related job → Warehouse table |
 | Publish a shaped extract | View on warehouse → Table to CSV → Email or FTP Transmit |
 | Review exceptions | Workflow → Data Review Task → notify on failure |
+| Alert on bad rows in a table/view | [Data monitors](/warehouses/data-monitors) on CoSet DB → optional trigger job |
 | Automate from outside the UI | OAuth token → Public API run job / query warehouse |
 
 ## Words you’ll see
@@ -107,5 +108,6 @@ File stores hold the documents and extracts workflows download, transform, or tr
 | [Getting started](./getting-started) | First login through a small end-to-end path |
 | [Credentials](/credentials) | Create and reuse connections |
 | [Workflows](/workflows) | Build and schedule job trees |
+| [Warehouses](/warehouses) | Browse tables/views, data monitors |
 | [Views](/views) | Shape warehouse data |
 | [Public API](/api) | Programmatic access |
