@@ -38,7 +38,7 @@ Liveness probe for load balancers and monitors.
 ### Example
 
 ```bash
-curl -sS "https://{tenant}.ryanplatform.com/api/v1/health"
+curl -sS "https://{tenant}.cosethub.com/api/v1/health"
 ```
 
 ---
@@ -97,7 +97,7 @@ Also accepted as `application/x-www-form-urlencoded` (standard OAuth2).
 curl -sS -X POST \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=client_credentials&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET&scope=warehouses:read" \
-  "https://{tenant}.ryanplatform.com/api/v1/oauth/token"
+  "https://{tenant}.cosethub.com/api/v1/oauth/token"
 ```
 
 ---
@@ -143,7 +143,7 @@ Current principal: user (or service account), organization, and granted scopes.
 ```bash
 curl -sS \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
-  "https://{tenant}.ryanplatform.com/api/v1/me"
+  "https://{tenant}.cosethub.com/api/v1/me"
 ```
 
 ---
@@ -193,7 +193,7 @@ Organization metadata for the authenticated tenant.
 ```bash
 curl -sS \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
-  "https://{tenant}.ryanplatform.com/api/v1/organizations/55"
+  "https://{tenant}.cosethub.com/api/v1/organizations/55"
 ```
 
 ---

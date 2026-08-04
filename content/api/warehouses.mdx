@@ -132,7 +132,7 @@ List warehouses for the authenticated organization.
 
 ```bash
 curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
-  "https://{tenant}.ryanplatform.com/api/v1/warehouses"
+  "https://{tenant}.cosethub.com/api/v1/warehouses"
 ```
 
 ---
@@ -335,7 +335,7 @@ curl -sS -G \
   --data-urlencode "sort=AsOf:desc" \
   --data-urlencode "page=1" \
   --data-urlencode "page_size=50" \
-  "https://{tenant}.ryanplatform.com/api/v1/warehouses/7/tables/dbo.Positions/rows"
+  "https://{tenant}.cosethub.com/api/v1/warehouses/7/tables/dbo.Positions/rows"
 ```
 
 ---
@@ -507,7 +507,7 @@ curl -sS -X POST \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"row":{"Symbol":"MSFT","Price":425.1,"AsOf":"2026-07-11T00:00:00Z"}}' \
-  "https://{tenant}.ryanplatform.com/api/v1/warehouses/7/tables/dbo.Positions/rows"
+  "https://{tenant}.cosethub.com/api/v1/warehouses/7/tables/dbo.Positions/rows"
 ```
 
 ---

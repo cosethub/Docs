@@ -104,7 +104,7 @@ List stores for the organization.
 
 ```bash
 curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
-  "https://{tenant}.ryanplatform.com/api/v1/file-stores?store_type=FileStore"
+  "https://{tenant}.cosethub.com/api/v1/file-stores?store_type=FileStore"
 ```
 
 ---
@@ -187,7 +187,7 @@ Presigned download URL for a file path.
 curl -sS -G \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   --data-urlencode "path=inbound/positions.csv" \
-  "https://{tenant}.ryanplatform.com/api/v1/file-stores/3/download-url"
+  "https://{tenant}.cosethub.com/api/v1/file-stores/3/download-url"
 ```
 
 ---
@@ -342,7 +342,7 @@ curl -sS -X POST \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -F "path=inbound/july/" \
   -F "file=@./positions.csv" \
-  "https://{tenant}.ryanplatform.com/api/v1/file-stores/3/upload"
+  "https://{tenant}.cosethub.com/api/v1/file-stores/3/upload"
 ```
 
 ---
@@ -465,7 +465,7 @@ curl -sS -X DELETE \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"path":"inbound/old-file.csv"}' \
-  "https://{tenant}.ryanplatform.com/api/v1/file-stores/3/items"
+  "https://{tenant}.cosethub.com/api/v1/file-stores/3/items"
 ```
 
 ---

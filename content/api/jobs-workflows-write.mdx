@@ -123,7 +123,7 @@ curl -sS -X POST \
   -H "X-Api-Version: 2" \
   -H "Content-Type: application/json" \
   -d '{"run_only_this_job":false,"parameter_overrides":{"AsOfDate":"2026-07-11"}}' \
-  "https://{tenant}.ryanplatform.com/api/v1/jobs/1042/run"
+  "https://{tenant}.cosethub.com/api/v1/jobs/1042/run"
 ```
 
 ### Legacy notes
@@ -197,7 +197,7 @@ curl -sS -X POST \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d @workflow.json \
-  "https://{tenant}.ryanplatform.com/api/v1/workflows"
+  "https://{tenant}.cosethub.com/api/v1/workflows"
 ```
 
 ---
@@ -312,7 +312,7 @@ curl -sS -X PATCH \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '[{"job_instance_id":"inst_etl_01","parameters":[{"name":"SourceTable","value":"raw_orders_v2"}]}]' \
-  "https://{tenant}.ryanplatform.com/api/v1/ai-workflow/chats/$CHAT_ID/parameters"
+  "https://{tenant}.cosethub.com/api/v1/ai-workflow/chats/$CHAT_ID/parameters"
 ```
 
 ---

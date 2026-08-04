@@ -1,5 +1,3 @@
-import { Callout } from 'nextra/components'
-
 # Joins
 
 Use **Join criteria** to bring in columns from related tables (or other views). Each join has a join type, two tables, and one or more match conditions.
@@ -41,27 +39,13 @@ Under each join:
 2. Choose **Group** to nest AND/OR logic when you need more than a simple equality chain.
 3. Use equality-style operators (`=`, `<>`, `>`, `>=`, `<`, `<=`) to relate columns (or values) across the two sides.
 
-<Callout type="info">
-  **Screenshot placeholder** (`joins-condition.png`)
-
-  Placeholder: A join with one or more ON conditions visible.
-</Callout>
-
-<Callout type="info">
-  **Screenshot placeholder** (`joins-group.png`)
-
-  Placeholder: Nested condition group with AND/OR inside a join.
-</Callout>
+![A join with one or more ON conditions visible](./images/joins-condition.png)
 
 ## Cast to date (optional)
 
-When comparing date-like values across systems, some join conditions offer a **Cast to date** option so both sides are compared as dates. Use this when raw types would otherwise prevent a correct match.
+When comparing date-like values across systems, some join conditions offer **Compare date only (ignore time)** so both sides are compared as dates. Use this when timestamps would otherwise prevent a correct match.
 
-<Callout type="info">
-  **Screenshot placeholder** (`joins-cast-to-date.png`)
-
-  Placeholder: Join condition showing the Cast to date option (if applicable).
-</Callout>
+![Join condition showing Compare date only (ignore time)](./images/joins-cast-to-date.png)
 
 ## Tips
 
