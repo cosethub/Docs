@@ -1,5 +1,3 @@
-import { Callout } from 'nextra/components'
-
 # Group by & aggregates
 
 Use group by when you want one output row per combination of category columns, with measures rolled up using aggregate functions.
@@ -12,11 +10,7 @@ Under **I want to:**, select:
 
 This enables the **Group by** section and unlocks aggregate column types (SUM, COUNT, AVG, MIN, MAX).
 
-<Callout type="info">
-  **Screenshot placeholder** (`groupby-mode.png`)
-
-  Placeholder: “I want to” with the aggregates / roll-up option selected.
-</Callout>
+![“I want to” with the aggregates / roll-up option selected](./images/groupby-mode.png)
 
 ## All matching rows vs aggregates
 
@@ -36,11 +30,7 @@ Switching modes changes which column types you can add — see [Column types](./
 
 The description in the form: *Aggregate row data when the following categories are consistent.*
 
-<Callout type="info">
-  **Screenshot placeholder** (`groupby-columns.png`)
-
-  Placeholder: Group by section with one or more category columns.
-</Callout>
+![Group by section with one or more category columns](./images/groupby-columns.png)
 
 ## Select columns when grouping
 
@@ -50,11 +40,7 @@ In aggregate mode:
 - **SUM**, **COUNT**, **AVG**, **MIN**, and **MAX** measure columns summarize the rows in each group.
 - Each measure can wrap a plain **column**, a **calculated** expression, or a **conditional** CASE — see [Aggregate metrics](./aggregate-metrics).
 
-<Callout type="info">
-  **Screenshot placeholder** (`groupby-select-columns.png`)
-
-  Placeholder: Select columns showing group dimensions plus aggregate measures.
-</Callout>
+![Select columns showing group dimensions plus aggregate measures](./images/groupby-select-columns.png)
 
 ## Distinct and COUNT(*)
 
@@ -64,11 +50,7 @@ For **COUNT**, leaving the column empty counts all rows in the group (`COUNT(*)`
 
 Full rules for inners, Distinct, and examples: [Aggregate metrics](./aggregate-metrics).
 
-<Callout type="info">
-  **Screenshot placeholder** (`groupby-distinct.png`)
-
-  Placeholder: Aggregate column with Distinct checked.
-</Callout>
+![Aggregate column with Distinct checked](./images/groupby-distinct.png)
 
 ## Example patterns
 
