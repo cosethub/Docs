@@ -2,7 +2,24 @@
 
 CoSet connects **credentials**, **workflows**, **warehouses**, **views**, and **file stores** so operations teams can move data securely — on a schedule or on demand — without hard-coding passwords into every job.
 
-This section explains what the product is for and how the main pieces fit together. For a first hands-on path, see [Getting started](./getting-started).
+Use it when you would otherwise spend engineering time on SFTP clients, credential vaults, schedulers, alert wiring, and one-off scripts for every counterparty. CoSet supplies that plumbing so your team can focus on **ops outcomes**: breaks, prices, positions, NAV packs, and sign-offs.
+
+For a first hands-on path, see [Getting started](./getting-started).
+
+## Why not build it yourself
+
+| You would otherwise build… | CoSet already has… |
+| --- | --- |
+| Per-vendor connectors (SFTP, IMAP/SMTP, SQL, Geneva, Bloomberg, Power BI, HTTP, …) | **Pre-built job types** and credential types — pick, configure, schedule |
+| A secrets store and rotation story for every script | **Credential Hub** — shared org credentials, secrets never returned on read |
+| Ad-hoc “does this login still work?” checks | **Credential validation** on a daily/weekly cadence with notification groups |
+| Cron + custom failure email for each pipeline | **Workflow trees** with schedules and **On success / On failure / Always** branches |
+| Homegrown file watchers and mailbox monitors | **FTP Monitor**, **File Monitor**, **Email Check**, **Quick Email Monitor**, and related jobs |
+| Spreadsheet or script checks for bad warehouse rows | **[Data monitors](/warehouses/data-monitors)** on tables/views → status + optional trigger job |
+| One-off SQL/views for each recon | **Views** (joins, filters, aggregates) plus **AI-assisted** drafting |
+| Glue code so internal tools can trigger the same work | **[Public API](/api)** and webhooks against the same jobs and warehouses |
+
+**What you keep owning:** business rules — what a break means, which extract the FA expects, who signs off, which prices to repair. CoSet runs the movement, storage, monitoring, and alerting around those rules.
 
 ## What CoSet does
 
@@ -49,13 +66,13 @@ The **Public API** and **Coordinator** sit alongside this loop: they read and wr
 
 ### Credentials
 
-**Credential Hub** is the secure place for connection details. Prefer shared org credentials for production workflows so jobs do not embed secrets. Secrets are stored for job use and are **never returned** when you list or open a credential.
+**Credential Hub** is the secure place for connection details. Prefer shared org credentials for production workflows so jobs do not embed secrets. Secrets are stored for job use and are **never returned** when you list or open a credential. Turn on validation when you want the bridge to prove connections still work and notify a group on failure.
 
 → [Credentials](/credentials)
 
 ### Workflows
 
-A workflow is a **tree of jobs**. The root is usually a **Group**. Children run on a schedule or when the parent finishes (**On success**, **On failure**, or **Always**). Job types cover email, FTP, encryption, Geneva, Bloomberg, SQL loads, Table to CSV, Data Review, and many more.
+A workflow is a **tree of jobs**. The root is usually a **Group**. Children run on a schedule or when the parent finishes (**On success**, **On failure**, or **Always**). Job types cover email, FTP, encryption, Geneva, Bloomberg, SQL loads, Table to CSV, Data Review, monitors, and many more.
 
 → [Workflows](/workflows)
 

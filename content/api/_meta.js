@@ -4,6 +4,7 @@ export default {
   auth: 'Auth & account',
   credentials: 'Credentials',
   warehouses: 'Warehouses',
+  permissions: 'Permissions & groups',
   'file-stores': 'File stores',
   'jobs-workflows-read': 'Jobs & workflows — read',
   'jobs-workflows-write': 'Jobs & workflows — write',

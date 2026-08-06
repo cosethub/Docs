@@ -1,6 +1,6 @@
 # Jobs & workflows — read
 
-Discover job types, inspect definitions, poll runs, list workflows, and load AI workflow builder chats.
+Discover job types, inspect definitions, poll runs, list workflows, load AI workflow builder chats, and fetch **AI error analysis** for failed runs.
 
 > **Base:** `/api/v1`  
 > **Auth:** `Authorization: Bearer {token}`  
@@ -15,10 +15,13 @@ Discover job types, inspect definitions, poll runs, list workflows, and load AI 
 | `GET` | [`/jobs`](#get-jobs) | List job types |
 | `GET` | [`/jobs/{jobId}`](#get-jobsjobid) | Definition + schema |
 | `GET` | [`/jobs/{jobId}/runs`](#get-jobsjobidruns) | Run history |
+| `GET` | [`/jobs/{jobId}/error-analysis`](#get-jobsjobiderror-analysis) | AI analysis (root or sub job) |
 | `GET` | [`/job-runs/{runId}`](#get-job-runsrunid) | Run status + outputs |
+| `GET` | [`/job-runs/{runId}/error-analysis`](#get-job-runsruniderror-analysis) | AI analysis for a run |
 | `GET` | [`/workflows`](#get-workflows) | List workflows |
 | `GET` | [`/workflows/{workflowId}`](#get-workflowsworkflowid) | Workflow detail |
 | `GET` | [`/workflows/{workflowId}/jobs/{jobTreeId}/detail`](#get-workflowsworkflowidjobsjobtreeiddetail) | Job tree detail |
+| `GET` | [`/workflows/{workflowId}/error-analysis`](#get-workflowsworkflowiderror-analysis) | Latest AI analysis for workflow |
 | `GET` | [`/ai-workflow/chats`](#get-ai-workflowchats) | List chats |
 | `GET` | [`/ai-workflow/chats/{chatId}`](#get-ai-workflowchatschatid) | Chat detail |
 
@@ -78,7 +81,57 @@ Same shapes used on create/get workflow — see [write](./jobs-workflows-write#c
 | `exception` | `string \| null` | Detail only |
 | `has_children` | `boolean` | Detail only |
 | `children` | `JobRunDetail[]` | Detail only |
-| `output_refs` | `{ parameter_name, value, download_url }[]` | Detail only |
+
+### `WorkflowErrorAnalysis`
+
+AI log analysis for a failed (or partially failed) workflow run. One analysis is stored per **root run**; looking up a child/sub job resolves to that root analysis.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `workflow_id` | `integer` | Workflow / job-tree ID |
+| `job_id` | `integer` | Job you queried (root or child), when applicable |
+| `root_job_id` | `integer` | Root job in the tree |
+| `run_id` | `string \| null` | Run id when known (same as `GET /job-runs/{runId}`) |
+| `root_run_id` | `string` | Canonical root history / run key for this analysis |
+| `created_at` | `string` | ISO 8601 when analysis was produced |
+| `analysis` | `ErrorAnalysis` | Structured AI result |
+
+### `ErrorAnalysis`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `error_summary` | `string` | Short explanation of what failed |
+| `resolution_suggestion` | `string` | What to try next |
+| `error_category` | `string` | e.g. `credential_expired`, `file_not_found_alternate`, `bridge_query_error` |
+| `affected_jobs` | `AffectedJob[]` | Jobs implicated in the failure |
+| `configuration_updates` | `ConfigurationUpdate[] \| null` | Suggested parameter fixes |
+| `email_draft` | `EmailDraft \| null` | Optional draft to notify an owner / counterparty |
+
+### `AffectedJob`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `job_instance_id` | `string` | Job identity in the analysis (often the job **name**) |
+| `parameter_names` | `string[]` | Parameters tied to the failure |
+
+### `ConfigurationUpdate`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `job_instance_id` | `string` | Job to update |
+| `overall_reason` | `string` | Why these changes |
+| `parameter_updates` | `{ parameter_name, current_value?, suggested_value, reason }[]` | |
+
+### `EmailDraft`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `recipient` | `string` | Suggested To |
+| `subject` | `string` | |
+| `body` | `string` | |
+| `reason` | `string` | Why email is suggested |
+
+---| `output_refs` | `{ parameter_name, value, download_url }[]` | Detail only |
 
 ### `ChatSummary` / `ChatMessage`
 
@@ -228,6 +281,78 @@ Run history (newest first).
 
 ---
 
+## `GET /jobs/{jobId}/error-analysis`
+
+Return AI error analysis for the latest failed run associated with this job.
+
+`jobId` may be the **root** workflow job or any **child / sub job**. The server walks to the root run and returns that run’s analysis (one analysis per root failure, not per child).
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GET /api/workflow/job-histories/{jobHistoryId}/errors` — resolves child → root) |
+| **Scopes** | `jobs:read` |
+
+### Query parameters
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `run_id` | `string` | — | Prefer analysis for this run when the job participated in it |
+
+### Response `200 OK`
+
+```json
+{
+  "workflow_id": 1001,
+  "job_id": 1042,
+  "root_job_id": 1001,
+  "run_id": "rjh_8f3a…",
+  "root_run_id": "rjh_8f3a…",
+  "created_at": "2026-08-05T18:04:12Z",
+  "analysis": {
+    "error_summary": "FTP Monitor timed out waiting for the PB FI price file.",
+    "resolution_suggestion": "Confirm the file landed on the SFTP path and that the file name pattern matches today’s extract.",
+    "error_category": "file_not_found_alternate",
+    "affected_jobs": [
+      {
+        "job_instance_id": "Monitor for PB FI Price File",
+        "parameter_names": ["File Path", "File Name"]
+      }
+    ],
+    "configuration_updates": [
+      {
+        "job_instance_id": "Monitor for PB FI Price File",
+        "overall_reason": "Pattern does not match the counterparty’s dated filename.",
+        "parameter_updates": [
+          {
+            "parameter_name": "File Name",
+            "current_value": "FI_Prices.csv",
+            "suggested_value": "FI_Prices_*.csv",
+            "reason": "Allow dated suffixes from the PB drop."
+          }
+        ]
+      }
+    ],
+    "email_draft": null
+  }
+}
+```
+
+### Errors
+
+| HTTP | `code` | When |
+| --- | --- | --- |
+| `404` | `not_found` | Unknown job, no failed run, or analysis not ready / disabled |
+
+### Example
+
+```bash
+# Root or child job id both work
+curl -sS -H "Authorization: Bearer $TOKEN" \
+  "https://{tenant}.cosethub.com/api/v1/jobs/1042/error-analysis"
+```
+
+---
+
 ## `GET /job-runs/{runId}`
 
 Run status + output refs.
@@ -263,6 +388,37 @@ Run status + output refs.
 ```
 
 > Legacy: `{ "JobHistories": [ … ] }` PascalCase, no `output_refs`.
+
+---
+
+## `GET /job-runs/{runId}/error-analysis`
+
+Return the AI error analysis for a specific run (if one has been produced).
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GET /api/workflow/runs/{runJobHistoryId}/errors`) |
+| **Scopes** | `workflows:read` or `jobs:read` |
+
+Failed and partially failed runs are analyzed automatically when workflow log analysis is enabled for the tenant. Poll this endpoint after a failure if analysis is not ready yet (`404` until available).
+
+### Response `200 OK`
+
+`WorkflowErrorAnalysis` (see [shared types](#workflowerroranalysis)).
+
+### Errors
+
+| HTTP | `code` | When |
+| --- | --- | --- |
+| `404` | `not_found` | Unknown run, analysis not ready, or feature disabled |
+| `403` | `forbidden` | Caller lacks AI log summary / workflow read access |
+
+### Example
+
+```bash
+curl -sS -H "Authorization: Bearer $TOKEN" \
+  "https://{tenant}.cosethub.com/api/v1/job-runs/$RUN_ID/error-analysis"
+```
 
 ---
 
@@ -375,6 +531,45 @@ Single job node detail inside a workflow.
   "job_schedules": [],
   "tags": ["etl"]
 }
+```
+
+---
+
+## `GET /workflows/{workflowId}/error-analysis`
+
+Latest AI error analysis for this workflow (product: workflow error insights on the detail page).
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GET /api/workflow/{workflowId}/errors`) |
+| **Scopes** | `workflows:read` |
+
+`workflowId` is the workflow / job-tree id (same id as [`GET /workflows/{workflowId}`](#get-workflowsworkflowid)).
+
+After a failure, analysis is usually queued automatically. If you get `404`, poll for a short period (the UI polls every few seconds) until the analysis row exists.
+
+### Query parameters
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `run_id` | `string` | — | Return analysis for this run instead of the latest |
+
+### Response `200 OK`
+
+Same `WorkflowErrorAnalysis` shape as [`GET /jobs/{jobId}/error-analysis`](#get-jobsjobiderror-analysis). `job_id` may be omitted or set to the root job.
+
+### Errors
+
+| HTTP | `code` | When |
+| --- | --- | --- |
+| `404` | `not_found` | Unknown workflow, no analysis yet, or feature disabled |
+| `403` | `forbidden` | Caller cannot read AI log summaries / this workflow |
+
+### Example
+
+```bash
+curl -sS -H "Authorization: Bearer $TOKEN" \
+  "https://{tenant}.cosethub.com/api/v1/workflows/1001/error-analysis"
 ```
 
 ---

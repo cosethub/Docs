@@ -13,6 +13,7 @@ Trigger runs, create workflows, and mutate AI workflow builder chats.
 | Method | Path | Action |
 | --- | --- | --- |
 | `POST` | [`/jobs/{jobId}/run`](#post-jobsjobidrun) | Trigger job |
+| `POST` | [`/job-runs/{runId}/error-analysis`](#post-job-runsruniderror-analysis) | Request / refresh AI error analysis |
 | `POST` | [`/workflows`](#post-workflows) | Create workflow |
 | `POST` | [`/ai-workflow/chats`](#post-ai-workflowchats) | Create chat |
 | `POST` | [`/ai-workflow/chats/{chatId}`](#post-ai-workflowchatschatid) | Send message |
@@ -131,6 +132,57 @@ curl -sS -X POST \
 - `POST /api/job` body: `{ "RunOnlyThisJob": bool, "ParameterOverrides": "<json-string>" }`
 - `GET /api/job?xAccessKey=…&runOnlyThisJob=…&version=2&parameterOverrides=…`
 - Host whitelist on the API key may reject callers outside allowed IPs/hostnames
+
+---
+
+## `POST /job-runs/{runId}/error-analysis`
+
+Queue or re-run AI error analysis for a failed (or partially failed) run. Prefer this when automatic analysis did not run or you need a refresh after fixing logs context.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `POST /api/workflow/logs/analyze` with history ids) |
+| **Scopes** | `workflows:write` or `jobs:write` |
+
+`runId` may identify a root or child history in the run; the server normalizes to the **root** run (same as the GET endpoints).
+
+### Request body
+
+Optional. Empty body is fine.
+
+```json
+{
+  "force": false
+}
+```
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `force` | `boolean` | `false` | Re-analyze even if an analysis already exists for the root run |
+
+### Response `202 Accepted`
+
+```json
+{
+  "run_id": "rjh_8f3a…",
+  "workflow_id": 1001,
+  "status": "queued"
+}
+```
+
+Poll [`GET /job-runs/{runId}/error-analysis`](./jobs-workflows-read#get-job-runsruniderror-analysis) until `200`.
+
+You can also **read** analysis by workflow id or any job id (root or sub): see [Jobs & workflows — read](./jobs-workflows-read#get-workflowsworkflowiderror-analysis).
+
+### Example
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"force":false}' \
+  "https://{tenant}.cosethub.com/api/v1/job-runs/$RUN_ID/error-analysis"
+```
 
 ---
 

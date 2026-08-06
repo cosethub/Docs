@@ -1,0 +1,571 @@
+# Permissions & groups
+
+Manage **groups**, **user ↔ group membership**, and **warehouse access** for tables and views. Callers use these endpoints to grant Read / ReadWrite (and related levels) the same way the product Admin and warehouse permission sidebars do.
+
+> **Base:** `/api/v1`  
+> **Auth:** `Authorization: Bearer {token}`  
+> **Scopes:** `permissions:read` / `permissions:write` (plus `warehouses:read` when resolving warehouse context)
+
+Today these operations run through ProcessServer (screen access, roles/groups, view roles). Public REST wraps them under `/groups`, `/users`, and `/warehouses/.../access`.
+
+---
+
+## How access works
+
+| Resource | Who you grant | What it controls |
+| --- | --- | --- |
+| **Group** | Named org group (internally a role) | Membership + optional component-level rights |
+| **User ↔ group** | Users as members of groups | Inheritance — users pick up every table/view grant on their groups |
+| **Table (screen access)** | Groups → permission level on a warehouse table/entity | Who can see / use the table in CoSet DB |
+| **View** | Groups → permission level; optional **owners** (users) | Who can open / edit the view; owners get full access |
+
+**Permission levels** used for table and view grants:
+
+| `access` | Meaning |
+| --- | --- |
+| `no_rights` | Explicit deny / no match (usually only on effective-permission responses) |
+| `read_only` | Browse / query |
+| `read_write` | Browse and change (edit definition, manage related settings where applicable) |
+
+Table screen-access policies are **group-based**. Assign users to groups to give them table access. Views support **group grants** and **owner users**.
+
+File-store ACLs stay on [File stores](./file-stores) (`PermissionRule`). Credential group ACLs stay on [Credentials](./credentials).
+
+---
+
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `GET` | [`/groups`](#get-groups) | List groups |
+| `GET` | [`/groups/{groupId}`](#get-groupsgroupid) | Group detail |
+| `POST` | [`/groups`](#post-groups) | Create group |
+| `PATCH` | [`/groups/{groupId}`](#patch-groupsgroupid) | Update group / members |
+| `DELETE` | [`/groups/{groupId}`](#delete-groupsgroupid) | Delete group |
+| `GET` | [`/users`](#get-users) | List users |
+| `GET` | [`/users/{userId}`](#get-usersuserid) | User detail (incl. groups) |
+| `PUT` | [`/users/{userId}/groups`](#put-usersuseridgroups) | Replace user’s group membership |
+| `GET` | [`/warehouses/{warehouseId}/table-access`](#get-warehouseswarehouseidtable-access) | List table screen-access policies |
+| `GET` | [`/warehouses/{warehouseId}/table-access/{tableName}`](#get-warehouseswarehouseidtable-accesstablename) | Policy for one table |
+| `PUT` | [`/warehouses/{warehouseId}/table-access/{tableName}`](#put-warehouseswarehouseidtable-accesstablename) | Create / replace table policy |
+| `DELETE` | [`/warehouses/{warehouseId}/table-access/{tableName}`](#delete-warehouseswarehouseidtable-accesstablename) | Remove table policy |
+| `GET` | [`/warehouses/{warehouseId}/views/{viewName}/access`](#get-warehouseswarehouseidviewsviewnameaccess) | View grants + owners |
+| `PUT` | [`/warehouses/{warehouseId}/views/{viewName}/access`](#put-warehouseswarehouseidviewsviewnameaccess) | Replace view grants + owners |
+| `GET` | [`/permissions/effective`](#get-permissionseffective) | Effective level for current caller |
+
+---
+
+## Shared types
+
+### `GroupSummary`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `integer` | Group ID |
+| `name` | `string` | Display name |
+| `description` | `string \| null` | |
+| `member_count` | `integer \| null` | When known |
+| `is_admin` | `boolean` | Admin / elevated group |
+| `created_at` | `string` | ISO 8601 |
+| `updated_at` | `string \| null` | ISO 8601 |
+
+### `GroupDetail`
+
+Extends `GroupSummary`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `user_ids` | `integer[]` | Member user IDs |
+| `component_permissions` | `ComponentPermission[]` | Optional org-component levels |
+
+### `ComponentPermission`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `component` | `string` | e.g. `data_warehouse`, `database_views`, `screen_access` |
+| `access` | `string` | `read_only` / `read_write` / … |
+
+### `UserSummary`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `integer` | User ID |
+| `email` | `string` | |
+| `display_name` | `string \| null` | |
+| `is_enabled` | `boolean` | |
+| `group_ids` | `integer[]` | Groups the user belongs to |
+
+### `AccessGrant`
+
+One row in a table or view ACL.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `principal_type` | `string` | `group` (required for table policies). Views also use `group`; owners are listed separately as users |
+| `principal_id` | `integer` | Group ID |
+| `access` | `string` | `read_only` or `read_write` |
+
+### `TableAccessPolicy`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `warehouse_id` | `integer` | |
+| `table_name` | `string` | Entity / table name the policy applies to |
+| `grants` | `AccessGrant[]` | Group → level |
+| `updated_at` | `string \| null` | ISO 8601 |
+
+### `ViewAccessPolicy`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `warehouse_id` | `integer` | |
+| `view_name` | `string` | Schema-qualified or view name as returned by list views |
+| `grants` | `AccessGrant[]` | Group → level |
+| `owner_user_ids` | `integer[]` | Users with full access (bypass group ACL) |
+| `updated_at` | `string \| null` | ISO 8601 |
+
+---
+
+## Groups
+
+### `GET /groups`
+
+List groups for the organization.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: ProcessServer `GetAllRoles` / `GetAllNonAdminRoles`) |
+| **Scopes** | `permissions:read` |
+
+#### Query parameters
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `include_admin` | `boolean` | `false` | Include admin groups |
+
+#### Response `200 OK`
+
+```json
+{
+  "groups": [
+    {
+      "id": 12,
+      "name": "Operations",
+      "description": "Middle / back office",
+      "member_count": 8,
+      "is_admin": false,
+      "created_at": "2026-01-12T15:00:00Z",
+      "updated_at": "2026-07-01T10:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### `GET /groups/{groupId}`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetRoleById`) |
+| **Scopes** | `permissions:read` |
+
+#### Response `200 OK`
+
+```json
+{
+  "id": 12,
+  "name": "Operations",
+  "description": "Middle / back office",
+  "member_count": 2,
+  "is_admin": false,
+  "user_ids": [101, 204],
+  "component_permissions": [
+    { "component": "data_warehouse", "access": "read_write" },
+    { "component": "database_views", "access": "read_write" }
+  ],
+  "created_at": "2026-01-12T15:00:00Z",
+  "updated_at": "2026-07-01T10:00:00Z"
+}
+```
+
+---
+
+### `POST /groups`
+
+Create a group and optionally seed members.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `CreateRole`) |
+| **Scopes** | `permissions:write` |
+
+#### Request body
+
+```json
+{
+  "name": "Price Ops",
+  "description": "PB price repair owners",
+  "user_ids": [101, 204],
+  "component_permissions": [
+    { "component": "data_warehouse", "access": "read_only" }
+  ]
+}
+```
+
+#### Response `201 Created`
+
+`GroupDetail` for the new group.
+
+---
+
+### `PATCH /groups/{groupId}`
+
+Update name, description, members, and/or component permissions. Omitted fields are left unchanged; send `user_ids` to replace membership.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `UpdateRole`) |
+| **Scopes** | `permissions:write` |
+
+#### Request body
+
+```json
+{
+  "name": "Price Ops",
+  "user_ids": [101, 204, 308]
+}
+```
+
+#### Response `200 OK`
+
+Updated `GroupDetail`.
+
+---
+
+### `DELETE /groups/{groupId}`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `DeleteRole`) |
+| **Scopes** | `permissions:write` |
+
+#### Response `204 No Content`
+
+---
+
+## Users and group assignment
+
+### `GET /users`
+
+List users in the organization (ids, names, group membership).
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetUsersByOrganizationId` / `GetAppUsers`) |
+| **Scopes** | `permissions:read` |
+
+#### Response `200 OK`
+
+```json
+{
+  "users": [
+    {
+      "id": 101,
+      "email": "ops.lead@example.com",
+      "display_name": "Ops Lead",
+      "is_enabled": true,
+      "group_ids": [12, 18]
+    }
+  ]
+}
+```
+
+---
+
+### `GET /users/{userId}`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetUserById`) |
+| **Scopes** | `permissions:read` |
+
+#### Response `200 OK`
+
+Same shape as one `UserSummary` (and any additional account fields your tenant returns).
+
+---
+
+### `PUT /users/{userId}/groups`
+
+Replace the user’s group membership. This is the primary way to give a **user** table access: put them in the groups that hold the table grants.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `UpdateAccountUser` with `UserGroups`) |
+| **Scopes** | `permissions:write` |
+
+#### Request body
+
+```json
+{
+  "group_ids": [12, 18]
+}
+```
+
+#### Response `200 OK`
+
+```json
+{
+  "id": 101,
+  "email": "ops.lead@example.com",
+  "display_name": "Ops Lead",
+  "is_enabled": true,
+  "group_ids": [12, 18]
+}
+```
+
+You can also set membership from the group side via [`PATCH /groups/{groupId}`](#patch-groupsgroupid) (`user_ids`).
+
+### Example
+
+```bash
+curl -sS -X PUT \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"group_ids":[12,18]}' \
+  "https://{tenant}.cosethub.com/api/v1/users/101/groups"
+```
+
+---
+
+## Table screen access
+
+One policy per warehouse table (entity). Grants are **group → access level**. Listing tables with screen access applied continues to live on [Warehouses](./warehouses#get-warehouseswarehouseidtables) (`has_screen_access`).
+
+### `GET /warehouses/{warehouseId}/table-access`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetWarehouseScreenAccessList`) |
+| **Scopes** | `permissions:read` |
+
+#### Response `200 OK`
+
+```json
+{
+  "policies": [
+    {
+      "warehouse_id": 7,
+      "table_name": "fact.tfactassetbalance",
+      "grants": [
+        { "principal_type": "group", "principal_id": 12, "access": "read_write" },
+        { "principal_type": "group", "principal_id": 18, "access": "read_only" }
+      ],
+      "updated_at": "2026-08-01T14:22:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### `GET /warehouses/{warehouseId}/table-access/{tableName}`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetWarehouseScreenAccessByEntityTypeName`) |
+| **Scopes** | `permissions:read` |
+
+`tableName` is path-escaped (for example `fact.tfactassetbalance` → `fact.tfactassetbalance` or URL-encoded as needed).
+
+#### Response `200 OK`
+
+Single `TableAccessPolicy`. `404` if no policy exists (table may still be visible via warehouse-level defaults).
+
+---
+
+### `PUT /warehouses/{warehouseId}/table-access/{tableName}`
+
+Create or replace the screen-access policy for a table.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `CreateWarehouseScreenAccess` / `UpdateWarehouseScreenAccess`) |
+| **Scopes** | `permissions:write` |
+
+#### Request body
+
+```json
+{
+  "grants": [
+    { "principal_type": "group", "principal_id": 12, "access": "read_write" },
+    { "principal_type": "group", "principal_id": 18, "access": "read_only" }
+  ]
+}
+```
+
+#### Response `200 OK`
+
+Updated `TableAccessPolicy`.
+
+### Example
+
+```bash
+curl -sS -X PUT \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"grants":[{"principal_type":"group","principal_id":12,"access":"read_write"}]}' \
+  "https://{tenant}.cosethub.com/api/v1/warehouses/7/table-access/ref.equity_master"
+```
+
+---
+
+### `DELETE /warehouses/{warehouseId}/table-access/{tableName}`
+
+Remove the policy (soft-delete in product).
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `DeleteWarehouseScreenAccess`) |
+| **Scopes** | `permissions:write` |
+
+#### Response `204 No Content`
+
+---
+
+## View access
+
+View grants are stored with the view (product: `WarehouseViewRoles` + owners). These endpoints expose that ACL without rewriting the whole view definition.
+
+### `GET /warehouses/{warehouseId}/views/{viewName}/access`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: embedded on `GetWarehouseView`) |
+| **Scopes** | `permissions:read` |
+
+#### Response `200 OK`
+
+```json
+{
+  "warehouse_id": 7,
+  "view_name": "ref.fa_trades_by_asset_class",
+  "grants": [
+    { "principal_type": "group", "principal_id": 12, "access": "read_write" }
+  ],
+  "owner_user_ids": [101],
+  "updated_at": "2026-08-05T18:00:00Z"
+}
+```
+
+If `grants` is empty and there are no special restrictions, the product may treat the view as open to users who can use Database Views — confirm effective access with [`GET /permissions/effective`](#get-permissionseffective).
+
+---
+
+### `PUT /warehouses/{warehouseId}/views/{viewName}/access`
+
+Replace group grants and owners.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `UpdateWarehouseView` with `WarehouseViewRoles` / owners) |
+| **Scopes** | `permissions:write` |
+
+#### Request body
+
+```json
+{
+  "grants": [
+    { "principal_type": "group", "principal_id": 12, "access": "read_write" },
+    { "principal_type": "group", "principal_id": 18, "access": "read_only" }
+  ],
+  "owner_user_ids": [101, 204]
+}
+```
+
+#### Response `200 OK`
+
+Updated `ViewAccessPolicy`.
+
+### Example
+
+```bash
+curl -sS -X PUT \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"grants":[{"principal_type":"group","principal_id":12,"access":"read_only"}],"owner_user_ids":[101]}' \
+  "https://{tenant}.cosethub.com/api/v1/warehouses/7/views/ref.UBS_recon/access"
+```
+
+---
+
+## Effective permission
+
+### `GET /permissions/effective`
+
+Return the caller’s effective access for a resource (after group membership and owners).
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetResourcePermissionLevel` / `GetWarehouseScreenAccessPermissionLevel`) |
+| **Scopes** | `permissions:read` |
+
+#### Query parameters
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `resource_type` | `string` | Yes | `table` or `view` |
+| `warehouse_id` | `integer` | Yes | Warehouse ID |
+| `resource_name` | `string` | Yes | Table or view name |
+
+#### Response `200 OK`
+
+```json
+{
+  "resource_type": "table",
+  "warehouse_id": 7,
+  "resource_name": "ref.equity_master",
+  "access": "read_write",
+  "matched_via": "group",
+  "group_id": 12
+}
+```
+
+| Field | Description |
+| --- | --- |
+| `access` | Effective level (`no_rights`, `read_only`, `read_write`) |
+| `matched_via` | `group`, `owner`, `warehouse_default`, or `none` |
+| `group_id` | Present when `matched_via` is `group` |
+
+---
+
+## Typical admin flow
+
+1. **Create a group** — `POST /groups` with the users who should share access.
+2. **Grant the table** — `PUT .../table-access/{tableName}` with that group at `read_only` or `read_write`.
+3. **Grant the view** — `PUT .../views/{viewName}/access` with group grants and/or `owner_user_ids`.
+4. **Move people later** — `PUT /users/{userId}/groups` (or patch the group’s `user_ids`) without re-touching every table policy.
+5. **Verify** — `GET /permissions/effective` as a token for that user (or inspect membership + policies).
+
+---
+
+## Errors
+
+| HTTP | `code` | When |
+| --- | --- | --- |
+| `400` | `bad_request` | Invalid `access`, empty name, malformed grants |
+| `403` | `forbidden` | Caller lacks permission to manage ACLs |
+| `404` | `not_found` | Unknown group, user, warehouse, table, or view |
+| `409` | `conflict` | Duplicate table policy / group name |
+
+---
+
+## Related
+
+| Page | Use when |
+| --- | --- |
+| [Warehouses](./warehouses) | List tables/views (respects screen access), query rows |
+| [File stores](./file-stores) | Store-level `PermissionRule` ACLs |
+| [Credentials](./credentials) | Credential group / role strings on create & update |
+| [Conventions](./conventions) | Scopes and error envelope |
