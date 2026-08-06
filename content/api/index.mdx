@@ -6,8 +6,10 @@ Programmatic access to credentials, warehouses, file stores, jobs, workflows, an
 
 Use this section when you need REST contracts for schedulers, ETL scripts, internal tools, or MCP clients.
 
+You also get the **product UI out of the box**. Engineering can automate and extend via `/api/v1`; ops and other non-technical users can clear everyday failures in the frontend without a deploy — for example an **expired Bloomberg credential**, a **missing SFTP file**, a failed monitor, or a data-monitor alert. Same credentials, workflows, and warehouses; API for systems, UI for people.
+
 <Callout type="info">
-  **In active development.** The `/api/v1` REST surface in this section is being built now. We are accepting **initial clients** — reach out if you want early access and we will onboard you against the current contract. Endpoints may still change; treat these pages as the working design and use the product UI (including the API keys dashboard below) for day-to-day work until your integration is enabled.
+  **In active development.** The `/api/v1` REST surface in this section is being built now. We are accepting **initial clients** — email [Sales@ryanbts.com](mailto:Sales@ryanbts.com) if you want early access and we will onboard you against the current contract. Endpoints may still change; treat these pages as the working design and use the product UI (including the API keys dashboard below) for day-to-day work until your integration is enabled.
 </Callout>
 
 ## Base URL
@@ -27,7 +29,7 @@ All paths in this section are relative to `/api/v1` unless noted.
 
 Issue a token with [`POST /oauth/token`](./auth#post-oauthtoken), then call [`GET /me`](./auth#get-me) to confirm scopes.
 
-Manage org API keys and IP restrictions in the product **API** dashboard (**Manage API Keys**). Key management and IP allow lists are available in the UI today. The REST endpoints below are in active development — initial clients can integrate with support from the CoSet team.
+Manage org API keys and IP restrictions in the product **API** dashboard (**Manage API Keys**). Key management and IP allow lists are available in the UI today. The REST endpoints below are in active development — initial clients can integrate with support from the CoSet team (email [Sales@ryanbts.com](mailto:Sales@ryanbts.com)).
 
 ![API dashboard — Manage API Keys and IP restriction](./images/api-dashboard-keys.png)
 
