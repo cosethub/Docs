@@ -15,7 +15,7 @@ For a first hands-on path, see [Getting started](./getting-started).
 | Ad-hoc “does this login still work?” checks | **Credential validation** on a daily/weekly cadence with notification groups |
 | Cron + custom failure email for each pipeline | **Workflow trees** with schedules and **On success / On failure / Always** branches |
 | Homegrown file watchers and mailbox monitors | **FTP Monitor**, **File Monitor**, **Email Check**, **Quick Email Monitor**, and related jobs |
-| Spreadsheet or script checks for bad warehouse rows | **[Data monitors](/warehouses/data-monitors)** on tables/views → status + optional trigger job |
+| Spreadsheet or script checks for bad warehouse rows | **[Data monitors](/warehouses/data-monitors)** on tables/views → status, trigger job, and **[webhooks](/api/webhooks)** |
 | One-off SQL/views for each recon | **Views** (joins, filters, aggregates) plus **AI-assisted** drafting |
 | Glue code so internal tools can trigger the same work | **[Public API](/api)** and webhooks against the same jobs and warehouses |
 
@@ -102,7 +102,7 @@ File stores hold the documents and extracts workflows download, transform, or tr
 | Load files into SQL | File in store → SQL Bulk Load / related job → Warehouse table |
 | Publish a shaped extract | View on warehouse → Table to CSV → Email or FTP Transmit |
 | Review exceptions | Workflow → Data Review Task → notify on failure |
-| Alert on bad rows in a table/view | [Data monitors](/warehouses/data-monitors) on CoSet DB → optional trigger job |
+| Alert on bad rows in a table/view | [Data monitors](/warehouses/data-monitors) → status / trigger job / [webhooks](/api/webhooks) |
 | Automate from outside the UI | OAuth token → Public API run job / query warehouse |
 
 ## Words you’ll see

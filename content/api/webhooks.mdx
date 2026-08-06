@@ -52,6 +52,8 @@ Subscribe to outbound events and poll an event stream.
 | `warehouse.export.ready` | Async export ready for download |
 | `file.upload.completed` | File landed in a file store |
 | `table.rows.updated` | Rows inserted/updated/deleted |
+| `data_monitor.alert.created` | Table/view data monitor condition matched — new alert |
+| `data_monitor.alert.updated` | Data monitor alert acknowledged or closed |
 
 ---
 
@@ -101,7 +103,8 @@ Register a webhook.
   "events": [
     "job.run.completed",
     "job.run.failed",
-    "warehouse.export.ready"
+    "warehouse.export.ready",
+    "data_monitor.alert.created"
   ],
   "secret": "whsec_optional_custom_secret"
 }
@@ -313,6 +316,62 @@ Same shape as a single `Event` object.
     "inserted": 1,
     "updated": 1,
     "deleted": 0
+  }
+}
+```
+
+#### `data_monitor.alert.created`
+
+Fired when a [database table/view data monitor](./data-monitors) condition matches a row (after warehouse write/delete evaluation).
+
+```json
+{
+  "id": "evt_01H…",
+  "type": "data_monitor.alert.created",
+  "occurred_at": "2026-08-06T15:02:11Z",
+  "organization_id": 55,
+  "data": {
+    "alert_id": 9001,
+    "data_monitor_id": 88,
+    "data_monitor_name": "BBG price repair — marl zero",
+    "condition_id": 201,
+    "status_code_id": 25,
+    "status_code_name": "Data Monitor Alert",
+    "warehouse_id": 7,
+    "entity_name": "ref.v_bbg_price_repair",
+    "entity_kind": "view",
+    "message": "marl = 0",
+    "monitored_at": "2026-08-06T15:02:11Z",
+    "trigger_job_id": 1042,
+    "source_row": {
+      "symbol": "AAPL US",
+      "marl": 0,
+      "asofdate": "2026-08-05"
+    },
+    "key_values": {
+      "symbol": "AAPL US"
+    },
+    "response_status": "open"
+  }
+}
+```
+
+Subscribe when Slack, PagerDuty, or an internal ops bus should react without polling. Configure monitors in the UI ([Data monitors](/warehouses/data-monitors)) or via the [Data monitors API](./data-monitors).
+
+#### `data_monitor.alert.updated`
+
+```json
+{
+  "id": "evt_01H…",
+  "type": "data_monitor.alert.updated",
+  "occurred_at": "2026-08-06T16:10:00Z",
+  "organization_id": 55,
+  "data": {
+    "alert_id": 9001,
+    "data_monitor_id": 88,
+    "response_status": "acknowledged",
+    "previous_response_status": "open",
+    "updated_by_user_id": 101
   }
 }
 ```

@@ -1,0 +1,440 @@
+# Data monitors
+
+Configure and read **database table/view data monitors** — conditions on warehouse entities, status codes, trigger jobs, and alerts.
+
+> **Base:** `/api/v1`  
+> **Auth:** `Authorization: Bearer {token}`  
+> **Scopes:** `data-monitors:read` / `data-monitors:write`  
+> Product UI: [Data monitors](/warehouses/data-monitors)
+
+Today these operations run through ProcessServer. Public REST wraps them under `/warehouses/.../data-monitors` and `/data-monitors/*`. Alert delivery to external systems uses [Webhooks](./webhooks) (`data_monitor.alert.*`).
+
+---
+
+## Concepts
+
+| Resource | Description |
+| --- | --- |
+| **Monitor type** | Schema for one warehouse table/view (`warehouse_id` + `entity_name` + fields). Ensured on first save |
+| **Data monitor** | Named instance on a type (conditions, escalation group, optional bridge) |
+| **Condition** | Rule tree + `status_code_id` + optional `trigger_job_id` |
+| **Alert** | Fired when a row matches a condition during warehouse write/delete |
+
+Evaluation is **on data change** (create / update / delete for that entity), not a full-table schedule poll.
+
+---
+
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `GET` | [`/warehouses/{warehouseId}/entities/{entityName}/data-monitor-type`](#get-warehouseswarehouseidentitiesentitynamedata-monitor-type) | Get or describe type for table/view |
+| `POST` | [`/warehouses/{warehouseId}/entities/{entityName}/data-monitor-type`](#post-warehouseswarehouseidentitiesentitynamedata-monitor-type) | Ensure type exists (from columns) |
+| `GET` | [`/warehouses/{warehouseId}/entities/{entityName}/data-monitors`](#get-warehouseswarehouseidentitiesentitynamedata-monitors) | List monitors for entity |
+| `POST` | [`/warehouses/{warehouseId}/entities/{entityName}/data-monitors`](#post-warehouseswarehouseidentitiesentitynamedata-monitors) | Create monitor |
+| `GET` | [`/data-monitors/{monitorId}`](#get-data-monitorsmonitorid) | Monitor detail |
+| `PATCH` | [`/data-monitors/{monitorId}`](#patch-data-monitorsmonitorid) | Update monitor + conditions |
+| `DELETE` | [`/data-monitors/{monitorId}`](#delete-data-monitorsmonitorid) | Soft-delete monitor |
+| `GET` | [`/data-monitors/status-codes`](#get-data-monitorsstatus-codes) | List status codes |
+| `POST` | [`/data-monitors/status-codes`](#post-data-monitorsstatus-codes) | Create status code |
+| `GET` | [`/data-monitors/alerts`](#get-data-monitorsalerts) | List alerts |
+| `GET` | [`/data-monitors/alerts/{alertId}`](#get-data-monitorsalertsalertid) | Alert detail |
+
+`entityName` is the table or view name as shown in CoSet DB (for example `ref.v_bbg_price_repair`). URL-encode dots and special characters as needed.
+
+---
+
+## Shared types
+
+### `DataMonitorType`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `integer` | Type ID |
+| `warehouse_id` | `integer` | |
+| `entity_name` | `string` | Table or view name |
+| `entity_kind` | `string` | `table` or `view` when known |
+| `name` | `string` | Display name |
+| `data_source_type` | `string` | `DatabaseTableData` for warehouse DB monitors |
+| `fields` | `DataMonitorField[]` | Columns available in rules |
+
+### `DataMonitorField`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | Column name |
+| `field_type` | `string` | e.g. `string`, `int64`, `decimal` |
+| `description` | `string \| null` | Often the SQL type |
+| `is_required` | `boolean` | |
+
+### `DataMonitor`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `integer` | |
+| `name` | `string` | |
+| `description` | `string \| null` | |
+| `data_monitor_type_id` | `integer` | |
+| `warehouse_id` | `integer` | |
+| `escalation_path_group_id` | `integer \| null` | Notification / escalation group |
+| `owner_user_id` | `integer \| null` | |
+| `conditions` | `DataMonitorCondition[]` | |
+
+### `DataMonitorCondition`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `integer \| null` | Null on create |
+| `status_code_id` | `integer` | Status emitted on match |
+| `trigger_job_id` | `integer \| null` | Workflow / job tree to run (`JobTreeId`) |
+| `rules` | `FilterGroup` | Condition tree |
+
+### `FilterGroup` / `FilterRule`
+
+```json
+{
+  "relation_to_previous": "and",
+  "groups": [
+    {
+      "field": "marl",
+      "operator": "=",
+      "value": "0",
+      "relation_to_previous": "and"
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `field` | `string` | Column / field name |
+| `operator` | `string` | e.g. `=`, `<>`, `>`, `is null` |
+| `value` | `string \| number \| null` | Comparison value |
+| `relation_to_previous` | `string` | `and` / `or` |
+| `groups` | `array` | Nested rules or groups |
+
+### `StatusCode`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `integer` | |
+| `name` | `string` | e.g. `Data Monitor Alert` |
+| `severity` | `string \| null` | When exposed |
+| `is_system` | `boolean` | Seeded vs org-defined |
+
+System seeds commonly include Information, Ok, Warning, Alert, Critical, and Error.
+
+### `DataMonitorAlert`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `integer` | |
+| `data_monitor_id` | `integer` | |
+| `condition_id` | `integer` | |
+| `status_code_id` | `integer` | |
+| `message` | `string` | |
+| `monitored_at` | `string` | ISO 8601 |
+| `warehouse_id` | `integer` | |
+| `entity_name` | `string` | |
+| `source_row` | `object` | Row (or projection) that matched |
+| `key_values` | `object` | Key fields / condition description bag |
+| `response_status` | `string` | e.g. `open`, `acknowledged`, `closed` |
+
+---
+
+## Monitor type
+
+### `GET /warehouses/{warehouseId}/entities/{entityName}/data-monitor-type`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetDatabaseTableDataMonitorType`) |
+| **Scopes** | `data-monitors:read` |
+
+#### Response `200 OK`
+
+`DataMonitorType`. `404` if no type exists yet (no monitor saved for this entity).
+
+---
+
+### `POST /warehouses/{warehouseId}/entities/{entityName}/data-monitor-type`
+
+Ensure a `DatabaseTableData` type exists for the entity (idempotent).
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `CreateDatabaseTableDataMonitorType`) |
+| **Scopes** | `data-monitors:write` |
+
+#### Request body
+
+```json
+{
+  "entity_kind": "view",
+  "columns": [
+    { "name": "marl", "data_type": "int" },
+    { "name": "symbol", "data_type": "varchar" },
+    { "name": "asofdate", "data_type": "datetime" }
+  ]
+}
+```
+
+#### Response `200 OK` / `201 Created`
+
+`DataMonitorType`.
+
+---
+
+## Monitors
+
+### `GET /warehouses/{warehouseId}/entities/{entityName}/data-monitors`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetDataMonitors` filtered by type) |
+| **Scopes** | `data-monitors:read` |
+
+#### Response `200 OK`
+
+```json
+{
+  "monitors": [
+    {
+      "id": 88,
+      "name": "Acme Private Credit Default Data Monitor",
+      "description": null,
+      "data_monitor_type_id": 41,
+      "warehouse_id": 7,
+      "escalation_path_group_id": 15,
+      "owner_user_id": 101,
+      "conditions": []
+    }
+  ]
+}
+```
+
+---
+
+### `POST /warehouses/{warehouseId}/entities/{entityName}/data-monitors`
+
+Create a monitor (ensures type if needed when `columns` are provided).
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `SaveDataMonitor` + type create) |
+| **Scopes** | `data-monitors:write` |
+
+#### Request body
+
+```json
+{
+  "name": "BBG price repair — marl zero",
+  "description": "Alert when repair view shows marl = 0",
+  "escalation_path_group_id": 15,
+  "columns": [
+    { "name": "marl", "data_type": "int" },
+    { "name": "symbol", "data_type": "varchar" }
+  ],
+  "conditions": [
+    {
+      "status_code_id": 25,
+      "trigger_job_id": 1042,
+      "rules": {
+        "relation_to_previous": "and",
+        "groups": [
+          {
+            "field": "marl",
+            "operator": "=",
+            "value": "0",
+            "relation_to_previous": "and"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+#### Response `201 Created`
+
+`DataMonitor` including condition ids.
+
+### Example
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"BBG price repair — marl zero","escalation_path_group_id":15,"conditions":[{"status_code_id":25,"trigger_job_id":null,"rules":{"relation_to_previous":"and","groups":[{"field":"marl","operator":"=","value":"0","relation_to_previous":"and"}]}}]}' \
+  "https://{tenant}.cosethub.com/api/v1/warehouses/7/entities/ref.v_bbg_price_repair/data-monitors"
+```
+
+---
+
+### `GET /data-monitors/{monitorId}`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetDataMonitorById`) |
+| **Scopes** | `data-monitors:read` |
+
+#### Response `200 OK`
+
+Full `DataMonitor` with conditions.
+
+---
+
+### `PATCH /data-monitors/{monitorId}`
+
+Replace name, description, escalation, and/or conditions.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `UpdateDataMonitor`) |
+| **Scopes** | `data-monitors:write` |
+
+#### Request body
+
+Same fields as create (partial). Sending `conditions` replaces the condition set.
+
+#### Response `200 OK`
+
+Updated `DataMonitor`.
+
+---
+
+### `DELETE /data-monitors/{monitorId}`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `DeleteDataMonitor`) |
+| **Scopes** | `data-monitors:write` |
+
+#### Response `204 No Content`
+
+---
+
+## Status codes
+
+### `GET /data-monitors/status-codes`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetStatusCodes` / `GetSystemDataMonitorStatusCodes`) |
+| **Scopes** | `data-monitors:read` |
+
+#### Response `200 OK`
+
+```json
+{
+  "status_codes": [
+    { "id": 22, "name": "Data Monitor Information", "is_system": true },
+    { "id": 24, "name": "Data Monitor Warning", "is_system": true },
+    { "id": 25, "name": "Data Monitor Alert", "is_system": true },
+    { "id": 26, "name": "Data Monitor Critical", "is_system": true }
+  ]
+}
+```
+
+---
+
+### `POST /data-monitors/status-codes`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `CreateStatusCode` for DataMonitor escalation type) |
+| **Scopes** | `data-monitors:write` |
+
+#### Request body
+
+```json
+{
+  "name": "Price repair — ops review",
+  "severity": "warning"
+}
+```
+
+#### Response `201 Created`
+
+`StatusCode`.
+
+---
+
+## Alerts
+
+### `GET /data-monitors/alerts`
+
+| | |
+| --- | --- |
+| **Status** | Planned |
+| **Scopes** | `data-monitors:read` |
+
+#### Query parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `warehouse_id` | `integer` | Filter |
+| `entity_name` | `string` | Filter |
+| `data_monitor_id` | `integer` | Filter |
+| `response_status` | `string` | e.g. `open` |
+| `page` / `page_size` | `integer` | Pagination |
+
+#### Response `200 OK`
+
+```json
+{
+  "alerts": [
+    {
+      "id": 9001,
+      "data_monitor_id": 88,
+      "condition_id": 201,
+      "status_code_id": 25,
+      "message": "marl = 0",
+      "monitored_at": "2026-08-06T15:02:11Z",
+      "warehouse_id": 7,
+      "entity_name": "ref.v_bbg_price_repair",
+      "source_row": { "symbol": "AAPL US", "marl": 0 },
+      "key_values": { "symbol": "AAPL US" },
+      "response_status": "open"
+    }
+  ],
+  "pagination": { "page": 1, "page_size": 25, "total_count": 1, "has_more": false }
+}
+```
+
+---
+
+### `GET /data-monitors/alerts/{alertId}`
+
+| | |
+| --- | --- |
+| **Status** | Planned |
+| **Scopes** | `data-monitors:read` |
+
+#### Response `200 OK`
+
+Single `DataMonitorAlert`.
+
+---
+
+## Webhooks
+
+When a condition matches, subscribe to:
+
+| Event | When |
+| --- | --- |
+| `data_monitor.alert.created` | New alert from a table/view monitor |
+| `data_monitor.alert.updated` | Alert acknowledged / closed (when exposed) |
+
+See [Webhooks & events](./webhooks) for subscription, signatures, and full payload examples. In the product UI, the same fire also drives escalation-path email / SMS / in-app alerts and optional **trigger jobs**.
+
+---
+
+## Related
+
+| Page | Use when |
+| --- | --- |
+| [Data monitors (UI)](/warehouses/data-monitors) | Configure monitors in CoSet DB |
+| [Warehouses](./warehouses) | Row writes that can trigger evaluation |
+| [Webhooks](./webhooks) | Push alerts to Slack, PagerDuty, internal buses |
+| [Jobs & workflows — write](./jobs-workflows-write) | Jobs referenced as `trigger_job_id` |
