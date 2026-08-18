@@ -6,7 +6,7 @@ Programmatic access to credentials, warehouses, file stores, jobs, workflows, an
 
 Use this section when you need REST contracts for schedulers, ETL scripts, internal tools, or MCP clients.
 
-You also get the **product UI out of the box**. Engineering can automate and extend via `/api/v1`; ops and other non-technical users can clear everyday failures in the frontend without a deploy — for example an **expired Bloomberg credential**, a **missing SFTP file**, a failed monitor, or a data-monitor alert. Same credentials, workflows, and warehouses; API for systems, UI for people.
+You also get the **product UI out of the box**. Engineering can automate and extend via `/api/v1`; ops and other non-technical users can clear everyday failures in the frontend without a deploy — for example an **expired Bloomberg credential**, a **missing SFTP file**, a failed monitor, a data-monitor alert, or a **checklist** item that did not finish in time. Same credentials, workflows, warehouses, and checklists; API for systems, UI for people.
 
 <Callout type="info">
   **In active development.** The `/api/v1` REST surface in this section is being built now. We are accepting **initial clients** — email [Sales@ryanbts.com](mailto:Sales@ryanbts.com) if you want early access and we will onboard you against the current contract. Endpoints may still change; treat these pages as the working design and use the product UI (including the API keys dashboard below) for day-to-day work until your integration is enabled.
@@ -61,6 +61,7 @@ If IP restriction is turned off (`I do not want to restrict API access by IP`), 
 | [Credentials](./credentials) | List names/metadata; create, update, delete, and test (secrets never returned) |
 | [Warehouses](./warehouses) | List warehouses, tables, schema, rows, exports |
 | [Data monitors](./data-monitors) | Table/view monitors, conditions, alerts, status codes |
+| [Checklists](./checklists) | Period-close boards, items, run, history |
 | [Permissions & groups](./permissions) | Groups, user membership, table/view access |
 | [File stores](./file-stores) | Browse, download, upload, rename, move, delete |
 | [Jobs & workflows — read](./jobs-workflows-read) | Job types, definitions, runs, workflows, AI chats, error analysis |

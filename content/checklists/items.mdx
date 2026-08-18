@@ -1,0 +1,73 @@
+# Items
+
+Each row on the board is a **checklist item**: a job/task, a data monitor, a web watcher, or an iterator. Expanding a row shows **History** for the selected period (runs, notes, alert responses).
+
+## Add an item
+
+On the **Checklist** tab, **Add Checklist Item**:
+
+| Menu | Item type | Use for |
+| --- | --- | --- |
+| **Add Job** | Job / quick job / task | Watch a workflow milestone (or a human task) |
+| **Add Data Monitor** | Data monitor | Surface table/view exception alerts on the period |
+| **Add Web Watcher** | Web watcher | Watch a site / page for the period |
+
+**Add Iterator** (parameter value list) is a separate dialog: reuse a workflow over a set of variables (as-of dates, funds, file names).
+
+From a workflow tree, **Add to Checklist** attaches that job to an existing board (or creates one).
+
+## Jobs and tasks
+
+### Milestone vs running job
+
+- **Milestone Job** — the watchpoint. Completion or failure of that job drives checklist status.
+- **Monitoring Type**
+  - **Single** — one job is both in-progress and done.
+  - **Multi** — pick a **Running Job** (usually an ancestor) as the “in progress” signal, and a different milestone as done.
+- Quick jobs: **Add Quick Job** / **Edit Quick Job** (including Quick Task and Quick Email Monitor).
+
+A **task** job (Basic or Advanced) is a human item: ops updates status and notes. Task items hide monitoring type and due/tolerance clocks (those apply to automated jobs).
+
+### Who to notify and pause
+
+| Field | Notes |
+| --- | --- |
+| **Who to notify** / **Escalation Path** | Notification plan (email / SMS / in-app) when the item is late, failed, or overdue. Plans live under **Escalation Paths** |
+| **Pause this item** / **Suspended** | Paused items show **Suspended**; they are not treated as due and escalations stay off until you unpause |
+
+### Timing (automated jobs)
+
+Clocks start from the job **schedule** or a **custom start time**:
+
+| Field | Meaning |
+| --- | --- |
+| **Timing basis** | **Use Schedule** or **Use Ad Hoc Start Time** |
+| **Custom start time** | When timing basis is ad hoc |
+| **Expected duration (minutes)** | Minutes until the orange (**late**) indicator |
+| **Extra tolerance (minutes)** | Extra minutes after orange until red (**overdue**) |
+
+### Workflow parameters
+
+If the milestone job’s workflow has parameters, the item can show **Configured** vs **Override** values. Overrides apply when this checklist **runs** the job.
+
+## Data monitors
+
+1. Choose **Add Data Monitor**.
+2. Pick the **Data Monitors** configuration (table/view rules from [Data monitors](/warehouses/data-monitors)).
+3. Set **Name**, **Description**, optional pause.
+
+Matching rows create alerts on the item. Ops **acknowledge** or **close** them in History. A period reset closes remaining open alerts (**Closed by System**).
+
+## Web watchers
+
+**Add Web Watcher** opens the web-watcher flow with this checklist selected. On the board: **View Data** and **View Configuration**.
+
+## Iterators (parameter value lists)
+
+**Add Iterator**: *Iterators reuse workflows over a set of variables.* Set name, description, escalation, timing, then choose the job/workflow to iterate. History can show iterator snapshots instead of a simple run row.
+
+## Edit, delete, order
+
+- **Edit** on the row opens item configuration.
+- **Delete** asks `Are you sure you wish to delete "{Name}" ?`
+- Drag / display order is saved per checklist (when you have rights).

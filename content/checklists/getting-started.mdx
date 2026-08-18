@@ -1,0 +1,48 @@
+# Getting started
+
+Create a checklist, bind it to a **period calendar**, and grant groups. The creating user is the **owner** (not a separate form field). Timing for the period comes from the calendar — there is no timezone field on the checklist.
+
+You need **Checklists** permission (**ReadWrite** to create/edit).
+
+## Open Checklists
+
+1. In the left nav, choose **Checklists**.
+2. The list shows folders (including **All Checklists**), search, and **Create Checklist**.
+3. Existing boards show name, last run, and folder.
+
+From **Workflow Automation**, you can also **Add to Checklist** on a job tree (picker: existing checklists or **Create Checklist**).
+
+## Create a checklist
+
+1. Choose **Create Checklist** (or **Create a New Checklist** in the empty state).
+2. Fill **Basic Information**:
+
+| Field | Notes |
+| --- | --- |
+| **Checklist Name** | Required (for example `Daily FA recon` or `Month-end NAV`) |
+| **Description** | Optional; max 1000 characters |
+| **Default Checklist?** | Owner’s default board (one default at a time) |
+| **Period Calendar** | Required. Cadence lives on the calendar (Daily, Weekly, Monthly, Quarterly, …) under Administration |
+
+3. Under **Permissions** → **Groups and Permissions**:
+   - **Add Group**, pick a group, set **Permission Level** (`NoRights`, `ReadOnly`, `ReadExecute`, `ReadWrite`).
+   - Remove a group from that row.
+4. **Create**.
+
+Changing a period calendar’s schedule affects **future periods**. The product warns that existing future periods will change.
+
+## Edit or delete
+
+| Action | Where |
+| --- | --- |
+| **Edit Checklist Details** | Checklist view toolbar, or **Edit** on the list |
+| **Save** / **Delete** | Edit form footer |
+| **Folders / bookmarks** | List: add to folder, **Add Bookmark** / **Remove Bookmark** |
+
+Past (closed) periods are **history** — add, edit, and reset are disabled for that period.
+
+## After create
+
+1. Open the new checklist (**Checklist** tab).
+2. Add items — see [Items](./items).
+3. Work the current period — see [Run, status & history](./run-and-history).

@@ -4,6 +4,7 @@ export default {
   credentials: 'Credentials',
   warehouses: 'Warehouses',
   views: 'Views',
+  checklists: 'Checklists',
   workflows: 'Workflows',
   api: 'API'
 }

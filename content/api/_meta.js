@@ -5,6 +5,7 @@ export default {
   credentials: 'Credentials',
   warehouses: 'Warehouses',
   'data-monitors': 'Data monitors',
+  checklists: 'Checklists',
   permissions: 'Permissions & groups',
   'file-stores': 'File stores',
   'jobs-workflows-read': 'Jobs & workflows — read',

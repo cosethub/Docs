@@ -1,0 +1,54 @@
+---
+asIndexPage: true
+---
+
+# Checklists
+
+Checklists are **period-close ops boards** — not generic todos. Bind jobs, tasks, data monitors, and web watchers to a **period calendar** (daily NAV pack, month-end close, weekly recon). When that calendar rolls, the board **resets** for the new period: item statuses go back to Not Running, notes/progress clear, and leftover data-monitor alerts are closed by the system.
+
+Use this section to create a checklist, add items, and work the current period in table or calendar view.
+
+## In this section
+
+| Page | Description |
+| --- | --- |
+| [Getting started](./getting-started) | Open Checklists, create one, pick a period calendar, set groups |
+| [Items](./items) | Jobs, tasks, data monitors, web watchers, iterators; timing and who to notify |
+| [Run, status & history](./run-and-history) | Table vs calendar, Run / Cancel, statuses, Reporting (History) |
+
+## What a checklist tracks
+
+| Item | What ops sees |
+| --- | --- |
+| **Job** | A workflow job (or quick job / task) — due clocks, run, cancel |
+| **Data monitor** | Exception feed from a table/view monitor — acknowledge / close alerts |
+| **Web watcher** | Site change watch attached to the period |
+| **Iterator / parameter value list** | Re-run a workflow over a set of variables (funds, dates, files) |
+
+## How it fits
+
+```
+Period calendar (daily / month-end / …)
+        │
+        ▼
+   Checklist board   ← this period instance
+        │
+        ├── Jobs / tasks     (Workflow Automation)
+        ├── Data monitors    (CoSet DB)
+        └── Web watchers
+```
+
+1. Administration defines the **period calendar** (cadence and dates).
+2. A **checklist** is bound to that calendar. All checklists on the same calendar reset together.
+3. **Items** watch a milestone job, a data monitor, or a web watcher.
+4. Ops works the **current period** on the Checklist tab (or Calendar). Closed periods are read-only **History**.
+
+API: [Checklists](/api/checklists) (planned REST around the same ProcessServer operations).
+
+## Related
+
+| Area | Use when |
+| --- | --- |
+| [Workflows](/workflows) | Jobs you attach as items; **Add to Checklist** from a job tree |
+| [Data monitors](/warehouses/data-monitors) | Table/view conditions that land as checklist alerts |
+| [Permissions](/api/permissions) | Groups you grant on the checklist |

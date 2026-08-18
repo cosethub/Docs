@@ -1,0 +1,328 @@
+# Checklists
+
+Period-close boards: list checklists, items, runs, periods, and history. Same model as the [Checklists](/checklists) UI.
+
+> **Base:** `/api/v1`  
+> **Auth:** `Authorization: Bearer {token}`  
+> **Scopes:** `checklists:read` / `checklists:write`
+
+Today these operations run through ProcessServer. Public REST wraps them under `/checklists`.
+
+---
+
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `GET` | [`/checklists`](#get-checklists) | List boards |
+| `POST` | [`/checklists`](#post-checklists) | Create |
+| `GET` | [`/checklists/{checklistId}`](#get-checklistschecklistid) | Detail (optional period) |
+| `PATCH` | [`/checklists/{checklistId}`](#patch-checklistschecklistid) | Update name, calendar, groups |
+| `DELETE` | [`/checklists/{checklistId}`](#delete-checklistschecklistid) | Delete |
+| `POST` | [`/checklists/{checklistId}/reset`](#post-checklistschecklistidreset) | Close alerts and reset |
+| `GET` | [`/checklists/{checklistId}/items`](#get-checklistschecklistiditems) | Master items |
+| `POST` | [`/checklists/{checklistId}/items`](#post-checklistschecklistiditems) | Add item |
+| `PATCH` | [`/checklists/{checklistId}/items/{itemId}`](#patch-checklistschecklistiditemsitemid) | Update item |
+| `DELETE` | [`/checklists/{checklistId}/items/{itemId}`](#delete-checklistschecklistiditemsitemid) | Delete item |
+| `POST` | [`/checklists/{checklistId}/items/{itemId}/run`](#post-checklistschecklistiditemsitemidrun) | Run linked job |
+| `POST` | [`/checklists/{checklistId}/items/{itemId}/cancel`](#post-checklistschecklistiditemsitemidcancel) | Cancel running job |
+| `GET` | [`/checklists/{checklistId}/items/{itemId}/history`](#get-checklistschecklistiditemsitemidhistory) | Period history / alerts |
+| `PATCH` | [`/checklists/{checklistId}/detail-items/{detailItemId}`](#patch-checklistschecklistiddetail-itemsdetailitemid) | Task status or alert response |
+| `GET` | [`/checklists/{checklistId}/periods`](#get-checklistschecklistidperiods) | Period instances |
+
+---
+
+## Shared types
+
+### `ChecklistSummary`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `integer` | |
+| `name` | `string` | |
+| `description` | `string \| null` | |
+| `period_calendar_id` | `integer` | Cadence source |
+| `is_default` | `boolean` | Owner default |
+| `owner_user_id` | `integer` | Set to creator on create |
+| `updated_at` | `string \| null` | ISO 8601 |
+
+### `ChecklistItem`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `integer` | Master item ID |
+| `name` | `string` | |
+| `item_type` | `string` | `job_workflow`, `data_monitor`, `web_watcher`, `parameter_value_list` |
+| `status` | `string` | Display status for the selected period |
+| `milestone_job_id` | `integer \| null` | Watched job |
+| `running_job_id` | `integer \| null` | Multi monitoring |
+| `data_monitor_id` | `integer \| null` | |
+| `escalation_path_id` | `integer \| null` | Who to notify |
+| `is_paused` | `boolean` | Suspended |
+| `monitoring_type` | `string \| null` | `single` / `multi` |
+| `expected_duration_minutes` | `integer \| null` | Late (orange) |
+| `tolerance_minutes` | `integer \| null` | Overdue (red) |
+
+### `item_type` mapping
+
+| `item_type` | Product |
+| --- | --- |
+| `job_workflow` | Job, quick job, or task |
+| `data_monitor` | [Data monitor](/warehouses/data-monitors) |
+| `web_watcher` | Web watcher (`DataMonitorBuilder` / WebWatcher in product) |
+| `parameter_value_list` | Iterator |
+
+---
+
+## `GET /checklists`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetAllCheckLists` / `GetChecklists`) |
+| **Scopes** | `checklists:read` |
+
+#### Query parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `folder_id` | `integer` | Optional folder |
+
+#### Response `200 OK`
+
+```json
+{
+  "checklists": [
+    {
+      "id": 12,
+      "name": "Daily FA recon",
+      "description": null,
+      "period_calendar_id": 3,
+      "is_default": true,
+      "owner_user_id": 101,
+      "updated_at": "2026-08-12T14:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## `POST /checklists`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `CreateChecklist`) |
+| **Scopes** | `checklists:write` |
+
+#### Request body
+
+```json
+{
+  "name": "Daily FA recon",
+  "description": "PB vs FA positions",
+  "period_calendar_id": 3,
+  "is_default": false,
+  "folder_id": null,
+  "roles": ["Operations"],
+  "permissions": ["Operations_ReadWrite"]
+}
+```
+
+`owner_user_id` is the caller. **Create**.
+
+---
+
+## `GET /checklists/{checklistId}`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetChecklist`) |
+| **Scopes** | `checklists:read` |
+
+#### Query parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `period_id` | `integer` | Period instance; omit for current |
+
+---
+
+## `PATCH /checklists/{checklistId}`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `UpdateChecklist`) |
+| **Scopes** | `checklists:write` |
+
+Name, description, period calendar, default flag, group permissions.
+
+---
+
+## `DELETE /checklists/{checklistId}`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `DeleteChecklist`) |
+| **Scopes** | `checklists:write` |
+
+---
+
+## `POST /checklists/{checklistId}/reset`
+
+**Close Alerts and Reset** for the current period.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `ResetChecklist`) |
+| **Scopes** | `checklists:write` |
+
+#### Response `202 Accepted`
+
+```json
+{ "status": "queued" }
+```
+
+---
+
+## Items
+
+### `GET /checklists/{checklistId}/items`
+
+| | |
+| --- | --- |
+| **Status** | Planned |
+| **Scopes** | `checklists:read` |
+
+Supports `period_id`.
+
+---
+
+### `POST /checklists/{checklistId}/items`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `SaveChecklistMasterItem` / `SaveQuickJob`) |
+| **Scopes** | `checklists:write` |
+
+```json
+{
+  "name": "Load FA trades",
+  "item_type": "job_workflow",
+  "milestone_job_id": 1042,
+  "monitoring_type": "single",
+  "escalation_path_id": 8,
+  "expected_duration_minutes": 30,
+  "tolerance_minutes": 15
+}
+```
+
+For `data_monitor`, send `data_monitor_id` instead of job ids.
+
+---
+
+### `PATCH /checklists/{checklistId}/items/{itemId}`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `UpdateChecklistMasterItem`) |
+| **Scopes** | `checklists:write` |
+
+---
+
+### `DELETE /checklists/{checklistId}/items/{itemId}`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `DeleteChecklistMasterItem`) |
+| **Scopes** | `checklists:write` |
+
+---
+
+### `POST /checklists/{checklistId}/items/{itemId}/run`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `RunCheckListItemJob`) |
+| **Scopes** | `checklists:write` |
+
+```json
+{
+  "period_id": 441,
+  "skip_next_scheduled_run": false,
+  "parameter_overrides": { "EffectiveDate": "2026-08-12" }
+}
+```
+
+---
+
+### `POST /checklists/{checklistId}/items/{itemId}/cancel`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `CancelChecklistJob`) |
+| **Scopes** | `checklists:write` |
+
+---
+
+### `GET /checklists/{checklistId}/items/{itemId}/history`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetChecklistDetailItems`) |
+| **Scopes** | `checklists:read` |
+
+Query `period_id`. Returns runs, notes, and (for monitors) alert rows with `response_status`: `open`, `acknowledged`, `closed`.
+
+---
+
+## `PATCH /checklists/{checklistId}/detail-items/{detailItemId}`
+
+Update a **task** status/notes/progress or a **data-monitor alert** response.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `UpdateChecklistDetailItems`) |
+| **Scopes** | `checklists:write` |
+
+```json
+{
+  "status": "completed",
+  "progress": 100,
+  "notes": "FA file signed off",
+  "response_status": null
+}
+```
+
+For an alert, set `response_status` to `acknowledged` or `closed`. Closed alerts cannot be reopened.
+
+---
+
+## `GET /checklists/{checklistId}/periods`
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GetChecklistPeriods`) |
+| **Scopes** | `checklists:read` |
+
+```json
+{
+  "periods": [
+    {
+      "id": 441,
+      "start_at": "2026-08-12T00:00:00Z",
+      "end_at": null,
+      "is_current": true
+    }
+  ]
+}
+```
+
+---
+
+## Related
+
+| Page | Use when |
+| --- | --- |
+| [Checklists UI](/checklists) | Period-close boards in the product |
+| [Data monitors](./data-monitors) | Monitor configs linked as items |
+| [Jobs & workflows — write](./jobs-workflows-write) | Jobs used as milestones |

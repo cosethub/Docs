@@ -1,0 +1,75 @@
+# Run, status & history
+
+Work the **current period** on the **Checklist** tab. Switch **Calendar** for a scheduler view. **Reporting** is **History** since the last reset.
+
+Open period = live ops. Closed period (end date set) = read-only history.
+
+## View chrome
+
+Tabs: **Checklist** | **Reporting** | **Calendar**.
+
+Period bar: **History displayed for period:** with `{StartDate} - {EndDate}`, or **now** while the period is open.
+
+Toolbar (current period, rights permitting): **Add Checklist Item**, **Filter**, **Edit Checklist Details**, **Close Alerts and Reset**, **Export to Excel**.
+
+Columns: **Name**, **Status**, **Type**, **Last Run**, **Actions**.
+
+## Run a job item
+
+**Run** opens **Run {job name}**:
+
+1. **Select a period**.
+2. **Set Job Parameters** — **Effective Date** plus job params.
+
+Buttons:
+
+| Action | When |
+| --- | --- |
+| **Run Job** | Run now |
+| **Run as Configured** | Run using the item’s stored overrides (hidden for data monitors) |
+| **Run & Skip Next Scheduled Run** | Run now and skip the next scheduled fire |
+| **Cancel** | Stop a running automated job |
+
+There is no **Skip item** control. Closest options: pause the item, mark a task **Not Completed**, or **Run & Skip Next Scheduled Run**.
+
+## Statuses
+
+Quick filters: **Not running**, **Running**, **Completed**, **Failed**.
+
+### Automated jobs
+
+Typical names: Not Running; Running / Completed / Failed **in Time**, **in Tolerance**, or **after Tolerance**; Failed to Start; Suspended; Partial Failure; System Failure.
+
+Orange (late) uses **Expected duration**; red (overdue) uses **Extra tolerance**.
+
+### Tasks
+
+| Kind | Statuses |
+| --- | --- |
+| **Basic** | Completed, Not Completed |
+| **Advanced** | Not Started, In Progress, Requires Attention, Completed, Overdue, Completed With No Response, Not Completed |
+
+Expand **History** → **Manage** / **Edit Selected**: **Status**, optional **Progress** (Advanced, 0–100), **Notes** (max 1000). Terminal statuses cannot be re-selected.
+
+### Data monitor alerts
+
+History: **Response**, **Status**, **Alert**. Response: **Open**, **Acknowledged**, **Closed**. You cannot reopen a closed alert. Item status includes Information / Ok / Warning / Alert / Error / Critical (same family as [data monitor status codes](/warehouses/data-monitors)).
+
+Bell + count is **open cases/alerts**.
+
+## Calendar
+
+**Calendar** tab: day / week / **month** / agenda. Event click shows **Status**, **Start**, **End (Expected)** and **Run** / **Run as Configured**.
+
+## Reporting (History)
+
+Heading **History**. Copy: reporting is based on job, task, and alert actions since the checklist was last reset.
+
+- Stat cards vs prior period (jobs expected/succeeded/failed, tasks completed/overdue, monitor alerts acknowledged/closed).
+- **Download history as CSV** — dialog **Download Checklist History** with **Start Date** / **End Date**.
+
+## Close Alerts and Reset
+
+**Close Alerts and Reset** ends the current instance early: closes open data-monitor alerts and resets items (same pattern as a period roll). Confirm: *This will close all alerts and remove them. Reset Checklist?*
+
+Period calendars also reset automatically when the period closes — all checklists on that calendar reset together.
