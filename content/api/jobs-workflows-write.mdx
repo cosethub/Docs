@@ -45,6 +45,29 @@ Trigger runs, create workflows, and mutate AI workflow builder chats.
 | `jobs_with_parameters` | `WorkflowJob[]` | Ordered jobs (root first) |
 | `output_mappings` | `WorkflowOutputMapping[]` | Parameter bindings |
 
+### `WorkflowJob`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `job_type` | `string` | Internal type (`Group`, `ETLJob`, …) |
+| `job_name` | `string` | |
+| `access_key` / `parent_access_key` | `string` | Request-local UUIDs to wire parent/child before IDs exist |
+| `fire_on_success` | `string \| null` | e.g. `RunOnSuccess` |
+| `parameters` | `{ name, value }[]` | **Input** job parameters to persist on create |
+
+### `WorkflowOutputMapping`
+
+Wire a **source job output** into a **dest job input** (same as the product **Output mapping** rail). Source must be an ancestor of dest.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `source_job_access_key` | `string` | Create-time UUID of the upstream job (or `source_job_id` on get) |
+| `source_parameter` | `string` | Output name (e.g. `CalculatedOutputFolder`) |
+| `target_job_access_key` | `string` | Create-time UUID of the downstream job (or `target_job_id` on get) |
+| `target_parameter` | `string` | Input name (e.g. `SourceFolder`) |
+
+Product UI: [Parameters and outputs](/workflows/parameters).
+
 ### `CreateWorkflowResponse`
 
 | Field | Type | Description |
@@ -223,7 +246,14 @@ Create a workflow from a full job graph.
       ]
     }
   ],
-  "output_mappings": []
+  "output_mappings": [
+    {
+      "source_job_access_key": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "source_parameter": "CalculatedOutputFile",
+      "target_job_access_key": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "target_parameter": "SourceFile"
+    }
+  ]
 }
 ```
 
@@ -232,6 +262,7 @@ Create a workflow from a full job graph.
 - `access_key` / `parent_access_key` are **request-local** UUIDs used to wire parent/child edges before IDs exist.
 - First job may carry schedule parameters (`RecurrencePeriod`, `StartDate`, …).
 - `job_type` `Group` maps to internal `FakeJob`.
+- `output_mappings` bind an ancestor job’s **output** into a descendant’s **input** (same as the product [Output mapping](/workflows/parameters) rail).
 - Creation can take up to ~120s while ProcessServer finishes the async create.
 
 ### Response `201 Created` / `200 OK`

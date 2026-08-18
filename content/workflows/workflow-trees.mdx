@@ -61,11 +61,7 @@ Search or browse by category (**Email and Communication**, **Systems and Securit
 
 Fill in the type-specific settings (mailbox, FTP path, table/view, recipients, and so on).
 
-<Callout type="info">
-  **Screenshot placeholder** (`workflow-configure-fields.png`)
-
-  Placeholder: Step 3 type-specific fields.
-</Callout>
+To pass a file path or other result into the next job, use **Output mapping** on the **child** — see [Parameters and outputs](./parameters).
 
 ## Parent → child run rules
 
@@ -131,3 +127,4 @@ See [Examples](./examples) for full walkthroughs.
 - Keep trees shallow when you can — easier to read and debug.
 - Put human gates (**Task** / **Data Review Task**) only where a person must decide.
 - Check **Job History** after a test run before turning on the real schedule.
+- Pass landing files into the next job with [output mappings](./parameters) instead of hard-coding paths.

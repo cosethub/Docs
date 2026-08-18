@@ -32,5 +32,6 @@ Load a CSV into a SQL table (create or append).
 - Add as a child under a **Group** (or under another job).
 - Give it a schedule, or **Run job based on parent status** (**On success** / **On failure** / **Always**).
 - Add children for the next step after this job finishes.
+- If the CSV came from FTP Download (or Convert Excel to CSV), [map that job’s output](../parameters) onto **Source Folder** / **Source File** instead of hard-coding the path.
 
 See [Configure workflow trees](../workflow-trees) and [Examples](../examples).

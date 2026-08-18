@@ -1,0 +1,83 @@
+# Job parameters and outputs
+
+Jobs take **inputs** (parameters you set on the form) and often **emit outputs** after they run (file path, table name, and so on). You do not type output values by hand — you **map** a prior job’s output onto a later job’s input.
+
+| Concept | What it is | Where you set it |
+| --- | --- | --- |
+| **Job parameters** | This job’s inputs (folder, file, credentials, table, …) | Job form — add stepper **Step 3: Job Parameters**, or **Edit** |
+| **Output parameters** | Values the job emits after it runs (for example `CalculatedOutputFolder` / `CalculatedOutputFile`) | Produced at runtime — not a form you fill |
+| **Output mapping** | Wire **source job output → dest job input** | On the **child** job: **Output mapping** rail (or Table view **Output Mapping**) |
+| **Workflow parameters** | Named values shared across jobs (and checklists / iterators) | Table view **Workflow Parameters**, iterator wizard, setup template |
+
+The source job must be an **ancestor** of the dest job (typically parent → child). You cannot map a sibling into another sibling.
+
+## Set job parameters
+
+1. Open the workflow in **Tree view**.
+2. **Edit** the job (card **⋯** → **Edit**), or **Add Child Job** and go to **Step 3: Job Parameters**.
+3. Fill the type-specific fields (FTP folders, SQL table, recipients, and so on).
+
+Mapped inputs are disabled on the form and show a hint such as **Set by output mapping:** `{source job} → {output}` or **Set by workflow parameter:** `{name}`.
+
+## Map an output into the next job
+
+Set this on the **downstream** job (the one that should consume the file/path).
+
+1. Open **Edit** (or Add Child) on the child. The job must not be the workflow root.
+2. On the right, use **Output mapping**: *Use outputs from other jobs (e.g. saved file names, table names, etc.) as inputs in this job.*
+3. For each mapping:
+   - **Use output from job** — the upstream job
+   - **Available job outputs** — that job’s outputs (or **Calculated folder and file name** to map folder + file together)
+   - **Map to input** — this job’s matching input
+4. **Map another output** for additional rows. Save the job.
+
+On the tree, a share icon (**Output Mapping**) on a child opens a sidebar with **From Job** / **From Parameter** / **To Job** / **To Parameter** (parent and child are fixed to that edge).
+
+**Table view** still has an **Output Mapping** accordion (From Job, From Parameter, Type, To Job, To Parameter) if you prefer the grid.
+
+### Example: FTP Download → SQL Bulk Load
+
+```
+Group: Load PB positions
+ └── FTP Download          [schedule]
+      └── SQL Bulk Load    [On success]
+```
+
+On **FTP Download**, set remote **Source Folder** / **Source File** and local **Output Folder** / **Output File**. After the run, the job emits calculated local folder and file names.
+
+On **SQL Bulk Load**, **Output mapping**:
+
+| Use output from job | Available job outputs | Map to input |
+| --- | --- | --- |
+| FTP Download | **Calculated folder and file name** | Source Folder + Source File |
+
+That stores two bindings: calculated output folder → **Source Folder**, calculated output file → **Source File**. At run time the load reads the file the download just wrote — you do not retype the path.
+
+Same idea: a report job’s calculated file → Email **attachment**; a monitor’s matched file name → a later job’s **File Name**.
+
+## Workflow parameters (named)
+
+Use named workflow parameters when **several jobs** (or a **checklist** / **iterator**) should share a value — as-of date, fund, custodian — instead of copying a file path from the previous job.
+
+On **Table view**, open **Workflow Parameters**:
+
+| Column | Meaning |
+| --- | --- |
+| **Parameter Name** | Shared name (keep it consistent for checklists and iterators) |
+| **Job** | Job that receives the value |
+| **Parameter** | That job’s input field |
+| **Default Value (optional)** | Used unless a checklist or iterator overrides it |
+
+**Add** / **Save**. Checklists can override these when they **Run** an item. Iterators map CSV (or other source) columns onto the same names so the workflow runs once per row.
+
+Output mapping vs workflow parameter:
+
+- **Output mapping** — job A’s *result* becomes job B’s *input* (file that just landed).
+- **Workflow parameter** — a *named* value you (or a checklist/iterator) set, then bind to one or more inputs.
+
+## Tips
+
+- Map on the **child**. The parent only needs its own inputs filled.
+- Prefer **Calculated folder and file name** when both jobs have folder + file fields so you do not split the pair.
+- If a field is greyed out, check the mapping rail or a workflow parameter before editing the stored value.
+- After a test run, confirm **Job History** that the child used the path you expected.
