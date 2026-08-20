@@ -1,14 +1,8 @@
-import { Callout } from 'nextra/components'
-
 # Column types
 
 **Select columns** define what the view returns. Use **Column** for the default type in the current mode, or open the chevron menu to pick a specific type.
 
-<Callout type="info">
-  **Screenshot placeholder** (`columns-menu.png`)
-
-  Placeholder: Chevron menu listing available column types.
-</Callout>
+![+ Column chevron menu listing Reference, Calculated, Conditional, and Coalesce](./images/columns-menu.png)
 
 ## Display names
 
@@ -18,11 +12,7 @@ Every select column needs a **Display name**:
 - Must start with a letter or underscore
 - Must be unique within the view
 
-<Callout type="info">
-  **Screenshot placeholder** (`columns-display-name.png`)
-
-  Placeholder: Display name field on a select column.
-</Callout>
+![Reference column with Display name field focused](./images/columns-display-name.png)
 
 ## Reference
 
@@ -34,11 +24,7 @@ Every select column needs a **Display name**:
 
 Available in both all-rows and aggregate modes. In aggregate mode, reference columns are typically your group-by dimensions.
 
-<Callout type="info">
-  **Screenshot placeholder** (`columns-reference.png`)
-
-  Placeholder: Reference column with table and column selected.
-</Callout>
+![Reference column with table and column selected](./images/columns-reference.png)
 
 ## Calculated
 
@@ -50,17 +36,9 @@ Available in both all-rows and aggregate modes. In aggregate mode, reference col
 
 In **all matching rows** mode, add a calculated column as its own select column. In **aggregate** mode, use the same expression builder as the **inner** of a SUM / COUNT / AVG / MIN / MAX measure — see [Aggregate metrics](./aggregate-metrics).
 
-<Callout type="info">
-  **Screenshot placeholder** (`columns-calculated.png`)
+![Calculated column with quantity minus quantity expression](./images/columns-calculated.png)
 
-  Placeholder: Calculated column with an expression (values and operators).
-</Callout>
-
-<Callout type="info">
-  **Screenshot placeholder** (`columns-calculated-group.png`)
-
-  Placeholder: Nested calculation group for parentheses / order of operations.
-</Callout>
+![Calculated column with nested group for net_amount plus quantity](./images/columns-calculated-group.png)
 
 ## Conditional
 
@@ -71,11 +49,7 @@ In **all matching rows** mode, add a calculated column as its own select column.
 
 In **all matching rows** mode, add a conditional column as its own select column. In **aggregate** mode, use the same When / Then builder as the **inner** of an aggregate measure — see [Aggregate metrics](./aggregate-metrics).
 
-<Callout type="info">
-  **Screenshot placeholder** (`columns-conditional.png`)
-
-  Placeholder: Conditional column with When / Then cases and Default.
-</Callout>
+![Conditional column with When / Then case and Default](./images/columns-conditional.png)
 
 ## Aggregate columns
 
@@ -93,11 +67,7 @@ For **SUM**, **COUNT**, and **AVG**, enable **Distinct** to aggregate distinct v
 
 Each aggregate can wrap a **column**, a **calculated** expression, or a **conditional** CASE. Full rules, examples, and SQL shapes: [Aggregate metrics](./aggregate-metrics).
 
-<Callout type="info">
-  **Screenshot placeholder** (`columns-aggregates.png`)
-
-  Placeholder: One or more SUM/COUNT/AVG/MIN/MAX columns configured.
-</Callout>
+![SUM aggregate column applied to a calculated marketvalue minus priormarketvalue](./images/columns-aggregates.png)
 
 ## Value types
 

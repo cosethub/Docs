@@ -1,5 +1,3 @@
-import { Callout } from 'nextra/components'
-
 # Calculated columns
 
 **Goal:** Derive **MarketValue** and **PnL** from quantity, price, and cost using calculated select columns.
@@ -34,12 +32,6 @@ This stays in **all matching rows** mode — one output row per lot.
      - MarketValue is not available as a prior select column in the expression builder — build it as Quantity `*` Price `-` Cost  
        (or nest a group: `(Quantity * Price) - Cost`)
 5. **Save**
-
-<Callout type="info">
-  **Screenshot placeholder** (`example-calculated-pnl.png`)
-
-  Placeholder: Calculated columns for MarketValue and PnL.
-</Callout>
 
 ### Expected result
 

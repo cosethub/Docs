@@ -1,5 +1,3 @@
-import { Callout } from 'nextra/components'
-
 # Bloomberg price backfill
 
 **Goal:** Take positions that have no price, and fill in Bloomberg `PxLast` by matching **security**, **security type**, and **date**.
@@ -57,12 +55,6 @@ Same keys on both sides: **AsOfDate + Security + SecurityType**.
 6. **Save**
 
 Why **LEFT**? If Bloomberg is missing a row tomorrow, you still see the position — `PxLast` is just empty.
-
-<Callout type="info">
-  **Screenshot placeholder** (`example-bbg-join.png`)
-
-  Placeholder: LEFT join with AsOfDate, Security, SecurityType conditions.
-</Callout>
 
 ## Expected result
 

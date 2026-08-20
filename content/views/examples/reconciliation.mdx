@@ -1,5 +1,3 @@
-import { Callout } from 'nextra/components'
-
 # Reconciliation
 
 **Goal:** Compare what your book says you hold vs what the custodian says you hold.
@@ -59,17 +57,9 @@ Three lines do **not** match: ACC1/MSFT, ACC2/AAPL, ACC3/AMZN.
    - Calculated: `Diff` = BookQty − CustodianQty
 6. **Save**
 
-<Callout type="info">
-  **Screenshot placeholder** (`example-rec-join.png`)
+![Left join with three equality conditions on trade date, symbol, and quantity](./images/example-rec-join.png)
 
-  Placeholder: Join with three equality conditions.
-</Callout>
-
-<Callout type="info">
-  **Screenshot placeholder** (`example-rec-diff.png`)
-
-  Placeholder: Calculated column Diff = BookQty - CustodianQty.
-</Callout>
+![Calculated column qty_diff as quantity minus quantity](./images/example-rec-diff.png)
 
 ## Expected result
 
