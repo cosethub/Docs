@@ -1,0 +1,51 @@
+# Trigger runs from scripts
+
+**Problem:** Airflow, cron, an internal portal, or an AI agent should start the **same** CoSet workflow the UI runs — not a second copy of the logic.
+
+## Prefer UI for definition, API for fire
+
+1. Build and test the workflow tree in **Workflow Automation**.
+2. Note the **job id** (root Group or the leaf you want to start).
+3. Call the Public API from your scheduler.
+
+**API base:** `https://your-tenant.cosethub.com/api/v1`
+
+## Auth
+
+| Mechanism | Header | Typical use |
+| --- | --- | --- |
+| OAuth2 access token | `Authorization: Bearer …` | Org-scoped automation |
+| Job API key | `X-Access-Key: …` | Narrow job run / status |
+
+Issue tokens via [`POST /oauth/token`](/api/auth); manage keys in the product **API** dashboard. Surface is in active development — early access: Sales@ryanbts.com. See [Public API overview](/api).
+
+## Run a job
+
+```http
+POST /api/v1/jobs/{jobId}/run
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "parameter_overrides": [
+    { "name": "EffectiveDate", "value": "2026-08-21" }
+  ]
+}
+```
+
+Poll [`GET /job-runs/{runId}`](/api/jobs-workflows-read#get-job-runsrunid) for status and `output_refs`. Details: [Jobs & workflows — write](/api/jobs-workflows-write).
+
+## Events back to your systems
+
+Subscribe with [Webhooks](/api/webhooks) for job / data-monitor alert events instead of scraping the UI.
+
+## What not to do
+
+- Do not embed SFTP passwords in Airflow variables when Credential Hub already holds them.
+- Do not reimplement FTP→SQL in Python if the CoSet tree already owns it — trigger the tree.
+- Do not invent a second “prod” tree for API-only use; one tree, two triggers (schedule + API).
+
+## Related product docs
+
+- [Parameters and outputs](/workflows/parameters) — overrides vs output mapping  
+- [Permissions API](/api/permissions) — groups and access if the automation user differs from ops users  

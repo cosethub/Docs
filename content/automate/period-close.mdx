@@ -1,0 +1,45 @@
+# Month-end / period close
+
+**Problem:** Track whether the NAV pack / month-end (or daily) jobs and exception feeds finished — without a shared spreadsheet of checkmarks.
+
+## Use a checklist, not a todo list
+
+CoSet **checklists** bind to a **period calendar**. When the period rolls (or ops resets), the board clears for the new period. Items can be:
+
+- **Jobs / tasks** — workflow milestones (download, load, recon export, sign-off task)
+- **Data monitors** — warehouse exception feeds
+- **Web watchers** — site-change watches
+- **Iterators** — same workflow over many funds/dates
+
+## Typical setup
+
+1. Admin defines the **period calendar** (daily / month-end / …).
+2. Create a **checklist** on that calendar; grant the right **groups**.
+3. **Add items** pointing at the milestone jobs and monitors.
+4. Ops works the **current period** on Checklist / Calendar; **Reporting** is history since last reset.
+
+```
+Period calendar (month-end)
+        │
+        ▼
+ Checklist: “Month-end NAV”
+        ├── Job: PB SFTP load
+        ├── Job: FA SFTP load
+        ├── Job: Recon export + Data Review
+        ├── Data monitor: break view still has rows
+        └── Task: PM sign-off
+```
+
+## Docs to open
+
+| Topic | Link |
+| --- | --- |
+| Overview | [Checklists](/checklists) |
+| Create + groups | [Getting started](/checklists/getting-started) |
+| Item types | [Items](/checklists/items) |
+| Run / status / history | [Run, status & history](/checklists/run-and-history) |
+| Planned REST | [Checklists API](/api/checklists) |
+
+## Pair with automation
+
+Upstream trees still live under [Workflows](/workflows). Checklists **watch** them; they do not replace Credential Hub or the Bridge. For bad warehouse rows that should appear as checklist alerts, configure [data monitors](/warehouses/data-monitors) on the table/view first.

@@ -1,0 +1,35 @@
+# robots.txt for CoSet Docs (GitHub Pages)
+# Site: https://cosethub.github.io/Docs/
+
+User-agent: *
+Allow: /
+
+# Explicit allow for common AI / docs crawlers
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+Sitemap: https://cosethub.github.io/Docs/sitemap.xml

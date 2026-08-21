@@ -1,0 +1,44 @@
+# Alert when a file is missing
+
+**Problem:** Counterparty should drop a file by a cutoff. If it never appears, ops must know before downstream NAV/recon work starts.
+
+## Pattern A — wait, then fail the chain
+
+```
+Group: Wait for cash file
+ └── FTP Monitor           [schedule through cutoff]
+      └── FTP Download     [On success] → continue pipeline
+      └── Email            [On failure] → “file missing / monitor timed out”
+```
+
+**FTP Monitor** (or **File Monitor** for a local/bridge path) owns the wait window. Failure of the monitor fires the **On failure** branch.
+
+## Pattern B — mailbox instead of SFTP
+
+```
+Group: Wait for broker email
+ └── Email Check           [schedule]
+      └── … download/convert/load …
+      └── Email            [On failure]
+```
+
+Use **Email Check** / **Quick Email Monitor** when the signal is an inbox attachment rather than a remote folder.
+
+## What to put in the alert Email
+
+- Recipients: ops distribution / escalation group
+- Subject: process name + as-of date
+- Body: expected path/pattern and cutoff (so the person opening it knows what to chase)
+
+## Docs to open
+
+| Topic | Link |
+| --- | --- |
+| Example tree | [SFTP download](/workflows/examples/sftp-download) (monitor + On failure Email) |
+| Job types | [FTP Monitor](/workflows/job-types/ftp-monitor), [File Monitor](/workflows/job-types/file-monitor), [Email Check](/workflows/job-types/email-check), [Email](/workflows/job-types/email) |
+| Run rules | [On success / On failure / Always](/workflows/workflow-trees) |
+| Optional: escalate beyond one Email | Escalation Paths in product (see UI); webhook events in [Webhooks](/api/webhooks) |
+
+## Related
+
+For bad **rows** after a load (not a missing file), use [data monitors](/warehouses/data-monitors) on the table/view instead of a file monitor.

@@ -1,0 +1,2232 @@
+# CoSet Docs — llms-full.txt
+
+> Concatenated high-value CoSet documentation for AI agents. Prefer https://cosethub.github.io/Docs/llms.txt to choose pages; use this file for bulk context.
+
+Generated: 2026-08-21
+
+---
+
+Source: https://cosethub.github.io/Docs/automate/
+
+# Automate with CoSet
+
+Use this page when you (or an AI agent) need to map a **business automation question** to CoSet building blocks: credentials, workflow trees, warehouses/views, checklists, or the Public API.
+
+**Product:** CoSet (ops automation for hedge funds and fund administrators)  
+**UI:** `https://your-tenant.cosethub.com`  
+**API base:** `https://your-tenant.cosethub.com/api/v1`  
+**Docs index for agents:** [llms.txt](https://cosethub.github.io/Docs/llms.txt)
+
+## Pick a problem
+
+| You want to… | Start here |
+| --- | --- |
+| Pull an SFTP/FTP file and load it to SQL | [SFTP file into SQL](./sftp-to-sql) |
+| Alert when a counterparty file never lands | [Alert when a file is missing](./missing-file-alerts) |
+| Reconcile book vs custodian / PB vs FA positions | [Reconcile PB vs FA positions](./reconcile-positions) |
+| Fire the same workflow from Airflow, cron, or an internal tool | [Trigger runs from scripts](./trigger-from-scripts) |
+| Track month-end / daily NAV close without a spreadsheet | [Month-end / period close](./period-close) |
+
+## Mental model (one paragraph)
+
+Store connections once in **Credential Hub**. Build a **workflow tree** (Group + child jobs) that a **Bridge** executes on a schedule or parent status (**On success** / **On failure** / **Always**). Jobs land files in a **file store** and/or rows in a **warehouse**. **Views** shape tables; **data monitors** alert on bad rows; **checklists** bind jobs and monitors to a **period calendar**. The **Public API** runs the same jobs and reads the same warehouses the UI uses.
+
+## Agent / integrator checklist
+
+1. Confirm tenant URL and that a **Bridge** is online.
+2. Create or reuse a **credential** for the counterparty (SFTP, IMAP, SQL, Geneva, Bloomberg, …).
+3. Create a **Group** workflow named for the business process.
+4. Add jobs; map upstream **outputs** into downstream **inputs** (do not hard-code landed paths).
+5. Wire **On failure** Email (or escalation) for ops visibility.
+6. For period close, attach the milestone job (and monitors) to a **checklist**.
+7. For external schedulers, use OAuth or a job API key and `POST /jobs/:jobId/run`.
+
+## Deep links
+
+| Topic | Docs |
+| --- | --- |
+| End-to-end first path | [Getting started](/getting-started) |
+| Trees, schedules, run rules | [Configure workflow trees](/workflows/workflow-trees) |
+| Output mapping & workflow parameters | [Parameters and outputs](/workflows/parameters) |
+| Job type catalog | [Job types](/workflows/job-types) |
+| UI walkthroughs | [Workflow examples](/workflows/examples) |
+| REST contracts | [Public API](/api) |
+| Full product map | [Introduction](/) |
+
+---
+
+Source: https://cosethub.github.io/Docs/automate/sftp-to-sql/
+
+# SFTP file into SQL
+
+**Problem:** A prime broker or custodian drops a CSV (or Excel) on SFTP each morning. Ops needs it in a warehouse table without a hand-run script.
+
+## Recommended tree
+
+```
+Group: Daily PB positions load
+ └── FTP Monitor              [weekdays 07:00]
+      └── FTP Download        [On success]
+           └── Convert Excel to CSV   [On success]   ← only if Excel
+                └── SQL Bulk Load     [On success]
+      └── Email               [On failure]         ← monitor timed out / missing file
+```
+
+If the file is always present at run time, skip **FTP Monitor** and schedule **FTP Download** directly.
+
+## Credentials
+
+| Need | Credential Hub type |
+| --- | --- |
+| SFTP/FTP login | FTP/SFTP |
+| Target database | Usually on the **warehouse** connection (SQL Server / PostgreSQL), not a one-off job secret |
+
+## Critical wiring
+
+On **SQL Bulk Load**, map the download’s calculated local folder/file into **Source Folder** / **Source File** using **Output mapping** on the child (see [Parameters and outputs](/workflows/parameters)). Do not paste yesterday’s path.
+
+## Docs to open
+
+| Step | Link |
+| --- | --- |
+| Tree + schedule rules | [Configure workflow trees](/workflows/workflow-trees) |
+| Full walkthrough | [SFTP download example](/workflows/examples/sftp-download) |
+| Job types | [FTP Monitor](/workflows/job-types/ftp-monitor), [FTP Download](/workflows/job-types/ftp-download), [SQL Bulk Load](/workflows/job-types/sql-bulk-load) |
+| Credentials | [FTP/SFTP](/credentials/credential-types/ftp-sftp), [SFTP example](/credentials/examples/sftp-for-download) |
+
+## API shape (when triggering from outside)
+
+Create/configure in UI first, then `POST /api/v1/jobs/{jobId}/run` with optional `parameter_overrides`. See [Trigger runs from scripts](./trigger-from-scripts) and [Jobs & workflows — write](/api/jobs-workflows-write).
+
+---
+
+Source: https://cosethub.github.io/Docs/automate/missing-file-alerts/
+
+# Alert when a file is missing
+
+**Problem:** Counterparty should drop a file by a cutoff. If it never appears, ops must know before downstream NAV/recon work starts.
+
+## Pattern A — wait, then fail the chain
+
+```
+Group: Wait for cash file
+ └── FTP Monitor           [schedule through cutoff]
+      └── FTP Download     [On success] → continue pipeline
+      └── Email            [On failure] → “file missing / monitor timed out”
+```
+
+**FTP Monitor** (or **File Monitor** for a local/bridge path) owns the wait window. Failure of the monitor fires the **On failure** branch.
+
+## Pattern B — mailbox instead of SFTP
+
+```
+Group: Wait for broker email
+ └── Email Check           [schedule]
+      └── … download/convert/load …
+      └── Email            [On failure]
+```
+
+Use **Email Check** / **Quick Email Monitor** when the signal is an inbox attachment rather than a remote folder.
+
+## What to put in the alert Email
+
+- Recipients: ops distribution / escalation group
+- Subject: process name + as-of date
+- Body: expected path/pattern and cutoff (so the person opening it knows what to chase)
+
+## Docs to open
+
+| Topic | Link |
+| --- | --- |
+| Example tree | [SFTP download](/workflows/examples/sftp-download) (monitor + On failure Email) |
+| Job types | [FTP Monitor](/workflows/job-types/ftp-monitor), [File Monitor](/workflows/job-types/file-monitor), [Email Check](/workflows/job-types/email-check), [Email](/workflows/job-types/email) |
+| Run rules | [On success / On failure / Always](/workflows/workflow-trees) |
+| Optional: escalate beyond one Email | Escalation Paths in product (see UI); webhook events in [Webhooks](/api/webhooks) |
+
+## Related
+
+For bad **rows** after a load (not a missing file), use [data monitors](/warehouses/data-monitors) on the table/view instead of a file monitor.
+
+---
+
+Source: https://cosethub.github.io/Docs/automate/reconcile-positions/
+
+# Reconcile PB vs FA positions
+
+**Problem:** Compare what the book/prime broker says you hold vs the fund administrator (or custodian) and surface **breaks** only — not the full noisy extract.
+
+## Recommended shape
+
+1. **Land both sides** with workflows (SFTP → optional convert → **SQL Bulk Load**) into tables such as `ApexPrime_Positions` and `SummitFA_Positions`.
+2. Build a **View**: join on account/security (and as-of date), calculated qty/MV diffs, optional conditional break flags, **Where** Diff ≠ 0.
+3. Export with **Table to CSV** (point at the **view**), then **Email** or **FTP Transmit**, or gate with a **Data Review Task**.
+4. Optionally attach the export/review job (and a [data monitor](/warehouses/data-monitors) on the break view) to a [checklist](/checklists) for the close calendar.
+
+```
+Group: Daily position recon export
+ └── Table to CSV          [schedule]   ← source = recon view
+      └── Data Review Task [On success]
+           └── Email       [On success]  ← approved break list
+           └── Email       [On failure]  ← rejected / needs attention
+```
+
+## Docs to open
+
+| Topic | Link |
+| --- | --- |
+| View walkthrough (joins, calc, where) | [Views](/views), [Reconciliation example](/views/examples/reconciliation) |
+| Column types | [Column types](/views/column-types) |
+| Export a view | [Table to CSV + views](/workflows/examples/table-to-csv-view) |
+| Human gate | [Data review example](/workflows/examples/data-review) |
+| Alert on remaining break rows | [Data monitors](/warehouses/data-monitors) |
+
+## Tips
+
+- Prefer a **LEFT** or full outer style join only when you must keep unmatched rows; for strict matched breaks, equality joins + Diff filters are enough.
+- Keep display names stable (`BookQty`, `CustodianQty`, `Diff`) so checklist owners and emails stay readable.
+- Do not hard-code file paths between jobs — use [output mapping](/workflows/parameters).
+
+---
+
+Source: https://cosethub.github.io/Docs/automate/trigger-from-scripts/
+
+# Trigger runs from scripts
+
+**Problem:** Airflow, cron, an internal portal, or an AI agent should start the **same** CoSet workflow the UI runs — not a second copy of the logic.
+
+## Prefer UI for definition, API for fire
+
+1. Build and test the workflow tree in **Workflow Automation**.
+2. Note the **job id** (root Group or the leaf you want to start).
+3. Call the Public API from your scheduler.
+
+**API base:** `https://your-tenant.cosethub.com/api/v1`
+
+## Auth
+
+| Mechanism | Header | Typical use |
+| --- | --- | --- |
+| OAuth2 access token | `Authorization: Bearer …` | Org-scoped automation |
+| Job API key | `X-Access-Key: …` | Narrow job run / status |
+
+Issue tokens via [`POST /oauth/token`](/api/auth); manage keys in the product **API** dashboard. Surface is in active development — early access: Sales@ryanbts.com. See [Public API overview](/api).
+
+## Run a job
+
+```http
+POST /api/v1/jobs/{jobId}/run
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "parameter_overrides": [
+    { "name": "EffectiveDate", "value": "2026-08-21" }
+  ]
+}
+```
+
+Poll [`GET /job-runs/{runId}`](/api/jobs-workflows-read#get-job-runsrunid) for status and `output_refs`. Details: [Jobs & workflows — write](/api/jobs-workflows-write).
+
+## Events back to your systems
+
+Subscribe with [Webhooks](/api/webhooks) for job / data-monitor alert events instead of scraping the UI.
+
+## What not to do
+
+- Do not embed SFTP passwords in Airflow variables when Credential Hub already holds them.
+- Do not reimplement FTP→SQL in Python if the CoSet tree already owns it — trigger the tree.
+- Do not invent a second “prod” tree for API-only use; one tree, two triggers (schedule + API).
+
+## Related product docs
+
+- [Parameters and outputs](/workflows/parameters) — overrides vs output mapping  
+- [Permissions API](/api/permissions) — groups and access if the automation user differs from ops users
+
+---
+
+Source: https://cosethub.github.io/Docs/automate/period-close/
+
+# Month-end / period close
+
+**Problem:** Track whether the NAV pack / month-end (or daily) jobs and exception feeds finished — without a shared spreadsheet of checkmarks.
+
+## Use a checklist, not a todo list
+
+CoSet **checklists** bind to a **period calendar**. When the period rolls (or ops resets), the board clears for the new period. Items can be:
+
+- **Jobs / tasks** — workflow milestones (download, load, recon export, sign-off task)
+- **Data monitors** — warehouse exception feeds
+- **Web watchers** — site-change watches
+- **Iterators** — same workflow over many funds/dates
+
+## Typical setup
+
+1. Admin defines the **period calendar** (daily / month-end / …).
+2. Create a **checklist** on that calendar; grant the right **groups**.
+3. **Add items** pointing at the milestone jobs and monitors.
+4. Ops works the **current period** on Checklist / Calendar; **Reporting** is history since last reset.
+
+```
+Period calendar (month-end)
+        │
+        ▼
+ Checklist: “Month-end NAV”
+        ├── Job: PB SFTP load
+        ├── Job: FA SFTP load
+        ├── Job: Recon export + Data Review
+        ├── Data monitor: break view still has rows
+        └── Task: PM sign-off
+```
+
+## Docs to open
+
+| Topic | Link |
+| --- | --- |
+| Overview | [Checklists](/checklists) |
+| Create + groups | [Getting started](/checklists/getting-started) |
+| Item types | [Items](/checklists/items) |
+| Run / status / history | [Run, status & history](/checklists/run-and-history) |
+| Planned REST | [Checklists API](/api/checklists) |
+
+## Pair with automation
+
+Upstream trees still live under [Workflows](/workflows). Checklists **watch** them; they do not replace Credential Hub or the Bridge. For bad warehouse rows that should appear as checklist alerts, configure [data monitors](/warehouses/data-monitors) on the table/view first.
+
+---
+
+Source: https://cosethub.github.io/Docs/
+
+# Introduction
+
+CoSet connects **credentials**, **workflows**, **warehouses**, **views**, and **file stores** so operations teams can move data securely — on a schedule or on demand — without hard-coding passwords into every job.
+
+Use it when you would otherwise spend engineering time on SFTP clients, credential vaults, schedulers, alert wiring, and one-off scripts for every counterparty. CoSet supplies that plumbing so your team can focus on **ops outcomes**: breaks, prices, positions, NAV packs, and sign-offs.
+
+For a first hands-on path, see [Getting started](./getting-started). For agents and integrators matching a problem to a tree or API call, start at [Automate with CoSet](./automate).
+
+## Why not build it yourself
+
+| You would otherwise build… | CoSet already has… |
+| --- | --- |
+| Per-vendor connectors (SFTP, IMAP/SMTP, SQL, Geneva, Bloomberg, Power BI, HTTP, …) | **Pre-built job types** and credential types — pick, configure, schedule |
+| A secrets store and rotation story for every script | **Credential Hub** — shared org credentials, secrets never returned on read |
+| Ad-hoc “does this login still work?” checks | **Credential validation** on a daily/weekly cadence with notification groups |
+| Cron + custom failure email for each pipeline | **Workflow trees** with schedules and **On success / On failure / Always** branches |
+| Homegrown file watchers and mailbox monitors | **FTP Monitor**, **File Monitor**, **Email Check**, **Quick Email Monitor**, and related jobs |
+| Spreadsheet or script checks for bad warehouse rows | **[Data monitors](/warehouses/data-monitors)** on tables/views → status, trigger job, and **[webhooks](/api/webhooks)** |
+| Homegrown period-close tracker (spreadsheet of jobs + alerts) | **[Checklists](/checklists)** bound to a period calendar, with reset and history |
+| One-off SQL/views for each recon | **Views** (joins, filters, aggregates) plus **AI-assisted** drafting |
+| Glue code so internal tools can trigger the same work | **[Public API](/api)** and webhooks against the same jobs and warehouses |
+
+**What you keep owning:** business rules — what a break means, which extract the FA expects, who signs off, which prices to repair. CoSet runs the movement, storage, monitoring, and alerting around those rules.
+
+## What CoSet does
+
+| Capability | What it is for |
+| --- | --- |
+| **Credential Hub** | Store logins, connection strings, and API details once; jobs and warehouses pick them by name |
+| **Workflows** | Chain jobs into trees (download → transform → load → notify) with schedules and success/failure branches |
+| **Warehouses** | Hold structured data (SQL Server, PostgreSQL, and related staging); browse tables/views and set data monitors |
+| **Checklists** | Period-close ops boards for jobs, tasks, data monitors, and web watchers |
+| **Views** | Shape warehouse tables into reusable datasets — joins, filters, calculated columns, aggregates |
+| **File stores** | Browse, upload, download, and organize files that workflows produce or consume |
+| **Public API** | Call the same surfaces from schedulers, scripts, internal tools, or MCP clients |
+| **Coordinator & AI** | Plan setup work and draft warehouse views in natural language |
+
+## How the pieces work together
+
+Most day-to-day automation follows this loop:
+
+```
+Credential Hub
+      │
+      ▼
+Workflows (Bridge runs jobs)
+      │
+      ├──► File stores   (raw files in / out)
+      │
+      └──► Warehouses    (tables loaded / queried)
+                │
+                ▼
+              Views      (shaped datasets)
+                │
+                ▼
+         Workflows again (e.g. Table to CSV → Email / SFTP)
+```
+
+1. **Credentials** unlock mail, FTP/SFTP, databases, Geneva, Bloomberg, OAuth providers, and more.
+2. **Workflows** use those credentials. A **Bridge** (process agent) executes each job.
+3. Jobs land files in a **file store**, load rows into a **warehouse**, or both.
+4. **Views** turn warehouse tables into the shapes ops and reporting need.
+5. **Checklists** sit on a period calendar and watch those jobs and monitors through close.
+6. Later workflows can **export a view** (for example Table to CSV) and send it out.
+
+The **Public API** and **Coordinator** sit alongside this loop: they read and write the same warehouses, jobs, chats, and file stores your UI uses.
+
+## Core building blocks
+
+### Credentials
+
+**Credential Hub** is the secure place for connection details. Prefer shared org credentials for production workflows so jobs do not embed secrets. Secrets are stored for job use and are **never returned** when you list or open a credential. Turn on validation when you want the bridge to prove connections still work and notify a group on failure.
+
+→ [Credentials](/credentials)
+
+### Workflows
+
+A workflow is a **tree of jobs**. The root is usually a **Group**. Children run on a schedule or when the parent finishes (**On success**, **On failure**, or **Always**). Job types cover email, FTP, encryption, Geneva, Bloomberg, SQL loads, Table to CSV, Data Review, monitors, and many more.
+
+→ [Workflows](/workflows)
+
+### Checklists
+
+**Checklists** are period-close boards bound to a **period calendar**. Items watch jobs, tasks, [data monitors](/warehouses/data-monitors), and web watchers until the period rolls and the board resets.
+
+→ [Checklists](/checklists)
+
+### Warehouses and views
+
+Warehouses store the structured data your pipelines produce. Browse **Tables / Views** in CoSet DB, set [data monitors](/warehouses/data-monitors) on exception rows, and build **Views** (joins, filters, calculated and aggregate columns). Workflows can export a view the same way they export a table.
+
+→ [Warehouses](/warehouses) · [Views](/views)
+
+### File stores
+
+File stores hold the documents and extracts workflows download, transform, or transmit. Browse and manage them in the UI or through the [file stores API](/api/file-stores).
+
+### API and AI surfaces
+
+| Surface | Use when |
+| --- | --- |
+| [Public API](/api) | You need REST access to warehouses, file stores, jobs, workflows, and webhooks |
+| Coordinator | You want guided plans for credentials, warehouses, and related setup |
+| [AI views](/views/ai-views) | You want to draft a warehouse view by chatting |
+
+## Typical journeys
+
+| Goal | Path |
+| --- | --- |
+| Pull counterparty files daily | Credential (SFTP) → FTP Download → optional decrypt/convert → File store |
+| Load files into SQL | File in store → SQL Bulk Load / related job → Warehouse table |
+| Publish a shaped extract | View on warehouse → Table to CSV → Email or FTP Transmit |
+| Review exceptions | Workflow → Data Review Task → notify on failure |
+| Drive a period close | [Checklist](/checklists) on a period calendar → jobs + data-monitor alerts |
+| Alert on bad rows in a table/view | [Data monitors](/warehouses/data-monitors) → status / trigger job / [webhooks](/api/webhooks) |
+| Automate from outside the UI | OAuth token → Public API run job / query warehouse |
+
+## Words you’ll see
+
+| Term | Meaning |
+| --- | --- |
+| **Organization / tenant** | Your CoSet site (e.g. `https://your-tenant.cosethub.com`) |
+| **Credential** | Named connection stored in Credential Hub |
+| **Workflow / Group** | Tree of jobs under a title |
+| **Job** | One step (a job type) in a workflow |
+| **Bridge** | Agent/machine that executes jobs |
+| **Warehouse** | Database used for staging and querying structured data |
+| **View** | Saved query definition over warehouse tables |
+| **Checklist** | Period-close board of jobs, tasks, and monitors |
+| **File store** | File area workflows and users read/write |
+
+## Where to go next
+
+| Page | Description |
+| --- | --- |
+| [Getting started](./getting-started) | First login through a small end-to-end path |
+| [Credentials](/credentials) | Create and reuse connections |
+| [Workflows](/workflows) | Build and schedule job trees |
+| [Warehouses](/warehouses) | Browse tables/views, data monitors |
+| [Views](/views) | Shape warehouse data |
+| [Checklists](/checklists) | Period-close boards |
+| [Public API](/api) | Programmatic access |
+| [Automate with CoSet](/automate) | Problem-shaped paths for agents and integrators |
+
+---
+
+Source: https://cosethub.github.io/Docs/getting-started/
+
+# Getting started
+
+Use this page to go from first login to a small working loop: **credential → workflow → warehouse/view → (optional) export**.
+
+You do not need every step on day one. Stop when you have something useful running, then deepen with the section docs linked below.
+
+## Before you begin
+
+Confirm with your admin that you have:
+
+- Access to the CoSet site for your organization
+- Permission for **Credentials** (ReadWrite if you will create connections)
+- Access to **Workflow Automation** / Process Server, and a **Bridge** available to run jobs
+- Access to at least one **data warehouse** if you will load or query data
+- Access to **Database Views** if you will build views
+
+Base URL pattern for the site and API:
+
+```
+https://{tenant}.cosethub.com
+```
+
+## 1. Sign in and orient
+
+1. Open your tenant URL and sign in.
+2. Note these areas in navigation (names may vary slightly by permission):
+   - **Workflow Automation** — build and run job trees
+   - **Administration → Security & Credentials → Credential Hub** — connections
+   - **Warehouses / Databases** — tables and the **Views** tab
+   - **File stores** — files produced or consumed by jobs
+
+}
+
+## 2. Create a credential
+
+Jobs and warehouses select credentials **by name**. Create the connection once in Credential Hub.
+
+1. Go to **Administration** → **Security & Credentials** → **Credential Hub**.
+2. Choose **Create Credential**.
+3. Set a clear name (for example `Prod PB SFTP`), pick a **Credential Type**, and fill connection settings.
+4. Turn on **Share Credential with Organization?** for production workflows others will run.
+5. Prefer **Create & Validate** when the type supports it.
+
+You can rename and reconfigure later; Credential Hub will not show stored passwords or other secrets again — re-enter them when you update.
+
+Full walkthrough: [Credentials — Getting started](/credentials/getting-started)
+
+Common first types:
+
+| Need | Credential type |
+| --- | --- |
+| Pull/push files | FTP/SFTP |
+| Mailbox watch | Email - IMAP |
+| Send mail | Email - SMTP |
+| Warehouse / Table to CSV | SQL Server or PostgreSQL (often on the warehouse itself) |
+
+## 3. Build a simple workflow
+
+1. Open **Workflow Automation**.
+2. Create a workflow / **Group** with a clear title (for example `Daily Broker Files`).
+3. Add a child job — start with something concrete:
+   - [SFTP download](/workflows/examples/sftp-download) if files arrive on a counterparty server
+   - [Email data gathering](/workflows/examples/email-data-gathering) if files arrive by mail
+4. In the job form, pick the credential you created.
+5. Save, then **run** the job (or wait for its schedule) and confirm the Bridge reports success.
+
+Tree shape reminder:
+
+```
+Group: Daily Broker Files
+ └── FTP Download     [schedule or manual]
+      └── … next step [On success]
+```
+
+How trees, schedules, and On success / On failure work: [Configure workflow trees](/workflows/workflow-trees)
+
+## 4. Land data in a warehouse (optional but common)
+
+Once files are in a **file store** (or ready for load):
+
+1. Add a follow-on job that loads into your warehouse (for example SQL Bulk Load or a vendor-specific loader).
+2. Confirm the warehouse credential / staging account is set on the warehouse where required.
+3. Open the warehouse **Databases** area and verify tables and row counts look right.
+
+SQL credentials for warehouse-backed jobs: [SQL for warehouse / Table to CSV](/credentials/examples/sql-warehouse)
+
+## 5. Create a view (optional)
+
+If you need joins, filters, or rolled-up columns — not just raw tables:
+
+1. Open the warehouse → **Views** tab.
+2. **Create View**, set schema and name, pick a base table.
+3. Add joins, where clauses, and columns as needed — or draft with [Create with AI](/views/ai-views).
+4. Save and preview.
+
+Step-by-step: [Views — Getting started](/views/getting-started)
+
+## 6. Export and distribute (optional)
+
+Close the loop by sending a shaped result:
+
+```
+Group: Export Positions View
+ └── Table to CSV          [schedule]
+      └── Email            [On success]
+```
+
+Or SFTP instead of email. Table to CSV can pick a **view** (shown as `View: …`) the same way it picks a table.
+
+Example: [Table to CSV (database views)](/workflows/examples/table-to-csv-view)
+
+## Suggested first path
+
+Pick one path that matches how your data arrives:
+
+| Your situation | Do this first |
+| --- | --- |
+| Files on SFTP | Credential → FTP Download → confirm file store |
+| Files by email | IMAP credential → Email Check → save attachments |
+| Data already in SQL | Open warehouse → create a view → Table to CSV |
+| Exploring the product | Create a credential, run one job, open the run history |
+
+## Using the API later
+
+When you need scripts or external systems to trigger the same work:
+
+1. Obtain OAuth credentials for your org.
+2. Call `POST /oauth/token`, then `GET /me`.
+3. Use warehouse, file-store, and job endpoints under `/api/v1`.
+
+→ [Public API](/api) · [Auth & account](/api/auth) · [Credentials](/api/credentials)
+
+## Checklist
+
+- [ ] Signed in to the correct tenant
+- [ ] At least one shared credential created and validated
+- [ ] One workflow with a job that runs successfully on the Bridge
+- [ ] (Optional) Rows visible in a warehouse table
+- [ ] (Optional) One view saved and previewed
+- [ ] (Optional) Export path (Table to CSV + Email/SFTP) working
+
+## Dig deeper
+
+| Section | Start here |
+| --- | --- |
+| [Introduction](/) | How capabilities connect |
+| [Credentials](/credentials) | Types, sharing, validation |
+| [Workflows](/workflows) | Job types and examples |
+| [Warehouses](/warehouses) | Tables/views browse, data monitors |
+| [Views](/views) | Joins, filters, aggregates, AI |
+| [Checklists](/checklists) | Period-close boards |
+| [Automate with CoSet](/automate) | Problem → automation map |
+| [Public API](/api) | REST contracts |
+
+---
+
+Source: https://cosethub.github.io/Docs/workflows/
+
+# Workflows
+
+Workflows chain jobs into a **tree**: a parent runs, then children run based on success, failure, or always.
+
+Open **Workflow Automation** to create, edit, and run workflows.
+
+## In this section
+
+| Page | What you’ll learn |
+| --- | --- |
+| [Configure workflow trees](./workflow-trees) | Groups, children, schedules, On success / On failure / Always |
+| [Parameters and outputs](./parameters) | Job inputs, output mappings, named workflow parameters |
+| [Create with AI](./ai-workflows) | Describe a workflow in chat; review and save the draft tree |
+| [Job types](./job-types) | One page per job type — what it does and how it works |
+| [Examples](./examples) | Simple trees for email gathering, SFTP, Table to CSV + views, Data Review |
+| [Automate with CoSet](/automate) | Problem → tree/API map (SFTP→SQL, missing files, recon, API trigger, period close) |
+| [Checklists](/checklists) | Watch jobs and monitors on a period-close board; **Add to Checklist** from a tree |
+
+## Big picture
+
+```
+Group (workflow title)
+ └── Job A   [schedule or trigger]
+      └── Job B   [On success]
+           └── Job C   [On success]
+      └── Notify   [On failure]
+```
+
+Each node is a **job type** (Email Check, FTP Download, Table to CSV, Data Review Task, and many more).
+
+
+
+## Before you begin
+
+- You need access to **Job Workflow** / Process Server.
+- Jobs that talk to mail, FTP, or databases need credentials in **Credential Hub**.
+- A **Bridge** must be available to run the jobs.
+
+---
+
+Source: https://cosethub.github.io/Docs/workflows/workflow-trees/
+
+# Configure workflow trees
+
+A workflow is a **tree of jobs**. The root is usually a **Group** (the workflow title). Everything else hangs under it as children.
+
+## Open a workflow
+
+1. Go to **Workflow Automation**.
+2. Open a workflow (or create one).
+3. You see the **tree** (boxes and lines) and can add / edit jobs.
+
+
+
+## Words you’ll see
+
+| Term | Meaning |
+| --- | --- |
+| **Group** | Root organizer / title. Does not do work by itself. |
+| **Job** / **Workflow Item** | One step (a job type). |
+| **Child Job** | A job that runs after its parent (by schedule rule). |
+| **Bridge** | The machine/agent that executes jobs. |
+| **Schedule** | When a job runs on its own clock. |
+| **On success** | Child runs only if the parent succeeded. |
+| **On failure** | Child runs only if the parent failed. |
+| **Always** | Child runs when the parent finished, success or failure. |
+
+## Create a new workflow
+
+1. Add a workflow / Group and give it a clear name (for example, `Daily Broker Files`).
+2. Select the Group.
+3. Choose **Add Child Job** (or **Add Workflow Item**).
+4. Walk the stepper:
+
+### Step 1 — Choose Your Job Type
+
+Search or browse by category (**Email and Communication**, **Systems and Security**, **Database and Reporting**, **Finance and Accounting**, **Other**).
+
+
+
+### Step 2 — Name, Description, and Schedule
+
+- Name the job.
+- Either give it an **Independent schedule**, or choose **Run job based on parent status**.
+
+
+
+### Step 3 — Job Parameters
+
+Fill in the type-specific settings (mailbox, FTP path, table/view, recipients, and so on).
+
+
+
+To pass a file path or other result into the next job, use **Output mapping** on the **child** — see [Parameters and outputs](../parameters).
+
+## Parent → child run rules
+
+When a child uses **Run job based on parent status**, pick one:
+
+| Option in the form | Edge on the tree | Meaning |
+| --- | --- | --- |
+| **Run on Success** | **On success** | Parent worked → child runs |
+| **Run on Failure** | **On failure** | Parent failed → child runs |
+| **Run on Success or Failure** | **Always** | Parent finished either way → child runs |
+
+Typical pattern:
+
+- Happy path children → **On success**
+- Alert / escalate → **On failure**
+- Cleanup that must happen either way → **Always**
+
+
+
+## Independent schedule vs parent status
+
+| Mode | Use when |
+| --- | --- |
+| **Independent schedule** | This job starts the chain (or runs on its own clock). |
+| **Run job based on parent status** | This job should wait for the parent to finish. |
+
+Root children under a Group often have a schedule. Deeper children usually depend on parent status.
+
+## Common tree actions
+
+- **Add Child Job** — grow the tree
+- **Edit Job** — change type fields, schedule, or run rule
+- **Copy / Cut / Paste** / **Paste as child** — reuse structure
+- **Run Job** / **Run Job as Configured** — test now
+- **Delete** — remove a node (and usually its children)
+
+
+
+## Tiny example tree
+
+```
+Group: Morning Positions
+ └── FTP Download          [daily 7:00]
+      └── Table to CSV     [On success]   ← optional export of a view
+           └── Data Review Task [On success]
+                └── Email  [On success]   ← approved
+                └── Email  [On failure]   ← rejected
+```
+
+See [Examples](../examples) for full walkthroughs.
+
+## Tips
+
+- Name jobs after the business step (`Download PB file`, not `FTP Download 3`).
+- Keep trees shallow when you can — easier to read and debug.
+- Put human gates (**Task** / **Data Review Task**) only where a person must decide.
+- Check **Job History** after a test run before turning on the real schedule.
+- Pass landing files into the next job with [output mappings](../parameters) instead of hard-coding paths.
+
+---
+
+Source: https://cosethub.github.io/Docs/workflows/parameters/
+
+# Job parameters and outputs
+
+Jobs take **inputs** (parameters you set on the form) and often **emit outputs** after they run (file path, table name, and so on). You do not type output values by hand — you **map** a prior job’s output onto a later job’s input.
+
+| Concept | What it is | Where you set it |
+| --- | --- | --- |
+| **Job parameters** | This job’s inputs (folder, file, credentials, table, …) | Job form — add stepper **Step 3: Job Parameters**, or **Edit** |
+| **Output parameters** | Values the job emits after it runs (for example `CalculatedOutputFolder` / `CalculatedOutputFile`) | Produced at runtime — not a form you fill |
+| **Output mapping** | Wire **source job output → dest job input** | On the **child** job: **Output mapping** rail (or Table view **Output Mapping**) |
+| **Workflow parameters** | Named values shared across jobs (and checklists / iterators) | Table view **Workflow Parameters**, iterator wizard, setup template |
+
+The source job must be an **ancestor** of the dest job (typically parent → child). You cannot map a sibling into another sibling.
+
+## Set job parameters
+
+1. Open the workflow in **Tree view**.
+2. **Edit** the job (card **⋯** → **Edit**), or **Add Child Job** and go to **Step 3: Job Parameters**.
+3. Fill the type-specific fields (FTP folders, SQL table, recipients, and so on).
+
+Mapped inputs are disabled on the form and show a hint such as **Set by output mapping:** `{source job}` → `{output}` or **Set by workflow parameter:** `{name}`.
+
+## Map an output into the next job
+
+Set this on the **downstream** job (the one that should consume the file/path).
+
+1. Open **Edit** (or Add Child) on the child. The job must not be the workflow root.
+2. On the right, use **Output mapping**: *Use outputs from other jobs (e.g. saved file names, table names, etc.) as inputs in this job.*
+3. For each mapping:
+   - **Use output from job** — the upstream job
+   - **Available job outputs** — that job’s outputs (or **Calculated folder and file name** to map folder + file together)
+   - **Map to input** — this job’s matching input
+4. **Map another output** for additional rows. Save the job.
+
+On the tree, a share icon (**Output Mapping**) on a child opens a sidebar with **From Job** / **From Parameter** / **To Job** / **To Parameter** (parent and child are fixed to that edge).
+
+**Table view** still has an **Output Mapping** accordion (From Job, From Parameter, Type, To Job, To Parameter) if you prefer the grid.
+
+### Example: FTP Download → SQL Bulk Load
+
+```
+Group: Load PB positions
+ └── FTP Download          [schedule]
+      └── SQL Bulk Load    [On success]
+```
+
+On **FTP Download**, set remote **Source Folder** / **Source File** and local **Output Folder** / **Output File**. After the run, the job emits calculated local folder and file names.
+
+On **SQL Bulk Load**, **Output mapping**:
+
+| Use output from job | Available job outputs | Map to input |
+| --- | --- | --- |
+| FTP Download | **Calculated folder and file name** | Source Folder + Source File |
+
+That stores two bindings: calculated output folder → **Source Folder**, calculated output file → **Source File**. At run time the load reads the file the download just wrote — you do not retype the path.
+
+Same idea: a report job’s calculated file → Email **attachment**; a monitor’s matched file name → a later job’s **File Name**.
+
+## Workflow parameters (named)
+
+Use named workflow parameters when **several jobs** (or a **checklist** / **iterator**) should share a value — as-of date, fund, custodian — instead of copying a file path from the previous job.
+
+On **Table view**, open **Workflow Parameters**:
+
+| Column | Meaning |
+| --- | --- |
+| **Parameter Name** | Shared name (keep it consistent for checklists and iterators) |
+| **Job** | Job that receives the value |
+| **Parameter** | That job’s input field |
+| **Default Value (optional)** | Used unless a checklist or iterator overrides it |
+
+**Add** / **Save**. Checklists can override these when they **Run** an item. Iterators map CSV (or other source) columns onto the same names so the workflow runs once per row.
+
+Output mapping vs workflow parameter:
+
+- **Output mapping** — job A’s *result* becomes job B’s *input* (file that just landed).
+- **Workflow parameter** — a *named* value you (or a checklist/iterator) set, then bind to one or more inputs.
+
+## Tips
+
+- Map on the **child**. The parent only needs its own inputs filled.
+- Prefer **Calculated folder and file name** when both jobs have folder + file fields so you do not split the pair.
+- If a field is greyed out, check the mapping rail or a workflow parameter before editing the stored value.
+- After a test run, confirm **Job History** that the child used the path you expected.
+
+---
+
+Source: https://cosethub.github.io/Docs/workflows/examples/sftp-download/
+
+# SFTP download
+
+**Goal:** Wait for a file on SFTP, download it, then (optionally) decrypt and load it.
+
+**FTP Download** supports FTP and **SFTP** through FTP/SFTP credentials in Credential Hub.
+
+## Tree
+
+```
+Group: Prime Broker Cash File
+ └── FTP Monitor           [schedule: weekdays 7:00]
+      └── FTP Download     [On success]
+           └── Decrypt File - PGP   [On success]   ← only if encrypted
+                └── SQL Bulk Load   [On success]
+      └── Email (alert)    [On failure]
+```
+
+Simpler version (no monitor): schedule **FTP Download** alone if the file is always there when you run.
+
+
+
+## 1. FTP Monitor
+
+Job type: [FTP Monitor](../job-types/ftp-monitor)
+
+| Setting | Example |
+| --- | --- |
+| Credentials | SFTP prime-broker credential |
+| Remote folder | `/outbound/cash` |
+| File pattern | `CASH_*.csv` |
+| Wait window | Until 9:00 or N minutes |
+
+## 2. FTP Download (On success)
+
+Job type: [FTP Download](../job-types/ftp-download)
+
+| Section | What to set |
+| --- | --- |
+| **FTP Settings** | Same SFTP credentials |
+| **Source Settings** | Remote folder + file name / pattern |
+| **Destination Settings** | Local folder, for example `files/pb/cash` |
+
+
+
+## 3. Optional next steps
+
+| If the file is… | Next job |
+| --- | --- |
+| PGP encrypted | [Decrypt File - PGP](../job-types/decrypt-file-pgp) |
+| Excel | [Convert Excel to CSV](../job-types/convert-excel-to-csv) |
+| CSV ready to load | [SQL Bulk Load](../job-types/sql-bulk-load) |
+
+## 4. Alert if the file never shows
+
+[Email](../job-types/email) under FTP Monitor with **On failure**.
+
+## What you practiced
+
+- SFTP via **FTP Monitor** + **FTP Download**  
+- Chaining decrypt / load only after a successful download  
+- Failure alert when the remote file is missing
+
+---
+
+Source: https://cosethub.github.io/Docs/workflows/examples/table-to-csv-view/
+
+# Table to CSV (database views)
+
+**Goal:** Export a **warehouse view** (not only a raw table) to a CSV, then send it out.
+
+**Table to CSV** (also labeled **Export Table Data to CSV**) lists tables **and** views in the same picker. Views appear as **`View: …`**.
+
+## Why views matter here
+
+If you already built a [warehouse view](/views) (joins, filters, columns), you can download **that shaped result** as CSV — no need to re-join in the job.
+
+## Tree
+
+```
+Group: Export Positions View
+ └── Table to CSV              [schedule: weekdays 6:30]
+      └── Email                [On success]   ← attach the CSV
+```
+
+Or transmit instead of email:
+
+```
+ └── Table to CSV
+      └── FTP Transmit         [On success]
+```
+
+
+
+## 1. Table to CSV
+
+Job type: [Table to CSV](../job-types/table-to-csv)
+
+| Section | What to set |
+| --- | --- |
+| **What database should we use?** | Your warehouse |
+| **What table should we use?** | Pick **`View: ref.PositionsReady`** (example name) — not only base tables |
+| **Filter conditions (optional)** | Extra row filters if needed (for example, AsOfDate = today) |
+| **Destination CSV File Settings** | Folder + file name for the CSV |
+
+
+
+
+
+## 2. Send the file (On success)
+
+- [Email](../job-types/email) — attach the CSV to ops / PMs  
+- or [FTP Transmit](../job-types/ftp-transmit) — drop on a counterparty SFTP  
+
+## Tiny sample idea
+
+Reuse a warehouse view you already built (recon, priced positions, and so on): export that view instead of the raw tables.
+
+## What you practiced
+
+- **Table to CSV** with a **database view** as the source  
+- Optional filters on top of the view  
+- Email or SFTP distribution of the CSV
+
+---
+
+Source: https://cosethub.github.io/Docs/workflows/examples/data-review/
+
+# Data review
+
+**Goal:** Produce a CSV (or point at live table/view data), ask a person to **approve or reject**, then continue only if approved.
+
+Job type in the tree: **Data Review Task** (picker may also say **Send Data for Review**).
+
+## Tree
+
+```
+Group: Monthly Trades Sign-off
+ └── Table to CSV                 [schedule: 1st business day]
+      └── Data Review Task        [On success]
+           └── SQL Bulk Load      [On success]   ← approved
+           └── Email (ops alert)  [On failure]   ← rejected
+```
+
+You can skip Table to CSV and use **Link to filtered data (table or view)** on the review job instead of an attachment.
+
+
+
+## 1. Table to CSV (optional but common)
+
+Export the dataset reviewers should see — ideally from a **view** (see [Table to CSV (views)](./table-to-csv-view)).
+
+## 2. Data Review Task
+
+Job type: [Data Review Task](../job-types/data-review-task)
+
+| Section | What to set |
+| --- | --- |
+| **Recipients** | **Users to Email** and/or **Groups to Email** |
+| **Message & Instructions** | What to check (“Confirm breaks under 5 lots”, etc.) |
+| **Data to Review** | **Link to filtered data (table or view)** *or* **Attach a file** |
+
+### Link vs attachment
+
+| Method | Best when |
+| --- | --- |
+| **Link to filtered data (table or view)** | Reviewers should open live warehouse rows (table or view + filters) |
+| **Attach a file** | Reviewers should get a snapshot file (for example, the CSV you just exported) |
+
+
+
+
+
+## 3. Branch on the decision
+
+| Reviewer action | Parent result | Child to run |
+| --- | --- | --- |
+| **Approve** | Success | **On success** — load, transmit, continue |
+| **Reject** | Failure | **On failure** — email ops, stop the happy path |
+
+The workflow **waits** on the review task until someone responds (or it times out per your task settings).
+
+## Minimal “link only” variant
+
+```
+Group: Positions Review
+ └── Data Review Task     [schedule]
+      (Link → View: PositionsReady, filter AsOfDate = today)
+      └── Email confirm   [On success]
+      └── Email rejected  [On failure]
+```
+
+No CSV step — reviewers open the view in product.
+
+## What you practiced
+
+- Placing **Data Review Task** after data is ready  
+- Link to **table or view** vs file attachment  
+- **On success** / **On failure** branching on approve / reject
+
+---
+
+Source: https://cosethub.github.io/Docs/checklists/
+
+# Checklists
+
+Checklists are **period-close ops boards** — not generic todos. Bind jobs, tasks, data monitors, and web watchers to a **period calendar** (daily NAV pack, month-end close, weekly recon). When that calendar rolls, the board **resets** for the new period: item statuses go back to Not Running, notes/progress clear, and leftover data-monitor alerts are closed by the system.
+
+Use this section to create a checklist, add items, and work the current period in table or calendar view.
+
+## In this section
+
+| Page | Description |
+| --- | --- |
+| [Getting started](./getting-started) | Open Checklists, create one, pick a period calendar, set groups |
+| [Items](./items) | Jobs, tasks, data monitors, web watchers, iterators; timing and who to notify |
+| [Run, status & history](./run-and-history) | Table vs calendar, Run / Cancel, statuses, Reporting (History) |
+
+## What a checklist tracks
+
+| Item | What ops sees |
+| --- | --- |
+| **Job** | A workflow job (or quick job / task) — due clocks, run, cancel |
+| **Data monitor** | Exception feed from a table/view monitor — acknowledge / close alerts |
+| **Web watcher** | Site change watch attached to the period |
+| **Iterator / parameter value list** | Re-run a workflow over a set of variables (funds, dates, files) |
+
+## How it fits
+
+```
+Period calendar (daily / month-end / …)
+        │
+        ▼
+   Checklist board   ← this period instance
+        │
+        ├── Jobs / tasks     (Workflow Automation)
+        ├── Data monitors    (CoSet DB)
+        └── Web watchers
+```
+
+1. Administration defines the **period calendar** (cadence and dates).
+2. A **checklist** is bound to that calendar. All checklists on the same calendar reset together.
+3. **Items** watch a milestone job, a data monitor, or a web watcher.
+4. Ops works the **current period** on the Checklist tab (or Calendar). Closed periods are read-only **History**.
+
+API: [Checklists](/api/checklists) (planned REST around the same ProcessServer operations).
+
+## Related
+
+| Area | Use when |
+| --- | --- |
+| [Workflows](/workflows) | Jobs you attach as items; **Add to Checklist** from a job tree |
+| [Data monitors](/warehouses/data-monitors) | Table/view conditions that land as checklist alerts |
+| [Permissions](/api/permissions) | Groups you grant on the checklist |
+
+---
+
+Source: https://cosethub.github.io/Docs/warehouses/data-monitors/
+
+# Data monitors
+
+Data monitors watch a warehouse **table** or **view** and react when **row conditions** match — emit a **status** (ops dashboards / escalation), optionally **trigger a job**, and (via the public API) deliver **webhooks** so external systems can react.
+
+Use them for exception signals that already live in data: repair flags (`marl = 0`), missing prices, unmapped securities, break rows, and similar.
+
+## Concepts
+
+| Piece | What it is |
+| --- | --- |
+| **Monitor type** | Per table/view schema (columns as fields). Created automatically the first time you save a monitor for that entity |
+| **Data monitor** | Named configuration on that type — conditions, escalation, ownership |
+| **Condition** | Rule tree (field / operator / value, groups) + **status** to emit + optional **trigger job** |
+| **Status code** | Severity label (Information, Warning, Alert, Critical, …) used for escalation and UI |
+| **Alert** | Record created when a row matches a condition |
+
+Evaluation for database table/view monitors is **data-change driven** (insert / update / delete and related warehouse writes) — not a separate cron poll of the whole table.
+
+## When to use
+
+| Situation | Approach |
+| --- | --- |
+| Exception rows already in a view | Monitor the **view** with a simple rule |
+| Raw table + complex logic | Prefer a [View](/views) that isolates exceptions, then monitor the view |
+| Need someone emailed / paged | Pick a status + escalation path (product), and/or subscribe to webhooks (API) |
+| Need follow-on automation | Set **Trigger job** on the condition (download, load, notify, repair workflow) |
+
+## Open a table or view
+
+1. Open **CoSet DB** (or your warehouse **Databases** area).
+2. Go to **Tables / Views**.
+3. Select the table or view (for example `v_bbg_price_repair`).
+4. Stay on the **Data** tab so the grid and toolbar are visible.
+
+## Open Add data monitor
+
+1. In the toolbar above the data grid, choose **Data monitors**.
+2. The **Add data monitor** panel opens on the right.
+
+
+
+## Configure the monitor
+
+### 1. Choose or name the monitor
+
+At the top of the panel, pick an existing data monitor for this table/view, or create a new named configuration. Org monitors for this entity appear in the dropdown.
+
+### 2. Set conditions
+
+Under **Conditions**, build rules that must match before the monitor fires:
+
+1. Keep or add a condition group (**When the following conditions are met:**).
+2. For each rule, set:
+   - **Field** — column on the table/view (for example `marl`)
+   - **Operator** — for example `=`
+   - **Value** — comparison value (for example `0`)
+3. Use **+ Add rule or group** for additional rules or nested AND/OR groups.
+4. Remove a single rule with the trash icon, or the whole group with **Remove condition**.
+
+
+
+### 3. Emit a status
+
+When conditions are met, choose the status under **emit the following status** (for example **Data Monitor Alert**).
+
+Built-in status codes include Information, Ok, Warning, Alert, Critical, and Error. Use **Manage status codes** to add or edit org-specific statuses.
+
+That status drives escalation / notification paths (email, SMS, in-app **Data Monitor Alerts**) configured for the monitor.
+
+### 4. Optionally trigger a job
+
+Under **Trigger job**, select a workflow job to run when the condition fires, or leave `-` for status-only monitoring.
+
+Typical triggers: email ops, kick a repair workflow, or open a data-review path.
+
+## How evaluation works
+
+1. A row is written, updated, or deleted on the monitored table/view (including loads and API/warehouse writes that hit that entity).
+2. CoSet finds data monitors for that warehouse + entity.
+3. Each condition’s rules are evaluated against the row.
+4. On match, CoSet creates an **alert**, applies the condition’s **status**, notifies via the monitor’s escalation settings, and runs the **trigger job** if set.
+5. External systems can subscribe to [`data_monitor.alert.created`](/api/webhooks) (and related events) on the public API.
+
+## Example
+
+| Setting | Example |
+| --- | --- |
+| Object | View `v_bbg_price_repair` |
+| Condition | `marl` `=` `0` |
+| Status | **Data Monitor Alert** |
+| Trigger job | (none, or a follow-on repair / notify job) |
+
+When rows in the view have `marl = 0` after a write, the monitor emits the alert status, notifies the escalation path, runs the selected job if configured, and can fire webhooks for subscribers.
+
+## Tips
+
+- Prefer monitoring a **view** that already isolates exceptions so rules stay simple.
+- Match column names and types to the grid — the field picker lists columns from the open table/view.
+- Pair a status with a **Trigger job** when someone should be emailed or a downstream workflow should run automatically.
+- Use webhooks when Slack, PagerDuty, or an internal ops bus should react without polling the UI — see [Webhooks](/api/webhooks) and [Data monitors API](/api/data-monitors).
+- Some monitor kinds use credentials (for example AWS IAM) configured elsewhere — see [Amazon IAM](/credentials/credential-types/amazon-iam).
+
+## Related
+
+| Area | Use when |
+| --- | --- |
+| [Data monitors API](/api/data-monitors) | Create/list monitors, conditions, status codes, and alerts over REST |
+| [Webhooks](/api/webhooks) | `data_monitor.alert.*` outbound events |
+| [Views](/views) | Shape exception datasets before monitoring |
+| [Checklists](/checklists) | Watch monitor alerts on a period-close board |
+
+---
+
+Source: https://cosethub.github.io/Docs/views/
+
+# Views
+
+Views let you shape warehouse data into reusable, queryable datasets — combining tables, filtering rows, selecting columns, and optionally aggregating results.
+
+Use this section to learn how to build views in the warehouse **Views** tab.
+
+## Running example: daily position reconciliation
+
+Throughout these pages we use a classic ops scenario from [CoSet, your Ops Assistant](https://www.cosethub.com/blog/coset-your-ops-assistant/): reconcile yesterday’s positions between a Prime Broker and a Fund Administrator.
+
+| Source | Example tables (after workflows land the files) |
+| --- | --- |
+| Apex Prime (PB) | `ApexPrime_Positions` |
+| Summit Fund Services (FA) | `SummitFA_Positions` |
+
+Workflows pull the raw SFTP files into those tables. A **View** then joins them on asset identifiers, calculates a **Breaks** column, and filters to only the discrepancies — so a downstream workflow can email the reconciliation owner a tight break list instead of a noisy full extract.
+
+| Step in the walkthrough | Where it shows up in Views docs |
+| --- | --- |
+| Stitch PB + FA tables | [Joins](./joins) |
+| Flag quantity / MV / cash differences | [Column types](./column-types) (calculated + conditional) |
+| Keep only break rows / as-of date | [Where clauses](./where-clauses) |
+| Summarize breaks by fund or strategy | [Group by & aggregates](./group-by) |
+| Sum nets, COUNT(*), Distinct, CASE insides | [Aggregate metrics](./aggregate-metrics) |
+| Draft the whole view from a sentence | [Create with AI](./ai-views) |
+
+## What you can do
+
+| Topic | Description |
+| --- | --- |
+| [Getting started](./getting-started) | Open the Views tab, name a view, pick a base table, and save |
+| [Joins](./joins) | Combine additional tables with INNER, LEFT, RIGHT, or FULL joins |
+| [Where clauses](./where-clauses) | Filter rows with conditions and nested AND/OR groups |
+| [Group by & aggregates](./group-by) | Roll up rows and use SUM, COUNT, AVG, MIN, MAX |
+| [Aggregate metrics](./aggregate-metrics) | Inner column / calculated / conditional, COUNT(*), Distinct |
+| [Column types](./column-types) | Reference, calculated, conditional, and aggregate columns |
+| [Create with AI](./ai-views) | Draft a view by chatting with the AI View Assistant |
+| [Examples](./examples) | Tiny CSV walkthroughs: reconciliation, price backfill, conditionals |
+| [Data monitors](/warehouses/data-monitors) | Alert on table/view rows when conditions match (CoSet DB) |
+
+## Anatomy of a view
+
+Every view is built from these sections in the form:
+
+1. **Schema & name** — where the view lives and what it is called
+2. **Table** — the primary (base) table
+3. **Join criteria** — optional related tables
+4. **I want to…** — all matching rows, or aggregated / rolled-up groups
+5. **Select columns** — what appears in the result
+6. **Where conditions** — optional row filters
+
+
+
+## Before you begin
+
+- You need access to **Database Views** for the warehouse.
+- Tables (and columns) you use must be available through your screen access.
+- Schema and view names may only contain letters, numbers, and underscores. Names must start with a letter or underscore.
+
+---
+
+Source: https://cosethub.github.io/Docs/api/
+
+# Public API
+
+Programmatic access to credentials, warehouses, file stores, jobs, workflows, and automation hooks.
+
+Use this section when you need REST contracts for schedulers, ETL scripts, internal tools, or MCP clients.
+
+You also get the **product UI out of the box**. Engineering can automate and extend via `/api/v1`; ops and other non-technical users can clear everyday failures in the frontend without a deploy — for example an **expired Bloomberg credential**, a **missing SFTP file**, a failed monitor, a data-monitor alert, or a **checklist** item that did not finish in time. Same credentials, workflows, warehouses, and checklists; API for systems, UI for people.
+
+
+
+## Base URL
+
+```
+https://{tenant}.cosethub.com/api/v1
+```
+
+All paths in this section are relative to `/api/v1` unless noted.
+
+## Authentication
+
+| Mechanism | Header | When |
+| --- | --- | --- |
+| OAuth2 access token | `Authorization: Bearer {token}` | Default for org-scoped endpoints |
+| Job API key | `X-Access-Key: {key}` | Job run / status |
+
+Issue a token with [`POST /oauth/token`](./auth#post-oauthtoken), then call [`GET /me`](./auth#get-me) to confirm scopes.
+
+Manage org API keys and IP restrictions in the product **API** dashboard (**Manage API Keys**). Key management and IP allow lists are available in the UI today. The REST endpoints below are in active development — initial clients can integrate with support from the CoSet team (email [Sales@ryanbts.com](mailto:Sales@ryanbts.com)).
+
+
+
+## API key permissions
+
+Each API key has one of three permission types:
+
+| Permission | Behavior |
+| --- | --- |
+| **Users** | Key is tied to a user account. It matches the permissions specified on that user’s account (pick the user in the Permissions dropdown). |
+| **Full Access** | Unrestricted API access for the organization. Recommended **only for testing or staging** accounts — not production. |
+| **Read Only** | Read access only. Cannot create, update, delete, or otherwise mutate resources. |
+
+## Successful requests
+
+For a request to succeed, **both** must be true:
+
+1. **Permission** — The API key’s permission type must allow the action (for **Users**, that means the linked user account must allow it; **Read Only** keys cannot perform writes).
+2. **IP allow list** — When IP restriction is enabled in the API dashboard, the caller’s IP must be on the allow list: either an exact **IP address** or within a configured **CIDR block**.
+
+If IP restriction is turned off (`I do not want to restrict API access by IP`), only the key’s permission applies. When restriction is on, requests from IPs outside the allow list are rejected even if the key would otherwise allow the action.
+
+## Sections
+
+| Topic | Description |
+| --- | --- |
+| [Conventions](./conventions) | Errors, pagination, IDs, dates, versioning |
+| [Auth & account](./auth) | Health, OAuth token, `/me`, organizations |
+| [Credentials](./credentials) | List names/metadata; create, update, delete, and test (secrets never returned) |
+| [Warehouses](./warehouses) | List warehouses, tables, schema, rows, exports |
+| [Data monitors](./data-monitors) | Table/view monitors, conditions, alerts, status codes |
+| [Checklists](./checklists) | Period-close boards, items, run, history |
+| [Permissions & groups](./permissions) | Groups, user membership, table/view access |
+| [File stores](./file-stores) | Browse, download, upload, rename, move, delete |
+| [Jobs & workflows — read](./jobs-workflows-read) | Job types, definitions, runs, workflows, AI chats, error analysis |
+| [Jobs & workflows — write](./jobs-workflows-write) | Run jobs, create workflows, mutate AI chats, request error analysis |
+| [Webhooks & events](./webhooks) | Subscriptions — including `data_monitor.alert.*` |
+
+---
+
+Source: https://cosethub.github.io/Docs/api/jobs-workflows-write/
+
+# Jobs & workflows — write
+
+Trigger runs, create workflows, and mutate AI workflow builder chats.
+
+> **Base:** `/api/v1`  
+> **Auth:** Bearer token, except job run which also accepts / requires `X-Access-Key`  
+> See also: [Jobs & workflows — read](./jobs-workflows-read)
+
+---
+
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `POST` | [`/jobs/{jobId}/run`](#post-jobsjobidrun) | Trigger job |
+| `POST` | [`/job-runs/{runId}/error-analysis`](#post-job-runsruniderror-analysis) | Request / refresh AI error analysis |
+| `POST` | [`/workflows`](#post-workflows) | Create workflow |
+| `POST` | [`/ai-workflow/chats`](#post-ai-workflowchats) | Create chat |
+| `POST` | [`/ai-workflow/chats/{chatId}`](#post-ai-workflowchatschatid) | Send message |
+| `PATCH` | [`/ai-workflow/chats/{chatId}/parameters`](#patch-ai-workflowchatschatidparameters) | Update parameters |
+| `POST` | [`/ai-workflow/chats/{chatId}/workflows`](#post-ai-workflowchatschatidworkflows) | Generate workflow |
+| `POST` | [`/ai-workflow/chats/{chatId}/context`](#post-ai-workflowchatschatidcontext) | Load workflow context |
+| `DELETE` | [`/ai-workflow/chats/{chatId}`](#delete-ai-workflowchatschatid) | Delete chat |
+
+## Shared types (write)
+
+### `RunJobRequest`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `run_only_this_job` | `boolean` | If `true`, do not cascade children |
+| `parameter_overrides` | `object` | Map of parameter name → value (API version 2) |
+
+### `RunJobResponse`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `run_id` | `string` | Opaque run ID — poll with `GET /job-runs/{runId}` |
+| `job_id` | `integer` | Job that was triggered |
+
+### `CreateWorkflowRequest`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `jobs_with_parameters` | `WorkflowJob[]` | Ordered jobs (root first) |
+| `output_mappings` | `WorkflowOutputMapping[]` | Parameter bindings |
+
+### `WorkflowJob`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `job_type` | `string` | Internal type (`Group`, `ETLJob`, …) |
+| `job_name` | `string` | |
+| `access_key` / `parent_access_key` | `string` | Request-local UUIDs to wire parent/child before IDs exist |
+| `fire_on_success` | `string \| null` | e.g. `RunOnSuccess` |
+| `parameters` | `{ name, value }[]` | **Input** job parameters to persist on create |
+
+### `WorkflowOutputMapping`
+
+Wire a **source job output** into a **dest job input** (same as the product **Output mapping** rail). Source must be an ancestor of dest.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `source_job_access_key` | `string` | Create-time UUID of the upstream job (or `source_job_id` on get) |
+| `source_parameter` | `string` | Output name (e.g. `CalculatedOutputFolder`) |
+| `target_job_access_key` | `string` | Create-time UUID of the downstream job (or `target_job_id` on get) |
+| `target_parameter` | `string` | Input name (e.g. `SourceFolder`) |
+
+Product UI: [Parameters and outputs](/workflows/parameters).
+
+### `CreateWorkflowResponse`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `workflow_id` | `integer` | Root job tree ID |
+| `workflow_name` | `string` | Name |
+| `workflow_url` | `string` | Deep link into product UI |
+
+### `ParameterUpdate`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `job_instance_id` | `string` | Draft job instance ID |
+| `parameters` | `{ name, value }[]` | Updated parameters |
+
+---
+
+## `POST /jobs/{jobId}/run`
+
+Trigger a job (or workflow root) run.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `GET/POST /api/job` — normalize to POST + API key header) |
+| **Scopes** | `jobs:write` |
+| **Auth** | Bearer **and/or** `X-Access-Key` for the job |
+
+### Path parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `jobId` | `integer` | Job tree ID (must match the API key’s job when using `X-Access-Key`) |
+
+### Headers
+
+| Header | Required | Description |
+| --- | --- | --- |
+| `X-Access-Key` | Yes (v1 job-key mode) | Encoded job API key |
+| `X-Api-Version` | No | `1` (default) or `2` (parameter overrides) |
+| `Authorization` | Preferred | Bearer token with `jobs:write` |
+
+### Request body
+
+```json
+{
+  "run_only_this_job": false,
+  "parameter_overrides": {
+    "AsOfDate": "2026-07-11",
+    "ForceReload": true
+  }
+}
+```
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `run_only_this_job` | `boolean` | `false` | Skip child cascade |
+| `parameter_overrides` | `object` | — | Requires API version `2` |
+
+### Response `202 Accepted`
+
+```json
+{
+  "run_id": "rjh_8f3a…",
+  "job_id": 1042
+}
+```
+
+> Legacy returns `{ "RunJobHistoryKey": "…" }`. v1 uses `run_id`. Poll with [`GET /job-runs/{runId}`](./jobs-workflows-read#get-job-runsrunid).
+
+### Examples
+
+```bash
+# Trigger with API key + overrides (v2)
+curl -sS -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "X-Access-Key: $JOB_ACCESS_KEY" \
+  -H "X-Api-Version: 2" \
+  -H "Content-Type: application/json" \
+  -d '{"run_only_this_job":false,"parameter_overrides":{"AsOfDate":"2026-07-11"}}' \
+  "https://{tenant}.cosethub.com/api/v1/jobs/1042/run"
+```
+
+### Legacy notes
+
+- `POST /api/job` body: `{ "RunOnlyThisJob": bool, "ParameterOverrides": "<json-string>" }`
+- `GET /api/job?xAccessKey=…&runOnlyThisJob=…&version=2&parameterOverrides=…`
+- Host whitelist on the API key may reject callers outside allowed IPs/hostnames
+
+---
+
+## `POST /job-runs/{runId}/error-analysis`
+
+Queue or re-run AI error analysis for a failed (or partially failed) run. Prefer this when automatic analysis did not run or you need a refresh after fixing logs context.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `POST /api/workflow/logs/analyze` with history ids) |
+| **Scopes** | `workflows:write` or `jobs:write` |
+
+`runId` may identify a root or child history in the run; the server normalizes to the **root** run (same as the GET endpoints).
+
+### Request body
+
+Optional. Empty body is fine.
+
+```json
+{
+  "force": false
+}
+```
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `force` | `boolean` | `false` | Re-analyze even if an analysis already exists for the root run |
+
+### Response `202 Accepted`
+
+```json
+{
+  "run_id": "rjh_8f3a…",
+  "workflow_id": 1001,
+  "status": "queued"
+}
+```
+
+Poll [`GET /job-runs/{runId}/error-analysis`](./jobs-workflows-read#get-job-runsruniderror-analysis) until `200`.
+
+You can also **read** analysis by workflow id or any job id (root or sub): see [Jobs & workflows — read](./jobs-workflows-read#get-workflowsworkflowiderror-analysis).
+
+### Example
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"force":false}' \
+  "https://{tenant}.cosethub.com/api/v1/job-runs/$RUN_ID/error-analysis"
+```
+
+---
+
+## `POST /workflows`
+
+Create a workflow from a full job graph.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `POST /api/ai-workflow/create`) |
+| **Scopes** | `workflows:write` |
+
+### Request body
+
+```json
+{
+  "jobs_with_parameters": [
+    {
+      "job_type": "Group",
+      "job_name": "Nightly ETL",
+      "access_key": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "parent_access_key": null,
+      "fire_on_success": null,
+      "parameters": [
+        { "name": "RecurrencePeriod", "value": "Daily" },
+        { "name": "StartDate", "value": "2026-01-01T09:00:00" }
+      ]
+    },
+    {
+      "job_type": "ETLJob",
+      "job_name": "Load orders",
+      "access_key": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "parent_access_key": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "fire_on_success": "RunOnSuccess",
+      "parameters": [
+        { "name": "SourceTable", "value": "raw_orders" },
+        { "name": "TargetTable", "value": "orders" }
+      ]
+    }
+  ],
+  "output_mappings": [
+    {
+      "source_job_access_key": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "source_parameter": "CalculatedOutputFile",
+      "target_job_access_key": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "target_parameter": "SourceFile"
+    }
+  ]
+}
+```
+
+### Notes
+
+- `access_key` / `parent_access_key` are **request-local** UUIDs used to wire parent/child edges before IDs exist.
+- First job may carry schedule parameters (`RecurrencePeriod`, `StartDate`, …).
+- `job_type` `Group` maps to internal `FakeJob`.
+- `output_mappings` bind an ancestor job’s **output** into a descendant’s **input** (same as the product [Output mapping](/workflows/parameters) rail).
+- Creation can take up to ~120s while ProcessServer finishes the async create.
+
+### Response `201 Created` / `200 OK`
+
+```json
+{
+  "workflow_id": 1001,
+  "workflow_name": "Nightly ETL",
+  "workflow_url": "/NewExperience/workflow/job-workflow/details/1001"
+}
+```
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d @workflow.json \
+  "https://{tenant}.cosethub.com/api/v1/workflows"
+```
+
+---
+
+## `POST /ai-workflow/chats`
+
+Create a workflow builder chat (optionally seeded from an existing workflow).
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `POST /api/ai-workflow/chats`) |
+| **Scopes** | `ai-workflow:write` |
+
+### Request body
+
+```json
+{
+  "workflow_id": 1001
+}
+```
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `workflow_id` | `integer` | No* | Seed chat from existing workflow (*required by current implementation when provided must be &gt; 0) |
+
+Omit or send `0` for a blank chat, depending on assistant support.
+
+### Response `200 OK`
+
+```json
+{
+  "chat_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "workflow_id": "1001",
+  "draft_workflow": [],
+  "output_mappings": []
+}
+```
+
+---
+
+## `POST /ai-workflow/chats/{chatId}`
+
+Send a user message; returns assistant reply and updated draft.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `POST /api/ai-workflow/chats/{chatId}`) |
+| **Scopes** | `ai-workflow:write` |
+
+### Request body
+
+```json
+{
+  "message": "Add an email notification that fires when the ETL fails."
+}
+```
+
+### Response `200 OK`
+
+```json
+{
+  "assistant_message": "I've added an Email job that runs on failure after the ETL step.",
+  "draft_workflow": [
+    {
+      "job_type": "Group",
+      "job_name": "Nightly orders load",
+      "job_instance_id": "inst_root_01",
+      "access_key": "…",
+      "parent_access_key": null,
+      "parameters": []
+    }
+  ],
+  "output_mappings": []
+}
+```
+
+> Exact assistant response field names may include `assistant_message` and nested draft objects. Treat extra fields as additive.
+
+---
+
+## `PATCH /ai-workflow/chats/{chatId}/parameters`
+
+Update dirty parameters on draft jobs.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `PATCH /api/ai-workflow/chats/{chatId}/parameters`) |
+| **Scopes** | `ai-workflow:write` |
+
+### Request body
+
+Array of updates:
+
+```json
+[
+  {
+    "job_instance_id": "inst_etl_01",
+    "parameters": [
+      { "name": "SourceTable", "value": "raw_orders_v2" },
+      { "name": "TargetTable", "value": "orders" }
+    ]
+  }
+]
+```
+
+### Response `200 OK`
+
+Empty body on success.
+
+```bash
+curl -sS -X PATCH \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '[{"job_instance_id":"inst_etl_01","parameters":[{"name":"SourceTable","value":"raw_orders_v2"}]}]' \
+  "https://{tenant}.cosethub.com/api/v1/ai-workflow/chats/$CHAT_ID/parameters"
+```
+
+---
+
+## `POST /ai-workflow/chats/{chatId}/workflows`
+
+Materialize the draft into a real workflow.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `POST /api/ai-workflow/chats/{chatId}/workflows`) |
+| **Scopes** | `ai-workflow:write` |
+
+### Request body
+
+Empty object `{}` (draft is server-side).
+
+### Response `200 OK`
+
+```json
+{
+  "workflow_id": 1001,
+  "workflow_name": "Nightly orders load",
+  "workflow_url": "/NewExperience/workflow/job-workflow/details/1001"
+}
+```
+
+> May take up to ~130s while creation completes.
+
+---
+
+## `POST /ai-workflow/chats/{chatId}/context`
+
+Load / switch chat context to an existing workflow.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `POST /api/ai-workflow/chats/{chatId}/context`) |
+| **Scopes** | `ai-workflow:write` |
+
+### Request body
+
+```json
+{
+  "workflow_id": 1001
+}
+```
+
+### Response `200 OK`
+
+```json
+{
+  "workflow_id": 1001,
+  "draft_workflow": [ … ],
+  "output_mappings": [ … ]
+}
+```
+
+---
+
+## `DELETE /ai-workflow/chats/{chatId}`
+
+Delete a workflow builder chat.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: `DELETE /api/ai-workflow/chats/{chatId}`) |
+| **Scopes** | `ai-workflow:write` |
+
+### Response `200 OK` / `204 No Content`
+
+Empty body.
+
+---
+
+---
+
+Source: https://cosethub.github.io/Docs/api/webhooks/
+
+# Webhooks & events
+
+Subscribe to outbound events and poll an event stream.
+
+> **Base:** `/api/v1`  
+> **Auth:** `Authorization: Bearer {token}`  
+> **Scopes:** `webhooks:read` / `webhooks:write`  
+> **Status:** Planned (coming soon)
+
+---
+
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `GET` | [`/webhooks`](#get-webhooks) | List subscriptions |
+| `POST` | [`/webhooks`](#post-webhooks) | Register webhook |
+| `PATCH` | [`/webhooks/{webhookId}`](#patch-webhookswebhookid) | Update subscription |
+| `DELETE` | [`/webhooks/{webhookId}`](#delete-webhookswebhookid) | Remove subscription |
+| `GET` | [`/events`](#get-events) | Poll events |
+
+## Shared types
+
+### `WebhookSubscription`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `string` | Webhook ID |
+| `url` | `string` | HTTPS delivery URL |
+| `events` | `string[]` | Subscribed event types |
+| `secret` | `string` | Signing secret (returned once on create; masked later) |
+| `is_enabled` | `boolean` | |
+| `created_at` | `string` | ISO 8601 |
+| `updated_at` | `string \| null` | ISO 8601 |
+
+### `Event`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `string` | Event ID |
+| `type` | `string` | Event type |
+| `occurred_at` | `string` | ISO 8601 |
+| `organization_id` | `integer` | |
+| `data` | `object` | Type-specific payload |
+
+### Event types
+
+| Type | Description |
+| --- | --- |
+| `job.run.completed` | Job/workflow run finished successfully |
+| `job.run.failed` | Job/workflow run failed |
+| `warehouse.export.ready` | Async export ready for download |
+| `file.upload.completed` | File landed in a file store |
+| `table.rows.updated` | Rows inserted/updated/deleted |
+| `data_monitor.alert.created` | Table/view data monitor condition matched — new alert |
+| `data_monitor.alert.updated` | Data monitor alert acknowledged or closed |
+
+---
+
+## `GET /webhooks`
+
+List webhook subscriptions for the organization.
+
+| | |
+| --- | --- |
+| **Status** | Planned |
+| **Scopes** | `webhooks:read` |
+
+### Response `200 OK`
+
+```json
+{
+  "webhooks": [
+    {
+      "id": "wh_01H…",
+      "url": "https://hooks.acme.com/ryan",
+      "events": ["job.run.completed", "job.run.failed"],
+      "secret": "whsec_••••••••",
+      "is_enabled": true,
+      "created_at": "2026-06-01T12:00:00Z",
+      "updated_at": null
+    }
+  ]
+}
+```
+
+---
+
+## `POST /webhooks`
+
+Register a webhook.
+
+| | |
+| --- | --- |
+| **Status** | Planned |
+| **Scopes** | `webhooks:write` |
+
+### Request body
+
+```json
+{
+  "url": "https://hooks.acme.com/ryan",
+  "events": [
+    "job.run.completed",
+    "job.run.failed",
+    "warehouse.export.ready",
+    "data_monitor.alert.created"
+  ],
+  "secret": "whsec_optional_custom_secret"
+}
+```
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `url` | `string` | Yes | HTTPS endpoint |
+| `events` | `string[]` | Yes | At least one event type |
+| `secret` | `string` | No | If omitted, server generates one |
+
+### Response `201 Created`
+
+```json
+{
+  "id": "wh_01H…",
+  "url": "https://hooks.acme.com/ryan",
+  "events": ["job.run.completed", "job.run.failed", "warehouse.export.ready"],
+  "secret": "whsec_live_…",
+  "is_enabled": true,
+  "created_at": "2026-07-11T16:30:00Z",
+  "updated_at": null
+}
+```
+
+Store `secret` immediately — subsequent GETs return a masked value.
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://hooks.acme.com/ryan","events":["job.run.completed","job.run.failed"]}' \
+  "https://{tenant}.cosethub.com/api/v1/webhooks"
+```
+
+---
+
+## `PATCH /webhooks/{webhookId}`
+
+Update URL, events, or enabled flag.
+
+| | |
+| --- | --- |
+| **Status** | Planned |
+| **Scopes** | `webhooks:write` |
+
+### Request body
+
+```json
+{
+  "url": "https://hooks.acme.com/ryan/v2",
+  "events": ["job.run.completed", "job.run.failed", "file.upload.completed"],
+  "is_enabled": true
+}
+```
+
+All fields optional; only provided fields change.
+
+### Response `200 OK`
+
+Updated `WebhookSubscription`.
+
+---
+
+## `DELETE /webhooks/{webhookId}`
+
+Remove a subscription.
+
+| | |
+| --- | --- |
+| **Status** | Planned |
+| **Scopes** | `webhooks:write` |
+
+### Response `204 No Content`
+
+---
+
+## `GET /events`
+
+Poll recent events (alternative to push webhooks).
+
+| | |
+| --- | --- |
+| **Status** | Planned |
+| **Scopes** | `webhooks:read` |
+
+### Query parameters
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `since` | `string` | — | ISO 8601; only events after this time |
+| `type` | `string` | — | Comma-separated event types |
+| `page` | `integer` | `1` | |
+| `page_size` | `integer` | `50` | Max `200` |
+
+### Response `200 OK`
+
+```json
+{
+  "events": [
+    {
+      "id": "evt_01H…",
+      "type": "job.run.completed",
+      "occurred_at": "2026-07-11T14:23:04Z",
+      "organization_id": 55,
+      "data": {
+        "job_id": 1042,
+        "run_id": "rjh_8f3a…",
+        "name": "Load warehouse table",
+        "status": "Completed"
+      }
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 50,
+    "total_count": 1,
+    "has_more": false
+  }
+}
+```
+
+---
+
+## Outbound delivery
+
+When a subscribed event occurs, the platform POSTs to your `url`:
+
+### Headers
+
+| Header | Description |
+| --- | --- |
+| `Content-Type` | `application/json` |
+| `X-Ryan-Event-Id` | Event ID |
+| `X-Ryan-Event-Type` | Event type |
+| `X-Ryan-Signature` | `sha256=` HMAC of raw body using webhook secret |
+| `User-Agent` | `Ryan-Webhooks/1.0` |
+
+### Body
+
+Same shape as a single `Event` object.
+
+### Example payloads
+
+#### `job.run.completed` / `job.run.failed`
+
+```json
+{
+  "id": "evt_01H…",
+  "type": "job.run.completed",
+  "occurred_at": "2026-07-11T14:23:04Z",
+  "organization_id": 55,
+  "data": {
+    "job_id": 1042,
+    "run_id": "rjh_8f3a…",
+    "name": "Load warehouse table",
+    "status": "Completed",
+    "exception": null
+  }
+}
+```
+
+#### `warehouse.export.ready`
+
+```json
+{
+  "id": "evt_01H…",
+  "type": "warehouse.export.ready",
+  "occurred_at": "2026-07-11T16:01:12Z",
+  "organization_id": 55,
+  "data": {
+    "warehouse_id": 7,
+    "export_id": "exp_9c2…",
+    "format": "csv",
+    "download_url": "https://…presigned…"
+  }
+}
+```
+
+#### `file.upload.completed`
+
+```json
+{
+  "id": "evt_01H…",
+  "type": "file.upload.completed",
+  "occurred_at": "2026-07-11T08:15:00Z",
+  "organization_id": 55,
+  "data": {
+    "store_id": 3,
+    "path": "inbound/positions.csv",
+    "size_bytes": 20480,
+    "uploaded_by": "ops@acme.com"
+  }
+}
+```
+
+#### `table.rows.updated`
+
+```json
+{
+  "id": "evt_01H…",
+  "type": "table.rows.updated",
+  "occurred_at": "2026-07-11T16:40:00Z",
+  "organization_id": 55,
+  "data": {
+    "warehouse_id": 7,
+    "table_name": "dbo.Positions",
+    "operation": "bulk_upsert",
+    "inserted": 1,
+    "updated": 1,
+    "deleted": 0
+  }
+}
+```
+
+#### `data_monitor.alert.created`
+
+Fired when a [database table/view data monitor](./data-monitors) condition matches a row (after warehouse write/delete evaluation).
+
+```json
+{
+  "id": "evt_01H…",
+  "type": "data_monitor.alert.created",
+  "occurred_at": "2026-08-06T15:02:11Z",
+  "organization_id": 55,
+  "data": {
+    "alert_id": 9001,
+    "data_monitor_id": 88,
+    "data_monitor_name": "BBG price repair — marl zero",
+    "condition_id": 201,
+    "status_code_id": 25,
+    "status_code_name": "Data Monitor Alert",
+    "warehouse_id": 7,
+    "entity_name": "ref.v_bbg_price_repair",
+    "entity_kind": "view",
+    "message": "marl = 0",
+    "monitored_at": "2026-08-06T15:02:11Z",
+    "trigger_job_id": 1042,
+    "source_row": {
+      "symbol": "AAPL US",
+      "marl": 0,
+      "asofdate": "2026-08-05"
+    },
+    "key_values": {
+      "symbol": "AAPL US"
+    },
+    "response_status": "open"
+  }
+}
+```
+
+Subscribe when Slack, PagerDuty, or an internal ops bus should react without polling. Configure monitors in the UI ([Data monitors](/warehouses/data-monitors)) or via the [Data monitors API](./data-monitors).
+
+#### `data_monitor.alert.updated`
+
+```json
+{
+  "id": "evt_01H…",
+  "type": "data_monitor.alert.updated",
+  "occurred_at": "2026-08-06T16:10:00Z",
+  "organization_id": 55,
+  "data": {
+    "alert_id": 9001,
+    "data_monitor_id": 88,
+    "response_status": "acknowledged",
+    "previous_response_status": "open",
+    "updated_by_user_id": 101
+  }
+}
+```
+
+### Delivery retries
+
+| Attempt | Delay |
+| --- | --- |
+| 1 | Immediate |
+| 2 | ~1 minute |
+| 3 | ~5 minutes |
+| 4 | ~30 minutes |
+| 5 | ~2 hours |
+
+Expect `2xx` within a short timeout. Non-2xx responses are retried. After exhausting retries, delivery is marked failed (visible in future webhook delivery logs).
+
+### Verifying signatures
+
+```text
+signed_payload = raw_request_body
+expected = "sha256=" + hex(HMAC_SHA256(secret, signed_payload))
+```
+
+Compare `expected` to `X-Ryan-Signature` using a constant-time compare.
+
+---

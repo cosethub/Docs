@@ -5,20 +5,39 @@ import 'nextra-theme-docs/style.css'
 
 export const metadata = {
   title: {
-    default: 'Docs',
-    template: '%s – Docs'
+    default: 'CoSet Docs',
+    template: '%s – CoSet Docs'
   },
-  description: 'Documentation site built with Nextra'
+  description:
+    'CoSet documentation for hedge fund and fund admin ops: automate SFTP, email, SQL, Geneva, and Bloomberg workflows; Credential Hub; warehouses and views; period-close checklists; Public API.',
+  applicationName: 'CoSet Docs',
+  keywords: [
+    'CoSet',
+    'workflow automation',
+    'hedge fund operations',
+    'fund administrator',
+    'SFTP',
+    'Credential Hub',
+    'data monitors',
+    'period close checklist',
+    'Geneva',
+    'Bloomberg'
+  ]
 }
 
 const navbar = (
   <Navbar
-    logo={<b>Docs</b>}
+    logo={<b>CoSet Docs</b>}
     projectLink="https://github.com/cosethub/Docs"
   />
 )
 
-const footer = <Footer>MIT {new Date().getFullYear()} © Docs.</Footer>
+const footer = (
+  <Footer>
+    {new Date().getFullYear()} © CoSet ·{' '}
+    <a href="https://www.cosethub.com">cosethub.com</a>
+  </Footer>
+)
 
 export default async function RootLayout({ children }) {
   return (

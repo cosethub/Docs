@@ -1,0 +1,55 @@
+# CoSet Docs
+
+> CoSet is ops automation for hedge funds and fund administrators: Credential Hub, workflow trees (SFTP, email, SQL, Geneva, Bloomberg, …), warehouses/views, data monitors, period-close checklists, and a Public API. Use these docs to build and trigger the same pipelines the CoSet UI runs.
+
+CoSet Docs live at https://cosethub.github.io/Docs/ · Product site https://www.cosethub.com · Tenant UI `https://your-tenant.cosethub.com` · API `https://your-tenant.cosethub.com/api/v1`
+
+## Start here
+
+- [Automate with CoSet](https://cosethub.github.io/Docs/automate/): Problem → workflow/API map for agents and integrators
+- [Introduction](https://cosethub.github.io/Docs/): Product map, why not build it yourself, core building blocks
+- [Getting started](https://cosethub.github.io/Docs/getting-started/): First credential → workflow → warehouse/view loop
+- [llms-full.txt](https://cosethub.github.io/Docs/llms-full.txt): Concatenated high-value Markdown for bulk ingest
+
+## Common automation problems
+
+- [SFTP file into SQL](https://cosethub.github.io/Docs/automate/sftp-to-sql/): FTP Monitor → Download → SQL Bulk Load + output mapping
+- [Alert when a file is missing](https://cosethub.github.io/Docs/automate/missing-file-alerts/): Monitor timeout → On failure Email
+- [Reconcile PB vs FA positions](https://cosethub.github.io/Docs/automate/reconcile-positions/): Dual loads → View breaks → Table to CSV / review
+- [Trigger runs from scripts](https://cosethub.github.io/Docs/automate/trigger-from-scripts/): Airflow/cron via POST /jobs/{id}/run
+- [Month-end / period close](https://cosethub.github.io/Docs/automate/period-close/): Checklists on a period calendar
+
+## Workflows
+
+- [Workflows overview](https://cosethub.github.io/Docs/workflows/): Trees, job types, examples index
+- [Configure workflow trees](https://cosethub.github.io/Docs/workflows/workflow-trees/): Groups, schedules, On success / On failure / Always
+- [Parameters and outputs](https://cosethub.github.io/Docs/workflows/parameters/): Job inputs, output mapping, workflow parameters
+- [Create with AI](https://cosethub.github.io/Docs/workflows/ai-workflows/): Draft trees from chat
+- [Job types](https://cosethub.github.io/Docs/workflows/job-types/): Catalog of connectors and transforms
+- [Workflow examples](https://cosethub.github.io/Docs/workflows/examples/): Email gather, SFTP, Table to CSV + views, Data Review
+
+## Credentials, data, close
+
+- [Credentials](https://cosethub.github.io/Docs/credentials/): Credential Hub getting started and types
+- [Warehouses](https://cosethub.github.io/Docs/warehouses/): CoSet DB tables/views
+- [Data monitors](https://cosethub.github.io/Docs/warehouses/data-monitors/): Alert on table/view conditions
+- [Views](https://cosethub.github.io/Docs/views/): Joins, filters, calculated/conditional/aggregate columns
+- [Checklists](https://cosethub.github.io/Docs/checklists/): Period-close boards
+
+## Public API
+
+- [API overview](https://cosethub.github.io/Docs/api/): Base URL, auth, keys (surface in active development)
+- [Auth](https://cosethub.github.io/Docs/api/auth/): OAuth token and /me
+- [Jobs & workflows — write](https://cosethub.github.io/Docs/api/jobs-workflows-write/): Run job, create workflow, AI chat writes
+- [Jobs & workflows — read](https://cosethub.github.io/Docs/api/jobs-workflows-read/): Job detail, runs, error analysis
+- [Webhooks](https://cosethub.github.io/Docs/api/webhooks/): Event subscriptions including data monitor alerts
+- [Warehouses API](https://cosethub.github.io/Docs/api/warehouses/): Tables, views, rows, exports
+- [Data monitors API](https://cosethub.github.io/Docs/api/data-monitors/): CRUD and evaluation
+- [Checklists API](https://cosethub.github.io/Docs/api/checklists/): Planned REST for period boards
+- [Permissions](https://cosethub.github.io/Docs/api/permissions/): Groups, table access, view grants
+
+## Optional
+
+- [Views examples](https://cosethub.github.io/Docs/views/examples/): CSV-backed teaching examples
+- [Credential types](https://cosethub.github.io/Docs/credentials/credential-types/): Full type list
+- GitHub source: https://github.com/cosethub/Docs

@@ -1,0 +1,34 @@
+# Reconcile PB vs FA positions
+
+**Problem:** Compare what the book/prime broker says you hold vs the fund administrator (or custodian) and surface **breaks** only — not the full noisy extract.
+
+## Recommended shape
+
+1. **Land both sides** with workflows (SFTP → optional convert → **SQL Bulk Load**) into tables such as `ApexPrime_Positions` and `SummitFA_Positions`.
+2. Build a **View**: join on account/security (and as-of date), calculated qty/MV diffs, optional conditional break flags, **Where** Diff ≠ 0.
+3. Export with **Table to CSV** (point at the **view**), then **Email** or **FTP Transmit**, or gate with a **Data Review Task**.
+4. Optionally attach the export/review job (and a [data monitor](/warehouses/data-monitors) on the break view) to a [checklist](/checklists) for the close calendar.
+
+```
+Group: Daily position recon export
+ └── Table to CSV          [schedule]   ← source = recon view
+      └── Data Review Task [On success]
+           └── Email       [On success]  ← approved break list
+           └── Email       [On failure]  ← rejected / needs attention
+```
+
+## Docs to open
+
+| Topic | Link |
+| --- | --- |
+| View walkthrough (joins, calc, where) | [Views](/views), [Reconciliation example](/views/examples/reconciliation) |
+| Column types | [Column types](/views/column-types) |
+| Export a view | [Table to CSV + views](/workflows/examples/table-to-csv-view) |
+| Human gate | [Data review example](/workflows/examples/data-review) |
+| Alert on remaining break rows | [Data monitors](/warehouses/data-monitors) |
+
+## Tips
+
+- Prefer a **LEFT** or full outer style join only when you must keep unmatched rows; for strict matched breaks, equality joins + Diff filters are enough.
+- Keep display names stable (`BookQty`, `CustodianQty`, `Diff`) so checklist owners and emails stay readable.
+- Do not hard-code file paths between jobs — use [output mapping](/workflows/parameters).

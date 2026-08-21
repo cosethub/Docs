@@ -1,0 +1,48 @@
+---
+asIndexPage: true
+---
+
+# Automate with CoSet
+
+Use this page when you (or an AI agent) need to map a **business automation question** to CoSet building blocks: credentials, workflow trees, warehouses/views, checklists, or the Public API.
+
+**Product:** CoSet (ops automation for hedge funds and fund administrators)  
+**UI:** `https://your-tenant.cosethub.com`  
+**API base:** `https://your-tenant.cosethub.com/api/v1`  
+**Docs index for agents:** [llms.txt](https://cosethub.github.io/Docs/llms.txt)
+
+## Pick a problem
+
+| You want to… | Start here |
+| --- | --- |
+| Pull an SFTP/FTP file and load it to SQL | [SFTP file into SQL](./sftp-to-sql) |
+| Alert when a counterparty file never lands | [Alert when a file is missing](./missing-file-alerts) |
+| Reconcile book vs custodian / PB vs FA positions | [Reconcile PB vs FA positions](./reconcile-positions) |
+| Fire the same workflow from Airflow, cron, or an internal tool | [Trigger runs from scripts](./trigger-from-scripts) |
+| Track month-end / daily NAV close without a spreadsheet | [Month-end / period close](./period-close) |
+
+## Mental model (one paragraph)
+
+Store connections once in **Credential Hub**. Build a **workflow tree** (Group + child jobs) that a **Bridge** executes on a schedule or parent status (**On success** / **On failure** / **Always**). Jobs land files in a **file store** and/or rows in a **warehouse**. **Views** shape tables; **data monitors** alert on bad rows; **checklists** bind jobs and monitors to a **period calendar**. The **Public API** runs the same jobs and reads the same warehouses the UI uses.
+
+## Agent / integrator checklist
+
+1. Confirm tenant URL and that a **Bridge** is online.
+2. Create or reuse a **credential** for the counterparty (SFTP, IMAP, SQL, Geneva, Bloomberg, …).
+3. Create a **Group** workflow named for the business process.
+4. Add jobs; map upstream **outputs** into downstream **inputs** (do not hard-code landed paths).
+5. Wire **On failure** Email (or escalation) for ops visibility.
+6. For period close, attach the milestone job (and monitors) to a **checklist**.
+7. For external schedulers, use OAuth or a job API key and `POST /jobs/:jobId/run`.
+
+## Deep links
+
+| Topic | Docs |
+| --- | --- |
+| End-to-end first path | [Getting started](/getting-started) |
+| Trees, schedules, run rules | [Configure workflow trees](/workflows/workflow-trees) |
+| Output mapping & workflow parameters | [Parameters and outputs](/workflows/parameters) |
+| Job type catalog | [Job types](/workflows/job-types) |
+| UI walkthroughs | [Workflow examples](/workflows/examples) |
+| REST contracts | [Public API](/api) |
+| Full product map | [Introduction](/) |

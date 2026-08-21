@@ -1,0 +1,40 @@
+# SFTP file into SQL
+
+**Problem:** A prime broker or custodian drops a CSV (or Excel) on SFTP each morning. Ops needs it in a warehouse table without a hand-run script.
+
+## Recommended tree
+
+```
+Group: Daily PB positions load
+ └── FTP Monitor              [weekdays 07:00]
+      └── FTP Download        [On success]
+           └── Convert Excel to CSV   [On success]   ← only if Excel
+                └── SQL Bulk Load     [On success]
+      └── Email               [On failure]         ← monitor timed out / missing file
+```
+
+If the file is always present at run time, skip **FTP Monitor** and schedule **FTP Download** directly.
+
+## Credentials
+
+| Need | Credential Hub type |
+| --- | --- |
+| SFTP/FTP login | FTP/SFTP |
+| Target database | Usually on the **warehouse** connection (SQL Server / PostgreSQL), not a one-off job secret |
+
+## Critical wiring
+
+On **SQL Bulk Load**, map the download’s calculated local folder/file into **Source Folder** / **Source File** using **Output mapping** on the child (see [Parameters and outputs](/workflows/parameters)). Do not paste yesterday’s path.
+
+## Docs to open
+
+| Step | Link |
+| --- | --- |
+| Tree + schedule rules | [Configure workflow trees](/workflows/workflow-trees) |
+| Full walkthrough | [SFTP download example](/workflows/examples/sftp-download) |
+| Job types | [FTP Monitor](/workflows/job-types/ftp-monitor), [FTP Download](/workflows/job-types/ftp-download), [SQL Bulk Load](/workflows/job-types/sql-bulk-load) |
+| Credentials | [FTP/SFTP](/credentials/credential-types/ftp-sftp), [SFTP example](/credentials/examples/sftp-for-download) |
+
+## API shape (when triggering from outside)
+
+Create/configure in UI first, then `POST /api/v1/jobs/{jobId}/run` with optional `parameter_overrides`. See [Trigger runs from scripts](./trigger-from-scripts) and [Jobs & workflows — write](/api/jobs-workflows-write).

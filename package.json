@@ -3,9 +3,11 @@
   "private": true,
   "scripts": {
     "dev": "next --turbopack",
+    "prebuild": "node scripts/generate-llms-full.mjs",
     "build": "next build",
     "postbuild": "pagefind --site .next/server/app --output-path out/_pagefind && touch out/.nojekyll",
-    "start": "next start"
+    "start": "next start",
+    "llms": "node scripts/generate-llms-full.mjs"
   },
   "dependencies": {
     "next": "^15.3.0",
