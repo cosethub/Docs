@@ -10,11 +10,7 @@ A workflow is a **tree of jobs**. The root is usually a **Group** (the workflow 
 2. Open a workflow (or create one).
 3. You see the **tree** (boxes and lines) and can add / edit jobs.
 
-<Callout type="info">
-  **Screenshot placeholder** (`workflow-tree.png`)
-
-  Placeholder: View Workflow tree with a Group and a few child jobs.
-</Callout>
+![View Workflow tree with a Group and child jobs for SQL Bulk Load and Email](./images/workflow-tree.png)
 
 ## Words you’ll see
 
@@ -40,28 +36,22 @@ A workflow is a **tree of jobs**. The root is usually a **Group** (the workflow 
 
 Search or browse by category (**Email and Communication**, **Systems and Security**, **Database and Reporting**, **Finance and Accounting**, **Other**).
 
-<Callout type="info">
-  **Screenshot placeholder** (`workflow-choose-type.png`)
-
-  Placeholder: Step 1 job type picker with categories.
-</Callout>
+![Step 1: Choose Your Job Type with Popular jobs and category cards](./images/workflow-choose-type.png)
 
 ### Step 2 — Name, Description, and Schedule
 
 - Name the job.
 - Either give it an **Independent schedule**, or choose **Run job based on parent status**.
 
-<Callout type="info">
-  **Screenshot placeholder** (`workflow-name-schedule.png`)
+![Step 2: Name, Description, and Schedule for a new job](./images/workflow-name-schedule.png)
 
-  Placeholder: Step 2 with parent-status vs independent schedule.
-</Callout>
-
-### Configure Job Fields
+### Step 3 — Job Parameters
 
 Fill in the type-specific settings (mailbox, FTP path, table/view, recipients, and so on).
 
-To pass a file path or other result into the next job, use **Output mapping** on the **child** — see [Parameters and outputs](./parameters).
+![Step 3: Job Parameters for FTP Download with FTP, Source, and Destination settings](./images/workflow-configure-fields.png)
+
+To pass a file path or other result into the next job, use **Output mapping** on the **child** — see [Parameters and outputs](../parameters).
 
 ## Parent → child run rules
 
@@ -79,11 +69,7 @@ Typical pattern:
 - Alert / escalate → **On failure**
 - Cleanup that must happen either way → **Always**
 
-<Callout type="info">
-  **Screenshot placeholder** (`workflow-run-conditions.png`)
-
-  Placeholder: Tree showing On success and On failure children under one parent.
-</Callout>
+![Tree with On success SQL Bulk Load and On failure Email children under one Group](./images/workflow-run-conditions.png)
 
 ## Independent schedule vs parent status
 
@@ -119,7 +105,7 @@ Group: Morning Positions
                 └── Email  [On failure]   ← rejected
 ```
 
-See [Examples](./examples) for full walkthroughs.
+See [Examples](../examples) for full walkthroughs.
 
 ## Tips
 
@@ -127,4 +113,4 @@ See [Examples](./examples) for full walkthroughs.
 - Keep trees shallow when you can — easier to read and debug.
 - Put human gates (**Task** / **Data Review Task**) only where a person must decide.
 - Check **Job History** after a test run before turning on the real schedule.
-- Pass landing files into the next job with [output mappings](./parameters) instead of hard-coding paths.
+- Pass landing files into the next job with [output mappings](../parameters) instead of hard-coding paths.
