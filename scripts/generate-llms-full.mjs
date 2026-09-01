@@ -26,6 +26,7 @@ const files = [
   'workflows/examples/table-to-csv-view.mdx',
   'workflows/examples/data-review.mdx',
   'checklists/index.mdx',
+  'checklists/iterators.mdx',
   'warehouses/data-monitors.mdx',
   'views/index.mdx',
   'api/index.mdx',

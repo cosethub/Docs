@@ -2,7 +2,7 @@
 
 > Concatenated high-value CoSet documentation for AI agents. Prefer https://cosethub.github.io/Docs/llms.txt to choose pages; use this file for bulk context.
 
-Generated: 2026-08-21
+Generated: 2026-08-24
 
 ---
 
@@ -257,7 +257,7 @@ CoSet **checklists** bind to a **period calendar**. When the period rolls (or op
 - **Jobs / tasks** — workflow milestones (download, load, recon export, sign-off task)
 - **Data monitors** — warehouse exception feeds
 - **Web watchers** — site-change watches
-- **Iterators** — same workflow over many funds/dates
+- **Iterators** — same workflow over many funds/dates ([Iterators guide](/checklists/iterators))
 
 ## Typical setup
 
@@ -1061,7 +1061,8 @@ Use this section to create a checklist, add items, and work the current period i
 | Page | Description |
 | --- | --- |
 | [Getting started](./getting-started) | Open Checklists, create one, pick a period calendar, set groups |
-| [Items](./items) | Jobs, tasks, data monitors, web watchers, iterators; timing and who to notify |
+| [Items](./items) | Jobs, tasks, data monitors, web watchers; timing and who to notify |
+| [Iterators](./iterators) | Step-by-step: Parameter Value List over a CSV, then track on a checklist |
 | [Run, status & history](./run-and-history) | Table vs calendar, Run / Cancel, statuses, Reporting (History) |
 
 ## What a checklist tracks
@@ -1100,6 +1101,161 @@ API: [Checklists](/api/checklists) (planned REST around the same ProcessServer o
 | [Workflows](/workflows) | Jobs you attach as items; **Add to Checklist** from a job tree |
 | [Data monitors](/warehouses/data-monitors) | Table/view conditions that land as checklist alerts |
 | [Permissions](/api/permissions) | Groups you grant on the checklist |
+
+---
+
+Source: https://cosethub.github.io/Docs/checklists/iterators/
+
+# Iterators (step by step)
+
+An **iterator** (engine name: **Parameter Value List**) runs the **same workflow once per CSV row**. Use it when the tree is identical and only a few values change — fund, as-of date, file name, custodian account.
+
+Checklists **track** that iterator job on a period board. You still create the iterator under **Workflow Automation**.
+
+## When to use
+
+| Use an iterator when… | Prefer a normal job when… |
+| --- | --- |
+| One tree must run for many funds / dates / files | A single run covers the whole book |
+| Values live in a CSV (static or dropped at runtime) | Values are fixed on the job form |
+| You need per-row status and **Rerun** on the checklist | One success/fail is enough |
+
+Example: `Daily fund extract` workflow parameterized by `Fund` and `AsOfDate`, CSV with one row per fund.
+
+## Prerequisites
+
+1. A **top-level workflow** (root **Group**) that does the real work.
+2. **Named workflow parameters** on that tree for every value that varies per row (and any shared defaults). See [Parameters and outputs](/workflows/parameters).
+3. A **checklist** with a **Period Calendar** if you will track/run from Checklists — [Getting started](./getting-started).
+4. Permission to create jobs (**Process Server** / Workflow Automation) and edit the checklist.
+
+Keep parameter **names** stable (`Fund`, `AsOfDate`). The iterator maps CSV columns onto those names.
+
+## Step 1 — Prepare the target workflow
+
+1. Open **Workflow Automation** and build (or open) the workflow you will reuse.
+2. On **Table view**, open **Workflow Parameters**.
+3. Add a row per varying input: **Parameter Name**, **Job**, **Parameter** (the job field), optional **Default Value**.
+4. Save. Run the workflow once with defaults to confirm the tree works before iterating.
+
+Anything that stays the same every row (credentials, fixed folders) can stay on the job form or in **Common Parameters** later — do not put it in the CSV.
+
+## Step 2 — Create the iterator
+
+1. In **Workflow Automation**, open a folder or workflow context that supports **Add Iterator** (job tree or **My Workflows**).
+2. Choose **Add Iterator**. Product copy: *Iterators are used to reuse workflows over a set of multiple variables.*
+3. Walk the wizard:
+
+### General
+
+| Field | What to set |
+| --- | --- |
+| **Iterator name** | Process name (`PB cash by fund`) |
+| **Description** | Optional |
+| **Group name** / schedule | Optional parent group + schedule if the iterator itself should fire on a clock |
+| **Run iterated workflows in parallel** | On if rows are independent and the Bridge can take the load |
+
+### Workflow
+
+| Field | What to set |
+| --- | --- |
+| Choose a workflow | The **top-level** target workflow from Step 1 |
+
+### Common Parameters
+
+| Field | What to set |
+| --- | --- |
+| **Available Parameters** / **Add parameter** | Defaults that apply to **every** row unless a CSV column overrides them |
+
+### Iterator Parameters
+
+| Field | What to set |
+| --- | --- |
+| **Upload CSV** | Static list of iterations |
+| **CSV includes headers** | On if row 1 is column names |
+| Column → parameter map | For each CSV column: **Select a parameter** (or **New parameter**) |
+| **Allow a CSV file at runtime instead** | Optional: **Source Folder** / **Source File** so a dropped file replaces the static list |
+| **Run labels** | Row number vs a CSV column — becomes the readable **PVL Iteration ID** in history |
+
+### Output (optional)
+
+| Field | What to set |
+| --- | --- |
+| **Write Statistics to File** | Optional summary of the iterator run |
+
+4. Save. The new job type shows as **Parameter Value List** / **Parameter Value List Job**.
+
+One CSV data row = one run of the target workflow. The engine merges **common defaults** + **column map** for that row.
+
+## Step 3 — Put it on a checklist
+
+1. Open **Checklists** → your board → **Checklist** tab.
+2. **Add Checklist Item** → **Add Job**.
+3. Pick the iterator job as the **Milestone** (same pattern as any other job item).
+4. Set **Who to notify** / escalation and timing if needed — [Items](./items).
+5. Save.
+
+**Edit** on that row opens iterator-aware configuration when the job is a Parameter Value List (common overrides, CSV remap, **Preview data** where available). Prefer fixing the mapping on the job in Workflow Automation if the change should apply everywhere.
+
+From a job tree you can also **Add to Checklist** on the iterator job.
+
+## Step 4 — Run for a period
+
+1. Confirm the checklist period bar shows the period you care about.
+2. On the iterator row:
+   - **Run as Configured** — fire with stored overrides (no dialog).
+   - **Run** — opens **Run** `{job name}`:
+     1. **Select a period**
+     2. **Set Job Parameters** (**Effective Date** plus any job params)
+3. Choose **Run Job** or **Run & Skip Next Scheduled Run**.
+4. **Cancel** stops a running automated job when needed.
+
+Period context comes from the checklist’s **Period Calendar**. The iterator’s own schedule (if any) is separate — it is how the PVL job wakes on the Bridge without the checklist.
+
+## Step 5 — Watch per-row results
+
+1. Expand the checklist item.
+2. Open the **Iterator snapshot** (not only a single run row).
+3. Review the grid:
+
+| Column | Meaning |
+| --- | --- |
+| **Workflow** | Target workflow |
+| **PVL Iteration ID** | Run label (row number or mapped column) |
+| **Values** | Parameter values for that row |
+| **Run Time** | When that iteration ran |
+| **Status** | Completed / Failed / Not Running / In Progress |
+
+4. Use status filters and **Rerun** on failed rows when you need to retry one fund without replaying the whole CSV.
+5. Empty state: **No history available**.
+
+## Tiny example
+
+**Target workflow:** `Fund NAV pack` with workflow parameters `Fund`, `AsOfDate`.
+
+**CSV** (headers on):
+
+```csv
+Fund,AsOfDate
+ALPHA,2026-08-21
+BETA,2026-08-21
+GAMMA,2026-08-21
+```
+
+**Map:** `Fund` → `Fund`, `AsOfDate` → `AsOfDate`.  
+**Common:** leave blank (or set a shared credential-related default that never changes).  
+**Run labels:** column `Fund` so snapshots read `ALPHA` / `BETA` / `GAMMA`.
+
+Checklist item watches the iterator; month-end period shows three iteration statuses under one board row.
+
+## Tips
+
+- Put only **varying** columns in the CSV; keep SFTP credentials and fixed paths on the job or in **Common Parameters**.
+- Turn **CSV includes headers** on whenever the file has a header row so maps stay readable.
+- Prefer **Run labels** from a business column (`Fund`) over raw row numbers when ops will read the snapshot.
+- Parallel iteration speeds independent funds; avoid it if rows contend for the same file or table lock.
+- Checklist **parameter overrides** on a normal job item are not the same as iterator column maps — iterators own the per-row values via the PVL CSV.
+- For period-close context around checklists generally, see [Month-end / period close](/automate/period-close) and [Run, status & history](./run-and-history).
 
 ---
 

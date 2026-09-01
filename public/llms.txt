@@ -35,6 +35,7 @@ CoSet Docs live at https://cosethub.github.io/Docs/ · Product site https://www.
 - [Data monitors](https://cosethub.github.io/Docs/warehouses/data-monitors/): Alert on table/view conditions
 - [Views](https://cosethub.github.io/Docs/views/): Joins, filters, calculated/conditional/aggregate columns
 - [Checklists](https://cosethub.github.io/Docs/checklists/): Period-close boards
+- [Iterators](https://cosethub.github.io/Docs/checklists/iterators/): CSV Parameter Value List step-by-step, then track on a checklist
 
 ## Public API
 

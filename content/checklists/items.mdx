@@ -12,7 +12,7 @@ On the **Checklist** tab, **Add Checklist Item**:
 | **Add Data Monitor** | Data monitor | Surface table/view exception alerts on the period |
 | **Add Web Watcher** | Web watcher | Watch a site / page for the period |
 
-**Add Iterator** (parameter value list) is a separate dialog: reuse a workflow over a set of variables (as-of dates, funds, file names).
+To iterate a workflow over many funds/dates/files, create an **iterator** (Parameter Value List) in Workflow Automation, then **Add Job** and select that iterator — full walkthrough: [Iterators](./iterators).
 
 From a workflow tree, **Add to Checklist** attaches that job to an existing board (or creates one).
 
@@ -64,10 +64,12 @@ Matching rows create alerts on the item. Ops **acknowledge** or **close** them i
 
 ## Iterators (parameter value lists)
 
-**Add Iterator**: *Iterators reuse workflows over a set of variables.* Set name, description, escalation, timing, then choose the job/workflow to iterate. History can show iterator snapshots instead of a simple run row.
+An **iterator** runs one target workflow **once per CSV row** (funds, as-of dates, file names). Create it with **Add Iterator** under Workflow Automation, then track it on the checklist as a job item. Per-row history is the **Iterator snapshot**.
+
+Step-by-step: [Iterators](./iterators).
 
 ## Edit, delete, order
 
 - **Edit** on the row opens item configuration.
-- **Delete** asks `Are you sure you wish to delete "{Name}" ?`
+- **Delete** asks whether you are sure you wish to delete the named item.
 - Drag / display order is saved per checklist (when you have rights).
