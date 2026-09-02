@@ -330,7 +330,7 @@ For a first hands-on path, see [Getting started](./getting-started). For agents 
 | **Checklists** | Period-close ops boards for jobs, tasks, data monitors, and web watchers |
 | **Views** | Shape warehouse tables into reusable datasets — joins, filters, calculated columns, aggregates |
 | **File stores** | Browse, upload, download, and organize files that workflows produce or consume |
-| **Public API** | Call the same surfaces from schedulers, scripts, internal tools, or MCP clients (**coming soon**) |
+| **Public API** | Call the same surfaces from schedulers, scripts, internal tools, or MCP clients |
 | **Coordinator & AI** | Plan setup work and draft warehouse views in natural language |
 
 ## How the pieces work together
@@ -397,7 +397,7 @@ File stores hold the documents and extracts workflows download, transform, or tr
 
 | Surface | Use when |
 | --- | --- |
-| [Public API](/api) | REST access to warehouses, file stores, jobs, workflows, and webhooks (**coming soon**) |
+| [Public API](/api) | REST access to warehouses, file stores, jobs, workflows, and webhooks |
 | Coordinator | You want guided plans for credentials, warehouses, and related setup |
 | [AI views](/views/ai-views) | You want to draft a warehouse view by chatting |
 
@@ -437,7 +437,7 @@ File stores hold the documents and extracts workflows download, transform, or tr
 | [Warehouses](/warehouses) | Browse tables/views, data monitors |
 | [Views](/views) | Shape warehouse data |
 | [Checklists](/checklists) | Period-close boards |
-| [Public API](/api) | Programmatic access (**coming soon**) |
+| [Public API](/api) | Programmatic access |
 | [Automate with CoSet](/automate) | Problem-shaped paths for agents and integrators |
 
 ---
@@ -1439,7 +1439,7 @@ Every view is built from these sections in the form:
 
 Source: https://cosethub.github.io/Docs/api/
 
-# Public API (coming soon)
+# Public API
 
 Programmatic access to credentials, warehouses, file stores, jobs, workflows, and automation hooks.
 
