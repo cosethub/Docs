@@ -10,5 +10,6 @@ export default {
   'file-stores': 'File stores',
   'jobs-workflows-read': 'Jobs & workflows — read',
   'jobs-workflows-write': 'Jobs & workflows — write',
+  mcp: 'MCP server (coming soon)',
   webhooks: 'Webhooks & events',
 }

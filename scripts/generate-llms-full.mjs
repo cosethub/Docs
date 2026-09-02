@@ -30,6 +30,7 @@ const files = [
   'warehouses/data-monitors.mdx',
   'views/index.mdx',
   'api/index.mdx',
+  'api/mcp.mdx',
   'api/jobs-workflows-write.mdx',
   'api/webhooks.mdx'
 ]

@@ -7,5 +7,5 @@ export default {
   views: 'Views',
   checklists: 'Checklists',
   workflows: 'Workflows',
-  api: 'API'
+  api: 'API (coming soon)'
 }

@@ -1,0 +1,388 @@
+import { Callout } from 'nextra/components'
+
+# MCP server (coming soon)
+
+Expose CoSet’s Public API as an [MCP](https://modelcontextprotocol.io/) tool server so Claude, Cursor, and other agents can run workflows, query warehouses, triage data-monitor alerts, and work period-close checklists — without reimplementing REST in every prompt.
+
+This page is the **product spec** for that layer: scope, tool catalog, and rollout. Implementation lives in a separate `coset-mcp` package; it is a thin adapter over `/api/v1`.
+
+<Callout type="info">
+  **Coming soon.** The `coset-mcp` package and full [tool catalog](#tool-catalog) are not shipped yet. MCP tools will map 1:1 to the Public API once both are available. For early access, email [Sales@ryanbts.com](mailto:Sales@ryanbts.com). Agent-facing product docs: [Automate with CoSet](/automate) · [llms.txt](https://cosethub.github.io/Docs/llms.txt).
+</Callout>
+
+## What the MCP server is
+
+```
+Agent (Claude / Cursor / internal bot)
+        │
+        ▼
+  coset-mcp-server          ← tools, resources, prompts
+        │
+        ▼
+  https://{tenant}.cosethub.com/api/v1
+        │
+        ▼
+  Bridge · warehouses · ProcessServer · …
+```
+
+Each **MCP tool** wraps one REST call (or a fixed, documented sequence such as start export → poll export). The server does not embed business logic that the API does not already enforce.
+
+## In scope
+
+Everything documented under Public API **except**:
+
+| Excluded | Reason |
+| --- | --- |
+| [Auth & account](./auth) (`/health`, `/oauth/token`, `/me`, `/organizations/*`) | Auth is **server configuration**, not an agent tool. The MCP process holds a Bearer token or job API key issued outside the session. |
+| [Webhooks & events](./webhooks) | Webhooks are **push subscriptions** for your infrastructure (HTTPS callback URL, signing secret, retry policy). Agents should **poll** runs and alerts (`get_job_run`, `list_data_monitor_alerts`) or you run a separate webhook receiver that calls MCP — not register webhooks from inside the IDE. |
+
+## Included API domains
+
+| Domain | REST doc | MCP role |
+| --- | --- | --- |
+| [Conventions](./conventions) | Errors, pagination, idempotency | Shared client behavior; not separate tools |
+| [Credentials](./credentials) | CRUD + test (metadata only on read) | List/create/update/delete/test connections |
+| [Warehouses](./warehouses) | Tables, views (read), rows, exports | Query and load data; **no view definition CRUD** (not in API today) |
+| [Data monitors](./data-monitors) | Monitors, conditions, alerts | Configure and triage exception feeds |
+| [Checklists](./checklists) | Boards, items, run, history | Period-close automation |
+| [Permissions & groups](./permissions) | Groups, users, table/view ACL | Admin agents only; gate behind `permissions:write` |
+| [File stores](./file-stores) | Browse, upload, download URLs | File landing zones for pipelines |
+| [Jobs & workflows — read](./jobs-workflows-read) | Types, definitions, runs, error analysis | Discover and inspect |
+| [Jobs & workflows — write](./jobs-workflows-write) | Run job, create workflow, AI chat | Trigger and mutate |
+
+## Authentication model
+
+The MCP server is configured once per tenant:
+
+| Config | Purpose |
+| --- | --- |
+| `COSET_TENANT` or `COSET_BASE_URL` | `https://{tenant}.cosethub.com/api/v1` |
+| `COSET_ACCESS_TOKEN` | OAuth Bearer token (preferred for org-scoped tools) |
+| `COSET_JOB_ACCESS_KEY` | Optional narrow key for `run_job` only (`X-Access-Key`) |
+| `COSET_READ_ONLY=true` | Hide all write tools at registration time |
+
+**No MCP tools** for `POST /oauth/token` or token refresh — implement refresh inside the server (client credentials on startup, refresh before expiry). Call `GET /me` once at startup to log org id and scopes; fail fast if a write tool is invoked without scope.
+
+IP allow lists on API keys apply to the MCP host’s egress IP — document this in the MCP README.
+
+## Quick start (Python)
+
+The model never sees your token. You run a **small Python process** that speaks MCP on **stdio**; Cursor or Claude Desktop launches it and forwards tool calls. The process reads `COSET_ACCESS_TOKEN` from the environment and calls `/api/v1`.
+
+<Callout type="info">
+  Below is a **minimal sketch** (two tools). Production should use the planned `coset-mcp` package with the full [tool catalog](#tool-catalog). Requires the Public API enabled for your tenant.
+</Callout>
+
+### 1. Install
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install "mcp[cli]" httpx
+```
+
+Uses the official [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) (`mcp.server.fastmcp`). Pin `mcp` in your own project when you harden this for production.
+
+### 2. Minimal server (`coset_mcp_server.py`)
+
+```python
+"""Tiny CoSet MCP adapter — list workflows and run a job."""
+import json
+import os
+
+import httpx
+from mcp.server.fastmcp import FastMCP
+
+BASE_URL = os.environ.get(
+    "COSET_BASE_URL",
+    f"https://{os.environ['COSET_TENANT']}.cosethub.com/api/v1",
+)
+TOKEN = os.environ["COSET_ACCESS_TOKEN"]
+
+mcp = FastMCP("coset")
+
+
+def _headers() -> dict[str, str]:
+    return {"Authorization": f"Bearer {TOKEN}"}
+
+
+@mcp.tool()
+def coset_list_workflows(page: int = 1, page_size: int = 25) -> str:
+    """List workflow roots. Read-only."""
+    with httpx.Client(timeout=30.0) as client:
+        response = client.get(
+            f"{BASE_URL}/workflows",
+            headers=_headers(),
+            params={"page": page, "page_size": page_size},
+        )
+        response.raise_for_status()
+        return json.dumps(response.json(), indent=2)
+
+
+@mcp.tool()
+def coset_run_job(
+    job_id: int,
+    parameter_overrides: list[dict] | None = None,
+) -> str:
+    """Trigger a job on the Bridge. Production side effect — returns run_id to poll."""
+    body: dict = {}
+    if parameter_overrides:
+        body["parameter_overrides"] = parameter_overrides
+    with httpx.Client(timeout=60.0) as client:
+        response = client.post(
+            f"{BASE_URL}/jobs/{job_id}/run",
+            headers={**_headers(), "Content-Type": "application/json"},
+            json=body,
+        )
+        response.raise_for_status()
+        return json.dumps(response.json(), indent=2)
+
+
+if __name__ == "__main__":
+    mcp.run(transport="stdio")
+```
+
+Token refresh: for a long-lived setup, fetch `POST /oauth/token` once at startup (or on 401) inside this process — still **not** exposed as an MCP tool. See [Auth & account](./auth).
+
+### 3. Wire into Cursor
+
+Project or user MCP config (path to your venv Python and script):
+
+```json
+{
+  "mcpServers": {
+    "coset": {
+      "command": "/absolute/path/to/.venv/bin/python",
+      "args": ["/absolute/path/to/coset_mcp_server.py"],
+      "env": {
+        "COSET_TENANT": "your-tenant",
+        "COSET_ACCESS_TOKEN": "your-bearer-token"
+      }
+    }
+  }
+}
+```
+
+Replace paths and secrets. If the API dashboard has **IP restriction** on, allow the machine running Cursor.
+
+Restart Cursor (or reload MCP). The host spawns the script, calls `list_tools`, and shows `coset_list_workflows` / `coset_run_job` to the model.
+
+### 4. What happens in chat
+
+1. You ask: *“List our workflows”* or *“Run job 1042 with AsOfDate 2026-09-02”*.
+2. The **model** chooses a tool name and JSON arguments (it does not receive your token).
+3. **Cursor** sends the tool call to your Python process over stdio.
+4. The **server** adds `Authorization: Bearer …` and calls CoSet REST.
+5. JSON/text comes back through MCP → model → reply.
+
+To poll a run, add `coset_get_job_run` the same way (`GET /job-runs/{runId}`) — see [Jobs & workflows — read](./jobs-workflows-read).
+
+### 5. Test without an IDE
+
+With the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) or `mcp dev coset_mcp_server.py`, you can invoke tools manually before connecting Cursor.
+
+## Tool design rules
+
+1. **One REST mapping per tool** unless polling is explicit (export status).
+2. **snake_case** arguments matching Public API JSON.
+3. Tool descriptions state **side effects** (“starts Bridge execution”, “soft-deletes monitor”).
+4. Write tools require **`idempotency_key`** where the REST API supports it.
+5. **Never return credential secrets** — same as API; list/get credential tools return metadata only.
+6. Large list responses: pass through API pagination (`page`, `page_size`); do not auto-fetch all pages unless a dedicated `list_all_*` tool is documented as such.
+
+Tool names use prefix `coset_` and snake_case, e.g. `coset_run_job`.
+
+## Tool catalog
+
+Full planned mapping. Tools marked **read** vs **write** for Read Only API keys.
+
+### Jobs & workflows
+
+| MCP tool | REST | RW |
+| --- | --- | --- |
+| `coset_list_job_types` | `GET /jobs` | R |
+| `coset_get_job` | `GET /jobs/{jobId}` | R |
+| `coset_list_job_runs` | `GET /jobs/{jobId}/runs` | R |
+| `coset_get_job_error_analysis` | `GET /jobs/{jobId}/error-analysis` | R |
+| `coset_get_job_run` | `GET /job-runs/{runId}` | R |
+| `coset_get_job_run_error_analysis` | `GET /job-runs/{runId}/error-analysis` | R |
+| `coset_list_workflows` | `GET /workflows` | R |
+| `coset_get_workflow` | `GET /workflows/{workflowId}` | R |
+| `coset_get_workflow_job_detail` | `GET /workflows/{workflowId}/jobs/{jobTreeId}/detail` | R |
+| `coset_get_workflow_error_analysis` | `GET /workflows/{workflowId}/error-analysis` | R |
+| `coset_run_job` | `POST /jobs/{jobId}/run` | W |
+| `coset_request_job_run_error_analysis` | `POST /job-runs/{runId}/error-analysis` | W |
+| `coset_create_workflow` | `POST /workflows` | W |
+| `coset_list_ai_workflow_chats` | `GET /ai-workflow/chats` | R |
+| `coset_get_ai_workflow_chat` | `GET /ai-workflow/chats/{chatId}` | R |
+| `coset_create_ai_workflow_chat` | `POST /ai-workflow/chats` | W |
+| `coset_send_ai_workflow_message` | `POST /ai-workflow/chats/{chatId}` | W |
+| `coset_patch_ai_workflow_parameters` | `PATCH /ai-workflow/chats/{chatId}/parameters` | W |
+| `coset_generate_ai_workflow` | `POST /ai-workflow/chats/{chatId}/workflows` | W |
+| `coset_load_ai_workflow_context` | `POST /ai-workflow/chats/{chatId}/context` | W |
+| `coset_delete_ai_workflow_chat` | `DELETE /ai-workflow/chats/{chatId}` | W |
+
+### Warehouses
+
+| MCP tool | REST | RW |
+| --- | --- | --- |
+| `coset_list_warehouses` | `GET /warehouses` | R |
+| `coset_get_warehouse` | `GET /warehouses/{warehouseId}` | R |
+| `coset_list_tables` | `GET /warehouses/{warehouseId}/tables` | R |
+| `coset_list_views` | `GET /warehouses/{warehouseId}/views` | R |
+| `coset_get_table_schema` | `GET .../tables/{tableName}/schema` | R |
+| `coset_query_table_rows` | `GET .../tables/{tableName}/rows` | R |
+| `coset_get_table_row` | `GET .../tables/{tableName}/rows/{rowId}` | R |
+| `coset_query_view_rows` | `GET .../views/{viewName}/rows` | R |
+| `coset_warehouse_query` | `POST /warehouses/{warehouseId}/query` | R |
+| `coset_start_warehouse_export` | `POST .../exports` | W |
+| `coset_get_warehouse_export` | `GET .../exports/{exportId}` | R |
+| `coset_insert_table_row` | `POST .../tables/{tableName}/rows` | W |
+| `coset_replace_table_row` | `PUT .../rows/{rowId}` | W |
+| `coset_patch_table_row` | `PATCH .../rows/{rowId}` | W |
+| `coset_delete_table_row` | `DELETE .../rows/{rowId}` | W |
+| `coset_bulk_upsert_table_rows` | `POST .../rows/bulk` | W |
+| `coset_put_warehouse_metadata` | `PUT .../metadata` | W |
+
+<Callout type="info">
+  **Views:** list and query rows only. There is **no** Public API endpoint to create or edit view definitions — use the CoSet UI or AI View Assistant. MCP does not add view-definition tools until the API does.
+</Callout>
+
+### Data monitors
+
+| MCP tool | REST | RW |
+| --- | --- | --- |
+| `coset_get_data_monitor_type` | `GET .../entities/{entityName}/data-monitor-type` | R |
+| `coset_ensure_data_monitor_type` | `POST .../data-monitor-type` | W |
+| `coset_list_entity_data_monitors` | `GET .../data-monitors` | R |
+| `coset_create_data_monitor` | `POST .../data-monitors` | W |
+| `coset_get_data_monitor` | `GET /data-monitors/{monitorId}` | R |
+| `coset_update_data_monitor` | `PATCH /data-monitors/{monitorId}` | W |
+| `coset_delete_data_monitor` | `DELETE /data-monitors/{monitorId}` | W |
+| `coset_list_data_monitor_status_codes` | `GET /data-monitors/status-codes` | R |
+| `coset_create_data_monitor_status_code` | `POST /data-monitors/status-codes` | W |
+| `coset_list_data_monitor_alerts` | `GET /data-monitors/alerts` | R |
+| `coset_get_data_monitor_alert` | `GET /data-monitors/alerts/{alertId}` | R |
+
+### Checklists
+
+| MCP tool | REST | RW |
+| --- | --- | --- |
+| `coset_list_checklists` | `GET /checklists` | R |
+| `coset_create_checklist` | `POST /checklists` | W |
+| `coset_get_checklist` | `GET /checklists/{checklistId}` | R |
+| `coset_update_checklist` | `PATCH /checklists/{checklistId}` | W |
+| `coset_delete_checklist` | `DELETE /checklists/{checklistId}` | W |
+| `coset_reset_checklist` | `POST /checklists/{checklistId}/reset` | W |
+| `coset_list_checklist_items` | `GET .../items` | R |
+| `coset_add_checklist_item` | `POST .../items` | W |
+| `coset_update_checklist_item` | `PATCH .../items/{itemId}` | W |
+| `coset_delete_checklist_item` | `DELETE .../items/{itemId}` | W |
+| `coset_run_checklist_item` | `POST .../items/{itemId}/run` | W |
+| `coset_cancel_checklist_item` | `POST .../items/{itemId}/cancel` | W |
+| `coset_get_checklist_item_history` | `GET .../items/{itemId}/history` | R |
+| `coset_patch_checklist_detail_item` | `PATCH .../detail-items/{detailItemId}` | W |
+| `coset_list_checklist_periods` | `GET .../periods` | R |
+
+### Credentials
+
+| MCP tool | REST | RW |
+| --- | --- | --- |
+| `coset_list_credentials` | `GET /credentials` | R |
+| `coset_get_credential` | `GET /credentials/{credentialId}` | R |
+| `coset_create_credential` | `POST /credentials` | W |
+| `coset_update_credential` | `PUT /credentials/{credentialId}` | W |
+| `coset_delete_credential` | `DELETE /credentials/{credentialId}` | W |
+| `coset_test_credential` | `POST /credentials/{credentialId}/test` | W |
+
+### File stores
+
+| MCP tool | REST | RW |
+| --- | --- | --- |
+| `coset_list_file_stores` | `GET /file-stores` | R |
+| `coset_list_file_store_items` | `GET /file-stores/{storeId}/items` | R |
+| `coset_get_file_download_url` | `GET .../download-url` | R |
+| `coset_get_file_store_settings` | `GET .../settings` | R |
+| `coset_create_file_store` | `POST /file-stores` | W |
+| `coset_update_file_store_settings` | `PUT .../settings` | W |
+| `coset_create_file_store_folder` | `POST .../folders` | W |
+| `coset_upload_file` | `POST .../upload` | W |
+| `coset_put_file_object` | `PUT .../objects` | W |
+| `coset_rename_file_store_item` | `POST .../rename` | W |
+| `coset_move_file_store_item` | `POST .../move` | W |
+| `coset_delete_file_store_items` | `DELETE .../items` | W |
+
+### Permissions & groups
+
+| MCP tool | REST | RW |
+| --- | --- | --- |
+| `coset_list_groups` | `GET /groups` | R |
+| `coset_get_group` | `GET /groups/{groupId}` | R |
+| `coset_create_group` | `POST /groups` | W |
+| `coset_update_group` | `PATCH /groups/{groupId}` | W |
+| `coset_delete_group` | `DELETE /groups/{groupId}` | W |
+| `coset_list_users` | `GET /users` | R |
+| `coset_get_user` | `GET /users/{userId}` | R |
+| `coset_put_user_groups` | `PUT /users/{userId}/groups` | W |
+| `coset_list_table_access` | `GET .../table-access` | R |
+| `coset_get_table_access` | `GET .../table-access/{tableName}` | R |
+| `coset_put_table_access` | `PUT .../table-access/{tableName}` | W |
+| `coset_delete_table_access` | `DELETE .../table-access/{tableName}` | W |
+| `coset_get_view_access` | `GET .../views/{viewName}/access` | R |
+| `coset_put_view_access` | `PUT .../views/{viewName}/access` | W |
+| `coset_get_effective_permission` | `GET /permissions/effective` | R |
+
+---
+
+## MCP resources (optional)
+
+Read-only URIs for context without invoking tools:
+
+| URI | Content |
+| --- | --- |
+| `coset://docs/llms.txt` | Link to site index |
+| `coset://workflows` | Cached workflow list (summary) |
+| `coset://warehouses/{id}/tables` | Table index |
+
+Keep summaries small; agents should call tools for fresh data.
+
+## MCP prompts (optional)
+
+Ship bundled prompts that reference [Automate with CoSet](/automate) playbooks:
+
+| Prompt | Primary tools |
+| --- | --- |
+| `investigate-failed-job` | `coset_get_job_run`, `coset_get_job_run_error_analysis` |
+| `triage-data-monitor-alerts` | `coset_list_data_monitor_alerts`, `coset_get_data_monitor` |
+| `period-close-status` | `coset_get_checklist`, `coset_list_checklist_items`, `coset_run_checklist_item` |
+| `run-sftp-pipeline` | `coset_list_workflows`, `coset_run_job`, `coset_get_job_run` |
+
+---
+
+## Rollout phases
+
+| Phase | Tool groups |
+| --- | --- |
+| **1 — Run & debug** | Jobs & workflows read + `coset_run_job` + error analysis |
+| **2 — Data & alerts** | Warehouse query/export read + data monitor alerts |
+| **3 — Close** | Checklists run, history, reset |
+| **4 — Platform** | Credentials, file stores, permissions, workflow create, AI chat |
+
+Phase 1 is enough to trigger and debug workflows from Claude/Cursor.
+
+## Safety
+
+- Honor API key **Read Only** and **Users**-linked permissions — hide write tools or pass through 403.
+- Respect **IP allow list** on the MCP host egress IP.
+- Do not log Bearer tokens, `X-Access-Key`, or credential `data` payloads.
+- `run_job` and `run_checklist_item` are **production side effects** — descriptions must say so.
+- Poll `get_job_run` with backoff; do not hammer list endpoints in a tight loop.
+
+## Related
+
+| Doc | Use |
+| --- | --- |
+| [Public API overview](./index) | Auth, keys, IP restriction |
+| [Conventions](./conventions) | Errors, pagination, idempotency |
+| [Automate with CoSet](/automate) | Problem → tree mapping for agents |
+| [Trigger from scripts](/automate/trigger-from-scripts) | Same REST patterns without MCP |
