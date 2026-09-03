@@ -2,12 +2,12 @@ import { Callout } from 'nextra/components'
 
 # MCP server (coming soon)
 
-Expose CoSet’s Public API as an [MCP](https://modelcontextprotocol.io/) tool server so Claude, Cursor, and other agents can run workflows, query warehouses, triage data-monitor alerts, and work period-close checklists — without reimplementing REST in every prompt.
+CoSet hosts a public [MCP](https://modelcontextprotocol.io/) endpoint on your tenant so Claude, Cursor, and other agents can run workflows, query warehouses, triage data-monitor alerts, and work period-close checklists — without installing a local adapter or reimplementing REST in every prompt.
 
-This page is the **product spec** for that layer: scope, tool catalog, and rollout. Implementation lives in a separate `coset-mcp` package; it is a thin adapter over `/api/v1`.
+The hosted server is a thin tool layer over `/api/v1`. Same scopes, permissions, and side effects as the Public API.
 
 <Callout type="info">
-  **Coming soon.** The `coset-mcp` package and full [tool catalog](#tool-catalog) are not shipped yet. MCP tools will map 1:1 to the Public API once both are available. For early access, email [Sales@ryanbts.com](mailto:Sales@ryanbts.com). Agent-facing product docs: [Automate with CoSet](/automate) · [llms.txt](https://cosethub.github.io/Docs/llms.txt).
+  **Coming soon.** The tenant MCP endpoint and full [tool catalog](#tool-catalog) are not live yet. For early access, email [Sales@ryanbts.com](mailto:Sales@ryanbts.com). Agent-facing product docs: [Automate with CoSet](/automate) · [llms.txt](https://cosethub.github.io/Docs/llms.txt).
 </Callout>
 
 ## What the MCP server is
@@ -16,7 +16,7 @@ This page is the **product spec** for that layer: scope, tool catalog, and rollo
 Agent (Claude / Cursor / internal bot)
         │
         ▼
-  coset-mcp-server          ← tools, resources, prompts
+  https://{tenant}.cosethub.com/mcp   ← CoSet-hosted (Streamable HTTP / SSE)
         │
         ▼
   https://{tenant}.cosethub.com/api/v1
@@ -27,14 +27,26 @@ Agent (Claude / Cursor / internal bot)
 
 Each **MCP tool** wraps one REST call (or a fixed, documented sequence such as start export → poll export). The server does not embed business logic that the API does not already enforce.
 
+You point the MCP client at the tenant URL and authenticate once. CoSet holds the adapter; the agent never talks to `/api/v1` directly unless you also use REST from scripts.
+
+## Endpoint
+
+| | |
+| --- | --- |
+| **URL** | `https://{tenant}.cosethub.com/mcp` |
+| **Transport** | Streamable HTTP (preferred) or SSE, per MCP remote-server support in the client |
+| **Docs metadata** | Server advertises [llms.txt](https://cosethub.github.io/Docs/llms.txt) for agent discovery |
+
+Replace `{tenant}` with your CoSet hostname prefix (same as the Public API base URL).
+
 ## In scope
 
 Everything documented under Public API **except**:
 
 | Excluded | Reason |
 | --- | --- |
-| [Auth & account](./auth) (`/health`, `/oauth/token`, `/me`, `/organizations/*`) | Auth is **server configuration**, not an agent tool. The MCP process holds a Bearer token or job API key issued outside the session. |
-| [Webhooks & events](./webhooks) | Webhooks are **push subscriptions** for your infrastructure (HTTPS callback URL, signing secret, retry policy). Agents should **poll** runs and alerts (`get_job_run`, `list_data_monitor_alerts`) or you run a separate webhook receiver that calls MCP — not register webhooks from inside the IDE. |
+| [Auth & account](./auth) (`/health`, `/oauth/token`, `/me`, `/organizations/*`) | Auth is **how the client connects** to MCP, not a tool the model calls. Token / API key lives in the MCP client config. |
+| [Webhooks & events](./webhooks) | Webhooks are **push subscriptions** for your infrastructure (HTTPS callback URL, signing secret, retry policy). Agents should **poll** runs and alerts (`coset_get_job_run`, `coset_list_data_monitor_alerts`) or you run a separate webhook receiver — not register webhooks from inside the IDE. |
 
 ## Included API domains
 
@@ -50,136 +62,56 @@ Everything documented under Public API **except**:
 | [Jobs & workflows — read](./jobs-workflows-read) | Types, definitions, runs, error analysis | Discover and inspect |
 | [Jobs & workflows — write](./jobs-workflows-write) | Run job, create workflow, AI chat | Trigger and mutate |
 
-## Authentication model
+## Authentication
 
-The MCP server is configured once per tenant:
+The agent never sees your secret. The MCP **client** (Cursor, Claude Desktop, etc.) sends credentials on each session; the hosted server validates them and calls `/api/v1` with the same org and scopes.
 
-| Config | Purpose |
+| Method | When to use |
 | --- | --- |
-| `COSET_TENANT` or `COSET_BASE_URL` | `https://{tenant}.cosethub.com/api/v1` |
-| `COSET_ACCESS_TOKEN` | OAuth Bearer token (preferred for org-scoped tools) |
-| `COSET_JOB_ACCESS_KEY` | Optional narrow key for `run_job` only (`X-Access-Key`) |
-| `COSET_READ_ONLY=true` | Hide all write tools at registration time |
+| **OAuth Bearer** (API client → `POST /oauth/token`) | Preferred for org-scoped tools; same client as Public API |
+| **API key** / job access key | Narrow keys (for example `X-Access-Key` for `run_job` only) where the dashboard issues them |
+| **Read Only** key or flag | Hosted server registers **read tools only** — write tools are hidden |
 
-**No MCP tools** for `POST /oauth/token` or token refresh — implement refresh inside the server (client credentials on startup, refresh before expiry). Call `GET /me` once at startup to log org id and scopes; fail fast if a write tool is invoked without scope.
+**No MCP tools** for `POST /oauth/token` or token refresh — the client supplies a token (or the host refreshes using client credentials configured for that MCP connection). On connect, the server may call `GET /me` to resolve org id and scopes; write tools fail fast with 403 if scope is missing.
 
-IP allow lists on API keys apply to the MCP host’s egress IP — document this in the MCP README.
+If the API key has an **IP allow list**, allow the egress IPs of the MCP **client** host (the machine or cloud runner that opens the MCP session), not a separate “MCP package” host — CoSet’s MCP endpoint is already on your tenant.
 
-## Quick start (Python)
+See [Auth & account](./auth) and the [API overview](./index) for issuing clients and keys.
 
-The model never sees your token. You run a **small Python process** that speaks MCP on **stdio**; Cursor or Claude Desktop launches it and forwards tool calls. The process reads `COSET_ACCESS_TOKEN` from the environment and calls `/api/v1`.
+## Connect (Cursor / Claude)
 
-<Callout type="info">
-  Below is a **minimal sketch** (two tools). Production should use the planned `coset-mcp` package with the full [tool catalog](#tool-catalog). Requires the Public API enabled for your tenant.
-</Callout>
+When the endpoint is live, add the tenant MCP URL to your client. Exact JSON keys vary by client version; the pattern is a **remote** MCP server with auth headers (not a local `command` / stdio process).
 
-### 1. Install
-
-```bash
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install "mcp[cli]" httpx
-```
-
-Uses the official [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) (`mcp.server.fastmcp`). Pin `mcp` in your own project when you harden this for production.
-
-### 2. Minimal server (`coset_mcp_server.py`)
-
-```python
-"""Tiny CoSet MCP adapter — list workflows and run a job."""
-import json
-import os
-
-import httpx
-from mcp.server.fastmcp import FastMCP
-
-BASE_URL = os.environ.get(
-    "COSET_BASE_URL",
-    f"https://{os.environ['COSET_TENANT']}.cosethub.com/api/v1",
-)
-TOKEN = os.environ["COSET_ACCESS_TOKEN"]
-
-mcp = FastMCP("coset")
-
-
-def _headers() -> dict[str, str]:
-    return {"Authorization": f"Bearer {TOKEN}"}
-
-
-@mcp.tool()
-def coset_list_workflows(page: int = 1, page_size: int = 25) -> str:
-    """List workflow roots. Read-only."""
-    with httpx.Client(timeout=30.0) as client:
-        response = client.get(
-            f"{BASE_URL}/workflows",
-            headers=_headers(),
-            params={"page": page, "page_size": page_size},
-        )
-        response.raise_for_status()
-        return json.dumps(response.json(), indent=2)
-
-
-@mcp.tool()
-def coset_run_job(
-    job_id: int,
-    parameter_overrides: list[dict] | None = None,
-) -> str:
-    """Trigger a job on the Bridge. Production side effect — returns run_id to poll."""
-    body: dict = {}
-    if parameter_overrides:
-        body["parameter_overrides"] = parameter_overrides
-    with httpx.Client(timeout=60.0) as client:
-        response = client.post(
-            f"{BASE_URL}/jobs/{job_id}/run",
-            headers={**_headers(), "Content-Type": "application/json"},
-            json=body,
-        )
-        response.raise_for_status()
-        return json.dumps(response.json(), indent=2)
-
-
-if __name__ == "__main__":
-    mcp.run(transport="stdio")
-```
-
-Token refresh: for a long-lived setup, fetch `POST /oauth/token` once at startup (or on 401) inside this process — still **not** exposed as an MCP tool. See [Auth & account](./auth).
-
-### 3. Wire into Cursor
-
-Project or user MCP config (path to your venv Python and script):
+### Cursor (remote MCP)
 
 ```json
 {
   "mcpServers": {
     "coset": {
-      "command": "/absolute/path/to/.venv/bin/python",
-      "args": ["/absolute/path/to/coset_mcp_server.py"],
-      "env": {
-        "COSET_TENANT": "your-tenant",
-        "COSET_ACCESS_TOKEN": "your-bearer-token"
+      "url": "https://{tenant}.cosethub.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_ACCESS_TOKEN"
       }
     }
   }
 }
 ```
 
-Replace paths and secrets. If the API dashboard has **IP restriction** on, allow the machine running Cursor.
+Replace `{tenant}` and the token. Prefer a short-lived OAuth access token from [Auth & account](./auth); rotate via your secrets store rather than committing the value.
 
-Restart Cursor (or reload MCP). The host spawns the script, calls `list_tools`, and shows `coset_list_workflows` / `coset_run_job` to the model.
-
-### 4. What happens in chat
+### What happens in chat
 
 1. You ask: *“List our workflows”* or *“Run job 1042 with AsOfDate 2026-09-02”*.
 2. The **model** chooses a tool name and JSON arguments (it does not receive your token).
-3. **Cursor** sends the tool call to your Python process over stdio.
-4. The **server** adds `Authorization: Bearer …` and calls CoSet REST.
+3. The **MCP client** sends the tool call to `https://{tenant}.cosethub.com/mcp`.
+4. The **hosted server** authorizes the session and calls CoSet REST.
 5. JSON/text comes back through MCP → model → reply.
 
-To poll a run, add `coset_get_job_run` the same way (`GET /job-runs/{runId}`) — see [Jobs & workflows — read](./jobs-workflows-read).
+To poll a run, use `coset_get_job_run` (`GET /job-runs/{runId}`) — see [Jobs & workflows — read](./jobs-workflows-read).
 
-### 5. Test without an IDE
+### Claude Desktop / other hosts
 
-With the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) or `mcp dev coset_mcp_server.py`, you can invoke tools manually before connecting Cursor.
+Same idea: remote MCP URL + Bearer (or API key) header. Follow the host’s docs for remote / HTTP MCP servers once CoSet publishes the transport details with GA.
 
 ## Tool design rules
 
@@ -368,15 +300,24 @@ Ship bundled prompts that reference [Automate with CoSet](/automate) playbooks:
 | **3 — Close** | Checklists run, history, reset |
 | **4 — Platform** | Credentials, file stores, permissions, workflow create, AI chat |
 
-Phase 1 is enough to trigger and debug workflows from Claude/Cursor.
+Phase 1 is enough to trigger and debug workflows from Claude/Cursor against the hosted URL.
 
 ## Safety
 
 - Honor API key **Read Only** and **Users**-linked permissions — hide write tools or pass through 403.
-- Respect **IP allow list** on the MCP host egress IP.
+- Respect **IP allow list** on the MCP **client** egress IP.
 - Do not log Bearer tokens, `X-Access-Key`, or credential `data` payloads.
-- `run_job` and `run_checklist_item` are **production side effects** — descriptions must say so.
-- Poll `get_job_run` with backoff; do not hammer list endpoints in a tight loop.
+- `coset_run_job` and `coset_run_checklist_item` are **production side effects** — descriptions must say so.
+- Poll `coset_get_job_run` with backoff; do not hammer list endpoints in a tight loop.
+
+## Local / self-hosted adapter (optional)
+
+Most teams should use the **hosted** endpoint above. A local stdio adapter (your process calls `/api/v1` with a token) remains useful for:
+
+- Developing against a private network or stub API before the tenant MCP URL is enabled
+- Air-gapped agent hosts that cannot reach `*.cosethub.com/mcp` but can reach `/api/v1`
+
+That path is not the product default. Prefer REST from scripts ([Trigger from scripts](/automate/trigger-from-scripts)) or wait for the hosted MCP URL.
 
 ## Related
 
