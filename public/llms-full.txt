@@ -2,7 +2,7 @@
 
 > Concatenated high-value CoSet documentation for AI agents. Prefer https://cosethub.github.io/Docs/llms.txt to choose pages; use this file for bulk context.
 
-Generated: 2026-09-03
+Generated: 2026-09-10
 
 ---
 
@@ -1651,6 +1651,7 @@ Full planned mapping. Tools marked **read** vs **write** for Read Only API keys.
 | `coset_get_workflow_job_detail` | `GET /workflows/{workflowId}/jobs/{jobTreeId}/detail` | R |
 | `coset_get_workflow_error_analysis` | `GET /workflows/{workflowId}/error-analysis` | R |
 | `coset_run_job` | `POST /jobs/{jobId}/run` | W |
+| `coset_request_job_error_analysis` | `POST /jobs/{jobId}/error-analysis` | W |
 | `coset_request_job_run_error_analysis` | `POST /job-runs/{runId}/error-analysis` | W |
 | `coset_create_workflow` | `POST /workflows` | W |
 | `coset_list_ai_workflow_chats` | `GET /ai-workflow/chats` | R |
@@ -1790,7 +1791,7 @@ Ship bundled prompts that reference [Automate with CoSet](/automate) playbooks:
 
 | Prompt | Primary tools |
 | --- | --- |
-| `investigate-failed-job` | `coset_get_job_run`, `coset_get_job_run_error_analysis` |
+| `investigate-failed-job` | `coset_request_job_error_analysis` (by root job id), `coset_get_job_error_analysis`, `coset_get_job_run`, `coset_get_job_run_error_analysis` |
 | `triage-data-monitor-alerts` | `coset_list_data_monitor_alerts`, `coset_get_data_monitor` |
 | `period-close-status` | `coset_get_checklist`, `coset_list_checklist_items`, `coset_run_checklist_item` |
 | `run-sftp-pipeline` | `coset_list_workflows`, `coset_run_job`, `coset_get_job_run` |
@@ -1801,7 +1802,7 @@ Ship bundled prompts that reference [Automate with CoSet](/automate) playbooks:
 
 | Phase | Tool groups |
 | --- | --- |
-| **1 — Run & debug** | Jobs & workflows read + `coset_run_job` + error analysis |
+| **1 — Run & debug** | Jobs & workflows read + `coset_run_job` + `coset_request_job_error_analysis` / run-id variant + error analysis reads |
 | **2 — Data & alerts** | Warehouse query/export read + data monitor alerts |
 | **3 — Close** | Checklists run, history, reset |
 | **4 — Platform** | Credentials, file stores, permissions, workflow create, AI chat |
@@ -1853,7 +1854,8 @@ Trigger runs, create workflows, and mutate AI workflow builder chats.
 | Method | Path | Action |
 | --- | --- | --- |
 | `POST` | [`/jobs/{jobId}/run`](#post-jobsjobidrun) | Trigger job |
-| `POST` | [`/job-runs/{runId}/error-analysis`](#post-job-runsruniderror-analysis) | Request / refresh AI error analysis |
+| `POST` | [`/jobs/{jobId}/error-analysis`](#post-jobsjobiderror-analysis) | Request / refresh AI log analysis by root (or child) job id |
+| `POST` | [`/job-runs/{runId}/error-analysis`](#post-job-runsruniderror-analysis) | Request / refresh AI log analysis by run id |
 | `POST` | [`/workflows`](#post-workflows) | Create workflow |
 | `POST` | [`/ai-workflow/chats`](#post-ai-workflowchats) | Create chat |
 | `POST` | [`/ai-workflow/chats/{chatId}`](#post-ai-workflowchatschatid) | Send message |
@@ -1998,9 +2000,72 @@ curl -sS -X POST \
 
 ---
 
+## `POST /jobs/{jobId}/error-analysis`
+
+Queue or re-run the **AI log analysis agent** for the latest failed (or partially failed) run of this job.
+
+`jobId` is typically the **root** workflow job id. A **child / sub job** id is also accepted — the server walks to the root job, finds the latest failed root run, and queues analysis for that run (one analysis per root failure).
+
+Prefer this when the caller already has a job tree id (from the UI, checklist, or agent) and does not want to look up `run_id` first. Prefer [`POST /job-runs/{runId}/error-analysis`](#post-job-runsruniderror-analysis) when you already know the exact run.
+
+| | |
+| --- | --- |
+| **Status** | Planned (today: queue via `IWorkflowLogAnalysisService.QueueAnalysisForFailedRun` / `POST /api/workflow/logs/analyze`) |
+| **Scopes** | `workflows:write` or `jobs:write` |
+
+### Request body
+
+Optional. Empty body is fine.
+
+```json
+{
+  "force": false,
+  "run_id": null
+}
+```
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `force` | `boolean` | `false` | Re-analyze even if an analysis already exists for the root run |
+| `run_id` | `string` | — | Optional. Prefer this run when the job participated in it; otherwise use the latest failed root run |
+
+### Response `202 Accepted`
+
+```json
+{
+  "job_id": 1042,
+  "root_job_id": 1001,
+  "run_id": "rjh_8f3a…",
+  "workflow_id": 1001,
+  "status": "queued"
+}
+```
+
+Poll [`GET /jobs/{jobId}/error-analysis`](./jobs-workflows-read#get-jobsjobiderror-analysis) or [`GET /job-runs/{runId}/error-analysis`](./jobs-workflows-read#get-job-runsruniderror-analysis) until `200`.
+
+### Errors
+
+| HTTP | `code` | When |
+| --- | --- | --- |
+| `404` | `not_found` | Unknown job, no failed run to analyze, or feature disabled |
+| `409` | `conflict` | Analysis already exists and `force` is false (optional; may also return `202` with `status: "already_exists"`) |
+
+### Example
+
+```bash
+# Trigger log analysis agent for root job 1001
+curl -sS -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"force":false}' \
+  "https://{tenant}.cosethub.com/api/v1/jobs/1001/error-analysis"
+```
+
+---
+
 ## `POST /job-runs/{runId}/error-analysis`
 
-Queue or re-run AI error analysis for a failed (or partially failed) run. Prefer this when automatic analysis did not run or you need a refresh after fixing logs context.
+Queue or re-run AI log analysis for a **specific** failed (or partially failed) run. Prefer this when automatic analysis did not run, you need a refresh after fixing logs context, or you already have `run_id`.
 
 | | |
 | --- | --- |
@@ -2008,6 +2073,8 @@ Queue or re-run AI error analysis for a failed (or partially failed) run. Prefer
 | **Scopes** | `workflows:write` or `jobs:write` |
 
 `runId` may identify a root or child history in the run; the server normalizes to the **root** run (same as the GET endpoints).
+
+To trigger by **root job id** instead, use [`POST /jobs/{jobId}/error-analysis`](#post-jobsjobiderror-analysis).
 
 ### Request body
 

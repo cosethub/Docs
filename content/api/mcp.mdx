@@ -143,6 +143,7 @@ Full planned mapping. Tools marked **read** vs **write** for Read Only API keys.
 | `coset_get_workflow_job_detail` | `GET /workflows/{workflowId}/jobs/{jobTreeId}/detail` | R |
 | `coset_get_workflow_error_analysis` | `GET /workflows/{workflowId}/error-analysis` | R |
 | `coset_run_job` | `POST /jobs/{jobId}/run` | W |
+| `coset_request_job_error_analysis` | `POST /jobs/{jobId}/error-analysis` | W |
 | `coset_request_job_run_error_analysis` | `POST /job-runs/{runId}/error-analysis` | W |
 | `coset_create_workflow` | `POST /workflows` | W |
 | `coset_list_ai_workflow_chats` | `GET /ai-workflow/chats` | R |
@@ -284,7 +285,7 @@ Ship bundled prompts that reference [Automate with CoSet](/automate) playbooks:
 
 | Prompt | Primary tools |
 | --- | --- |
-| `investigate-failed-job` | `coset_get_job_run`, `coset_get_job_run_error_analysis` |
+| `investigate-failed-job` | `coset_request_job_error_analysis` (by root job id), `coset_get_job_error_analysis`, `coset_get_job_run`, `coset_get_job_run_error_analysis` |
 | `triage-data-monitor-alerts` | `coset_list_data_monitor_alerts`, `coset_get_data_monitor` |
 | `period-close-status` | `coset_get_checklist`, `coset_list_checklist_items`, `coset_run_checklist_item` |
 | `run-sftp-pipeline` | `coset_list_workflows`, `coset_run_job`, `coset_get_job_run` |
@@ -295,7 +296,7 @@ Ship bundled prompts that reference [Automate with CoSet](/automate) playbooks:
 
 | Phase | Tool groups |
 | --- | --- |
-| **1 — Run & debug** | Jobs & workflows read + `coset_run_job` + error analysis |
+| **1 — Run & debug** | Jobs & workflows read + `coset_run_job` + `coset_request_job_error_analysis` / run-id variant + error analysis reads |
 | **2 — Data & alerts** | Warehouse query/export read + data monitor alerts |
 | **3 — Close** | Checklists run, history, reset |
 | **4 — Platform** | Credentials, file stores, permissions, workflow create, AI chat |

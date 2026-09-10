@@ -283,9 +283,11 @@ Run history (newest first).
 
 ## `GET /jobs/{jobId}/error-analysis`
 
-Return AI error analysis for the latest failed run associated with this job.
+Return AI log / error analysis for the latest failed run associated with this job.
 
 `jobId` may be the **root** workflow job or any **child / sub job**. The server walks to the root run and returns that run’s analysis (one analysis per root failure, not per child).
+
+To **trigger** the log analysis agent for a root job id (instead of only reading), use [`POST /jobs/{jobId}/error-analysis`](./jobs-workflows-write#post-jobsjobiderror-analysis).
 
 | | |
 | --- | --- |
