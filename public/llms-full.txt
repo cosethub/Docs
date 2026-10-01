@@ -2,7 +2,7 @@
 
 > Concatenated high-value CoSet documentation for AI agents. Prefer https://cosethub.github.io/Docs/llms.txt to choose pages; use this file for bulk context.
 
-Generated: 2026-09-10
+Generated: 2026-10-01
 
 ---
 
@@ -13,8 +13,8 @@ Source: https://cosethub.github.io/Docs/automate/
 Use this page when you (or an AI agent) need to map a **business automation question** to CoSet building blocks: credentials, workflow trees, warehouses/views, checklists, or the Public API.
 
 **Product:** CoSet (ops automation for hedge funds and fund administrators)  
-**UI:** `https://your-tenant.cosethub.com`  
-**API base:** `https://your-tenant.cosethub.com/api/v1`  
+**UI:** `https://portal.cosethub.com`  
+**API base:** `https://portal.cosethub.com/api/v1`  
 **Docs index for agents:** [llms.txt](https://cosethub.github.io/Docs/llms.txt)
 
 ## Pick a problem
@@ -200,7 +200,7 @@ Source: https://cosethub.github.io/Docs/automate/trigger-from-scripts/
 2. Note the **job id** (root Group or the leaf you want to start).
 3. Call the Public API from your scheduler.
 
-**API base:** `https://your-tenant.cosethub.com/api/v1`
+**API base:** `https://portal.cosethub.com/api/v1`
 
 ## Auth
 
@@ -225,7 +225,7 @@ Content-Type: application/json
 }
 ```
 
-Poll [`GET /job-runs/{runId}`](/api/jobs-workflows-read#get-job-runsrunid) for status and `output_refs`. Details: [Jobs & workflows — write](/api/jobs-workflows-write). For Claude/Cursor agents, see the planned hosted [MCP server](/api/mcp) (`https://{tenant}.cosethub.com/mcp`, tools such as `coset_run_job`, `coset_get_job_run`, …).
+Poll [`GET /job-runs/{runId}`](/api/jobs-workflows-read#get-job-runsrunid) for status and `output_refs`. Details: [Jobs & workflows — write](/api/jobs-workflows-write). For Claude/Cursor agents, see the planned hosted [MCP server](/api/mcp) (`https://portal.cosethub.com/mcp`, tools such as `coset_run_job`, `coset_get_job_run`, …).
 
 ## Events back to your systems
 
@@ -417,7 +417,7 @@ File stores hold the documents and extracts workflows download, transform, or tr
 
 | Term | Meaning |
 | --- | --- |
-| **Organization / tenant** | Your CoSet site (e.g. `https://your-tenant.cosethub.com`) |
+| **Organization / tenant** | Your CoSet site (e.g. `https://portal.cosethub.com`) |
 | **Credential** | Named connection stored in Credential Hub |
 | **Workflow / Group** | Tree of jobs under a title |
 | **Job** | One step (a job type) in a workflow |
@@ -460,15 +460,17 @@ Confirm with your admin that you have:
 - Access to at least one **data warehouse** if you will load or query data
 - Access to **Database Views** if you will build views
 
-Base URL pattern for the site and API:
+Base URL for the SaaS site and API:
 
 ```
-https://{tenant}.cosethub.com
+https://portal.cosethub.com
 ```
+
+Custom / privately installed tenants use their own hostname instead (for example `https://{tenant}.cosethub.com`).
 
 ## 1. Sign in and orient
 
-1. Open your tenant URL and sign in.
+1. Open your CoSet URL and sign in.
 2. Note these areas in navigation (names may vary slightly by permission):
    - **Workflow Automation** — build and run job trees
    - **Administration → Security & Credentials → Credential Hub** — connections
@@ -1452,8 +1454,10 @@ You also get the **product UI out of the box**. Engineering can automate and ext
 ## Base URL
 
 ```
-https://{tenant}.cosethub.com/api/v1
+https://portal.cosethub.com/api/v1
 ```
+
+Most SaaS orgs use **portal.cosethub.com**. Custom / privately installed tenants use their own hostname instead (for example `https://{tenant}.cosethub.com/api/v1` or a customer domain) — same `/api/v1` paths.
 
 All paths in this section are relative to `/api/v1` unless noted.
 
@@ -1503,7 +1507,7 @@ If IP restriction is turned off (`I do not want to restrict API access by IP`), 
 | [File stores](./file-stores) | Browse, download, upload, rename, move, delete |
 | [Jobs & workflows — read](./jobs-workflows-read) | Job types, definitions, runs, workflows, AI chats, error analysis |
 | [Jobs & workflows — write](./jobs-workflows-write) | Run jobs, create workflows, mutate AI chats, request error analysis |
-| [MCP server](./mcp) | **Coming soon** — hosted tenant MCP (`https://{tenant}.cosethub.com/mcp`) over Public API |
+| [MCP server](./mcp) | **Coming soon** — hosted MCP (`https://portal.cosethub.com/mcp`) over Public API |
 | [Webhooks & events](./webhooks) | Subscriptions — including `data_monitor.alert.*` |
 
 ---
@@ -1524,10 +1528,10 @@ The hosted server is a thin tool layer over `/api/v1`. Same scopes, permissions,
 Agent (Claude / Cursor / internal bot)
         │
         ▼
-  https://{tenant}.cosethub.com/mcp   ← CoSet-hosted (Streamable HTTP / SSE)
+  https://portal.cosethub.com/mcp   ← CoSet-hosted (Streamable HTTP / SSE)
         │
         ▼
-  https://{tenant}.cosethub.com/api/v1
+  https://portal.cosethub.com/api/v1
         │
         ▼
   Bridge · warehouses · ProcessServer · …
@@ -1535,17 +1539,17 @@ Agent (Claude / Cursor / internal bot)
 
 Each **MCP tool** wraps one REST call (or a fixed, documented sequence such as start export → poll export). The server does not embed business logic that the API does not already enforce.
 
-You point the MCP client at the tenant URL and authenticate once. CoSet holds the adapter; the agent never talks to `/api/v1` directly unless you also use REST from scripts.
+You point the MCP client at the MCP URL and authenticate once. CoSet holds the adapter; the agent never talks to `/api/v1` directly unless you also use REST from scripts.
 
 ## Endpoint
 
 | | |
 | --- | --- |
-| **URL** | `https://{tenant}.cosethub.com/mcp` |
+| **URL** | `https://portal.cosethub.com/mcp` |
 | **Transport** | Streamable HTTP (preferred) or SSE, per MCP remote-server support in the client |
 | **Docs metadata** | Server advertises [llms.txt](https://cosethub.github.io/Docs/llms.txt) for agent discovery |
 
-Replace `{tenant}` with your CoSet hostname prefix (same as the Public API base URL).
+Most SaaS orgs use **portal.cosethub.com** (same host as the [Public API](./index)). Custom / privately installed tenants use their own hostname (for example `https://{tenant}.cosethub.com/mcp`).
 
 ## In scope
 
@@ -1596,7 +1600,7 @@ When the endpoint is live, add the tenant MCP URL to your client. Exact JSON key
 {
   "mcpServers": {
     "coset": {
-      "url": "https://{tenant}.cosethub.com/mcp",
+      "url": "https://portal.cosethub.com/mcp",
       "headers": {
         "Authorization": "Bearer YOUR_ACCESS_TOKEN"
       }
@@ -1605,13 +1609,13 @@ When the endpoint is live, add the tenant MCP URL to your client. Exact JSON key
 }
 ```
 
-Replace `{tenant}` and the token. Prefer a short-lived OAuth access token from [Auth & account](./auth); rotate via your secrets store rather than committing the value.
+Replace the token (and the host if you are on a custom install). Prefer a short-lived OAuth access token from [Auth & account](./auth); rotate via your secrets store rather than committing the value.
 
 ### What happens in chat
 
 1. You ask: *“List our workflows”* or *“Run job 1042 with AsOfDate 2026-09-02”*.
 2. The **model** chooses a tool name and JSON arguments (it does not receive your token).
-3. The **MCP client** sends the tool call to `https://{tenant}.cosethub.com/mcp`.
+3. The **MCP client** sends the tool call to `https://portal.cosethub.com/mcp`.
 4. The **hosted server** authorizes the session and calls CoSet REST.
 5. JSON/text comes back through MCP → model → reply.
 
@@ -1989,7 +1993,7 @@ curl -sS -X POST \
   -H "X-Api-Version: 2" \
   -H "Content-Type: application/json" \
   -d '{"run_only_this_job":false,"parameter_overrides":{"AsOfDate":"2026-07-11"}}' \
-  "https://{tenant}.cosethub.com/api/v1/jobs/1042/run"
+  "https://portal.cosethub.com/api/v1/jobs/1042/run"
 ```
 
 ### Legacy notes
@@ -2058,7 +2062,7 @@ curl -sS -X POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"force":false}' \
-  "https://{tenant}.cosethub.com/api/v1/jobs/1001/error-analysis"
+  "https://portal.cosethub.com/api/v1/jobs/1001/error-analysis"
 ```
 
 ---
@@ -2111,7 +2115,7 @@ curl -sS -X POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"force":false}' \
-  "https://{tenant}.cosethub.com/api/v1/job-runs/$RUN_ID/error-analysis"
+  "https://portal.cosethub.com/api/v1/job-runs/$RUN_ID/error-analysis"
 ```
 
 ---
@@ -2187,7 +2191,7 @@ curl -sS -X POST \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d @workflow.json \
-  "https://{tenant}.cosethub.com/api/v1/workflows"
+  "https://portal.cosethub.com/api/v1/workflows"
 ```
 
 ---
@@ -2302,7 +2306,7 @@ curl -sS -X PATCH \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '[{"job_instance_id":"inst_etl_01","parameters":[{"name":"SourceTable","value":"raw_orders_v2"}]}]' \
-  "https://{tenant}.cosethub.com/api/v1/ai-workflow/chats/$CHAT_ID/parameters"
+  "https://portal.cosethub.com/api/v1/ai-workflow/chats/$CHAT_ID/parameters"
 ```
 
 ---
@@ -2521,7 +2525,7 @@ curl -sS -X POST \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"url":"https://hooks.acme.com/ryan","events":["job.run.completed","job.run.failed"]}' \
-  "https://{tenant}.cosethub.com/api/v1/webhooks"
+  "https://portal.cosethub.com/api/v1/webhooks"
 ```
 
 ---

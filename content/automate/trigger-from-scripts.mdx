@@ -8,7 +8,7 @@
 2. Note the **job id** (root Group or the leaf you want to start).
 3. Call the Public API from your scheduler.
 
-**API base:** `https://your-tenant.cosethub.com/api/v1`
+**API base:** `https://portal.cosethub.com/api/v1`
 
 ## Auth
 
@@ -33,7 +33,7 @@ Content-Type: application/json
 }
 ```
 
-Poll [`GET /job-runs/{runId}`](/api/jobs-workflows-read#get-job-runsrunid) for status and `output_refs`. Details: [Jobs & workflows — write](/api/jobs-workflows-write). For Claude/Cursor agents, see the planned hosted [MCP server](/api/mcp) (`https://{tenant}.cosethub.com/mcp`, tools such as `coset_run_job`, `coset_get_job_run`, …).
+Poll [`GET /job-runs/{runId}`](/api/jobs-workflows-read#get-job-runsrunid) for status and `output_refs`. Details: [Jobs & workflows — write](/api/jobs-workflows-write). For Claude/Cursor agents, see the planned hosted [MCP server](/api/mcp) (`https://portal.cosethub.com/mcp`, tools such as `coset_run_job`, `coset_get_job_run`, …).
 
 ## Events back to your systems
 

@@ -15,8 +15,10 @@ You also get the **product UI out of the box**. Engineering can automate and ext
 ## Base URL
 
 ```
-https://{tenant}.cosethub.com/api/v1
+https://portal.cosethub.com/api/v1
 ```
+
+Most SaaS orgs use **portal.cosethub.com**. Custom / privately installed tenants use their own hostname instead (for example `https://{tenant}.cosethub.com/api/v1` or a customer domain) — same `/api/v1` paths.
 
 All paths in this section are relative to `/api/v1` unless noted.
 
@@ -66,5 +68,5 @@ If IP restriction is turned off (`I do not want to restrict API access by IP`), 
 | [File stores](./file-stores) | Browse, download, upload, rename, move, delete |
 | [Jobs & workflows — read](./jobs-workflows-read) | Job types, definitions, runs, workflows, AI chats, error analysis |
 | [Jobs & workflows — write](./jobs-workflows-write) | Run jobs, create workflows, mutate AI chats, request error analysis |
-| [MCP server](./mcp) | **Coming soon** — hosted tenant MCP (`https://{tenant}.cosethub.com/mcp`) over Public API |
+| [MCP server](./mcp) | **Coming soon** — hosted MCP (`https://portal.cosethub.com/mcp`) over Public API |
 | [Webhooks & events](./webhooks) | Subscriptions — including `data_monitor.alert.*` |

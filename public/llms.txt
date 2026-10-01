@@ -2,7 +2,7 @@
 
 > CoSet is ops automation for hedge funds and fund administrators: Credential Hub, workflow trees (SFTP, email, SQL, Geneva, Bloomberg, …), warehouses/views, data monitors, period-close checklists, and a Public API. Use these docs to build and trigger the same pipelines the CoSet UI runs.
 
-CoSet Docs live at https://cosethub.github.io/Docs/ · Product site https://www.cosethub.com · Tenant UI `https://your-tenant.cosethub.com` · API `https://your-tenant.cosethub.com/api/v1`
+CoSet Docs live at https://cosethub.github.io/Docs/ · Product site https://www.cosethub.com · Tenant UI `https://portal.cosethub.com` · API `https://portal.cosethub.com/api/v1`
 
 ## Start here
 

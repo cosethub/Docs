@@ -16,10 +16,10 @@ The hosted server is a thin tool layer over `/api/v1`. Same scopes, permissions,
 Agent (Claude / Cursor / internal bot)
         │
         ▼
-  https://{tenant}.cosethub.com/mcp   ← CoSet-hosted (Streamable HTTP / SSE)
+  https://portal.cosethub.com/mcp   ← CoSet-hosted (Streamable HTTP / SSE)
         │
         ▼
-  https://{tenant}.cosethub.com/api/v1
+  https://portal.cosethub.com/api/v1
         │
         ▼
   Bridge · warehouses · ProcessServer · …
@@ -27,17 +27,17 @@ Agent (Claude / Cursor / internal bot)
 
 Each **MCP tool** wraps one REST call (or a fixed, documented sequence such as start export → poll export). The server does not embed business logic that the API does not already enforce.
 
-You point the MCP client at the tenant URL and authenticate once. CoSet holds the adapter; the agent never talks to `/api/v1` directly unless you also use REST from scripts.
+You point the MCP client at the MCP URL and authenticate once. CoSet holds the adapter; the agent never talks to `/api/v1` directly unless you also use REST from scripts.
 
 ## Endpoint
 
 | | |
 | --- | --- |
-| **URL** | `https://{tenant}.cosethub.com/mcp` |
+| **URL** | `https://portal.cosethub.com/mcp` |
 | **Transport** | Streamable HTTP (preferred) or SSE, per MCP remote-server support in the client |
 | **Docs metadata** | Server advertises [llms.txt](https://cosethub.github.io/Docs/llms.txt) for agent discovery |
 
-Replace `{tenant}` with your CoSet hostname prefix (same as the Public API base URL).
+Most SaaS orgs use **portal.cosethub.com** (same host as the [Public API](./index)). Custom / privately installed tenants use their own hostname (for example `https://{tenant}.cosethub.com/mcp`).
 
 ## In scope
 
@@ -88,7 +88,7 @@ When the endpoint is live, add the tenant MCP URL to your client. Exact JSON key
 {
   "mcpServers": {
     "coset": {
-      "url": "https://{tenant}.cosethub.com/mcp",
+      "url": "https://portal.cosethub.com/mcp",
       "headers": {
         "Authorization": "Bearer YOUR_ACCESS_TOKEN"
       }
@@ -97,13 +97,13 @@ When the endpoint is live, add the tenant MCP URL to your client. Exact JSON key
 }
 ```
 
-Replace `{tenant}` and the token. Prefer a short-lived OAuth access token from [Auth & account](./auth); rotate via your secrets store rather than committing the value.
+Replace the token (and the host if you are on a custom install). Prefer a short-lived OAuth access token from [Auth & account](./auth); rotate via your secrets store rather than committing the value.
 
 ### What happens in chat
 
 1. You ask: *“List our workflows”* or *“Run job 1042 with AsOfDate 2026-09-02”*.
 2. The **model** chooses a tool name and JSON arguments (it does not receive your token).
-3. The **MCP client** sends the tool call to `https://{tenant}.cosethub.com/mcp`.
+3. The **MCP client** sends the tool call to `https://portal.cosethub.com/mcp`.
 4. The **hosted server** authorizes the session and calls CoSet REST.
 5. JSON/text comes back through MCP → model → reply.
 

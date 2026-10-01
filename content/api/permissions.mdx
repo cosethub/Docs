@@ -334,7 +334,7 @@ curl -sS -X PUT \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"group_ids":[12,18]}' \
-  "https://{tenant}.cosethub.com/api/v1/users/101/groups"
+  "https://portal.cosethub.com/api/v1/users/101/groups"
 ```
 
 ---
@@ -416,7 +416,7 @@ curl -sS -X PUT \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"grants":[{"principal_type":"group","principal_id":12,"access":"read_write"}]}' \
-  "https://{tenant}.cosethub.com/api/v1/warehouses/7/table-access/ref.equity_master"
+  "https://portal.cosethub.com/api/v1/warehouses/7/table-access/ref.equity_master"
 ```
 
 ---
@@ -495,7 +495,7 @@ curl -sS -X PUT \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"grants":[{"principal_type":"group","principal_id":12,"access":"read_only"}],"owner_user_ids":[101]}' \
-  "https://{tenant}.cosethub.com/api/v1/warehouses/7/views/ref.UBS_recon/access"
+  "https://portal.cosethub.com/api/v1/warehouses/7/views/ref.UBS_recon/access"
 ```
 
 ---
