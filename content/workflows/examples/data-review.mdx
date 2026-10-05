@@ -1,5 +1,3 @@
-import { Callout } from 'nextra/components'
-
 # Data review
 
 **Goal:** Produce a CSV (or point at live table/view data), ask a person to **approve or reject**, then continue only if approved.
@@ -17,12 +15,6 @@ Group: Monthly Trades Sign-off
 ```
 
 You can skip Table to CSV and use **Link to filtered data (table or view)** on the review job instead of an attachment.
-
-<Callout type="info">
-  **Screenshot placeholder** (`example-data-review-tree.png`)
-
-  Placeholder: Table to CSV → Data Review Task with On success and On failure children.
-</Callout>
 
 ## 1. Table to CSV (optional but common)
 
@@ -45,17 +37,7 @@ Job type: [Data Review Task](../job-types/data-review-task)
 | **Link to filtered data (table or view)** | Reviewers should open live warehouse rows (table or view + filters) |
 | **Attach a file** | Reviewers should get a snapshot file (for example, the CSV you just exported) |
 
-<Callout type="info">
-  **Screenshot placeholder** (`example-data-review-config.png`)
-
-  Placeholder: Recipients, Message, and Data to Review (link vs attach).
-</Callout>
-
-<Callout type="info">
-  **Screenshot placeholder** (`example-data-review-approve.png`)
-
-  Placeholder: Recipient “Approve or reject data” screen.
-</Callout>
+![Data Review Task configure: subject, message, link to table/view with filters](../images/job-data-review-task-config.png)
 
 ## 3. Branch on the decision
 

@@ -4,7 +4,7 @@ Trigger runs, create workflows, and mutate AI workflow builder chats.
 
 > **Base:** `/api/v1`  
 > **Auth:** Bearer token, except job run which also accepts / requires `X-Access-Key`  
-> See also: [Jobs & workflows — read](./jobs-workflows-read)
+> See also: [Jobs & workflows — read](./jobs-workflows-read) · **[Job parameter schemas](./job-parameter-schemas)** (per–job-type inputs/outputs for create/update)
 
 ---
 
@@ -326,7 +326,8 @@ Create a workflow from a full job graph.
 ### Notes
 
 - `access_key` / `parent_access_key` are **request-local** UUIDs used to wire parent/child edges before IDs exist.
-- First job may carry schedule parameters (`RecurrencePeriod`, `StartDate`, …).
+- First job may carry schedule parameters (`recurrence_period`, `start_date`, …) when `job_type` is `Group`.
+- Per–job-type parameter names, required flags, and types: **[Job parameter schemas](./job-parameter-schemas)**.
 - `job_type` `Group` maps to internal `FakeJob`.
 - `output_mappings` bind an ancestor job’s **output** into a descendant’s **input** (same as the product [Output mapping](/workflows/parameters) rail).
 - Creation can take up to ~120s while ProcessServer finishes the async create.

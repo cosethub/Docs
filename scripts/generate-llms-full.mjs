@@ -25,6 +25,8 @@ const files = [
   'workflows/examples/sftp-download.mdx',
   'workflows/examples/table-to-csv-view.mdx',
   'workflows/examples/data-review.mdx',
+  'workflows/job-types/data-request-task.mdx',
+  'workflows/job-types/data-review-task.mdx',
   'checklists/index.mdx',
   'checklists/iterators.mdx',
   'warehouses/data-monitors.mdx',
@@ -32,6 +34,7 @@ const files = [
   'api/index.mdx',
   'api/mcp.mdx',
   'api/jobs-workflows-write.mdx',
+  'api/job-parameter-schemas.mdx',
   'api/webhooks.mdx'
 ]
 

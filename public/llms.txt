@@ -41,6 +41,7 @@ CoSet Docs live at https://cosethub.github.io/Docs/ · Product site https://www.
 
 - [API overview](https://cosethub.github.io/Docs/api/): Base URL, auth, keys (surface in active development)
 - [Auth](https://cosethub.github.io/Docs/api/auth/): OAuth token and /me
+- [Job parameter schemas](https://cosethub.github.io/Docs/api/job-parameter-schemas/): Per–job-type inputs/outputs for create workflow
 - [Jobs & workflows — write](https://cosethub.github.io/Docs/api/jobs-workflows-write/): Run job, create workflow, AI chat writes
 - [MCP server](https://cosethub.github.io/Docs/api/mcp/): Coming soon — hosted tenant MCP over Public API
 - [Jobs & workflows — read](https://cosethub.github.io/Docs/api/jobs-workflows-read/): Job detail, runs, error analysis
