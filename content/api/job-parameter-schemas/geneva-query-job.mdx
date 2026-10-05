@@ -1,0 +1,33 @@
+# `GenevaQueryJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `GenevaQueryJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `CredentialId` | `foreign_key_option` | No | Secondary: Credential. Credential types: Geneva |
+| `OutputFolder` | `string` | Yes | — |
+| `OutputFile` | `string` | Yes | — |
+| `OutputDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputDateAdjustment` | `int` | No | Output File Name Date Format |
+| `OutputMinusForMonday` | `boolean` | No | Output File Name Date Format |
+| `CalendarId` | `foreign_key_option` | No | Output File Name Date Format. Secondary: Calendar |
+| `FileFormat` | `option` | Yes | — |
+| `OutputFileStoreId` | `string` | No | — |
+| `QueryName` | `string` | Yes | — |
+| `OutputFolderIncludeDate` | `boolean` | No | — |
+| `OutputFileIncludeDate` | `boolean` | No | — |
+| `OutputFolderDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+| `OutputFileDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedKnowledgeDate` | `DateTime` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFolder` | `string` | Output Folder Date Format |
+| `CalculatedOutputFile` | `string` | Output File Date Format |
+

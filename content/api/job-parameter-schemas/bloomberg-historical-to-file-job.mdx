@@ -1,0 +1,45 @@
+# `BloombergHistoricalToFileJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `BloombergHistoricalToFileJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `SourceFolder` | `string` | No | — |
+| `SourceFile` | `string` | No | — |
+| `SourceDateFormat` | `date_format` | No | Source File Name Date Format. Secondary: DateFormat |
+| `SourceDateAdjustment` | `int` | No | Source File Name Date Format |
+| `MinusForMonday` | `boolean` | No | Source File Name Date Format |
+| `SourceFileStoreId` | `string` | No | Source File Name Date Format |
+| `OutputFileStoreId` | `string` | No | Source File Name Date Format |
+| `OutputFolder` | `string` | No | — |
+| `OutputFile` | `string` | No | — |
+| `OutputDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputDateAdjustment` | `int` | No | Output File Name Date Format |
+| `OutputMinusForMonday` | `boolean` | No | Output File Name Date Format |
+| `CalendarId` | `foreign_key_option` | No | Output File Name Date Format. Secondary: Calendar |
+| `PeriodStartDate` | `DateTime` | No | — |
+| `PeriodEndDate` | `DateTime` | No | — |
+| `EnableHeaderAdhoc` | `boolean` | No | — |
+| `ListOfFields` | `CommaSeparatedValues` | Yes | — |
+| `ListOfSecurities` | `CommaSeparatedValues` | No | — |
+| `FileFormat` | `option` | Yes | — |
+| `UseServerAPI` | `boolean` | No | — |
+| `CredentialId` | `foreign_key_option` | Yes | Secondary: Credential. Credential types: BloombergApiService |
+| `RetryDelayInSeconds` | `int` | No | — |
+| `TerminalUserNumber` | `int` | No | — |
+| `TerminalWs` | `int` | No | — |
+| `TerminalSn` | `int` | No | — |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedSourceFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedSourceFile` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFile` | `string` | Emitted after run — map onto a later job input |
+

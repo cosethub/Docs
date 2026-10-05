@@ -1,0 +1,54 @@
+# `ParameterValueListJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `ParameterValueListJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `CalendarId` | `foreign_key_option` | No | Secondary: Calendar |
+| `AllowDynamicParametersAtRuntime` | `boolean` | No | — |
+| `ParametersContainHtmlEncodedData` | `boolean` | No | — |
+| `IterationIdType` | `int` | No | — |
+| `IterationIdCsvParamId` | `int` | No | — |
+| `SourceFolder` | `string` | No | — |
+| `SourceFileName` | `string` | No | — |
+| `SourceFileNameDateFormat` | `date_format` | No | Secondary: DateFormat |
+| `SourceFileNameDateAdjustment` | `int` | No | — |
+| `SourceFileNameDateAccountForMonday` | `boolean` | No | — |
+| `WriteStatisticsToFile` | `boolean` | No | — |
+| `OutputFolder` | `string` | No | — |
+| `OutputFileName` | `string` | No | — |
+| `OutputFileNameDateFormat` | `date_format` | No | Secondary: DateFormat |
+| `OutputFileNameDateAdjustment` | `int` | No | — |
+| `OutputFileNameDateAccountForMonday` | `boolean` | No | — |
+| `OutputFileFormat` | `string` | No | — |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `OutputStatisticsFullPath` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedSourceFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedSourceFile` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFile` | `string` | Emitted after run — map onto a later job input |
+
+<details>
+<summary>Hidden / system parameters (9)</summary>
+
+| Parameter | IO | Notes |
+| --- | --- | --- |
+| `PvlInstanceId` | input | Usually set by the platform; omit unless you know you need it |
+| `ParallelProcessing` | input | Usually set by the platform; omit unless you know you need it |
+| `TargetJobKey` | input | Usually set by the platform; omit unless you know you need it |
+| `ColumnParameterMap` | input | Usually set by the platform; omit unless you know you need it |
+| `ParameterDefaultOverrides` | input | Usually set by the platform; omit unless you know you need it |
+| `RowsToRun` | input | Usually set by the platform; omit unless you know you need it |
+| `ManualInitiatorId` | input | Usually set by the platform; omit unless you know you need it |
+| `SourceFileStoreId` | input | Usually set by the platform; omit unless you know you need it |
+| `OutputFileStoreId` | input | Usually set by the platform; omit unless you know you need it |
+
+</details>

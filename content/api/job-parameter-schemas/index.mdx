@@ -1,0 +1,94 @@
+import { Callout } from 'nextra/components'
+
+# Job parameter schemas
+
+Parameter catalog for workflow **create / update** payloads (`jobs_with_parameters[].parameters`) and `parameter_overrides` on run. One page per `job_type`.
+
+Generated from RyanServer job classes (`[JobInput]` / `[JobOutput]`). Prefer live schemas from your tenant when FK option lists matter:
+
+- Instance: `GET /api/v1/jobs/{jobId}?include_output=true`
+- By type (private today): `POST /api/ai-workflow/jobs/parameters` — see [Jobs & workflows — read](../jobs-workflows-read)
+
+<Callout type="info">
+  **Descriptions** come from `Description` / `DisplayName` when present on the C# property; otherwise the table lists type / secondary hints only. Org-enabled job types may be a subset of this list (`GET /jobs`).
+</Callout>
+
+## How to use with create workflow
+
+```json
+{
+  "job_type": "FTPRetrieveJob",
+  "job_name": "Pull PB file",
+  "access_key": "…",
+  "parent_access_key": "…",
+  "fire_on_success": "RunOnSuccess",
+  "parameters": [
+    { "name": "SourceFolder", "value": "/incoming" },
+    { "name": "OutputFolder", "value": "C:\\Landing" }
+  ]
+}
+```
+
+Root `Group` schedule virtual params use snake_case (`recurrence_period`, `start_date`, …) — see [`Group`](./group).
+
+## Job types
+
+| `job_type` |
+| --- |
+| [`AgaSyncJob`](./aga-sync-job) |
+| [`AwsAutomationJob`](./aws-automation-job) |
+| [`BackstopToFileJob`](./backstop-to-file-job) |
+| [`BatchFileJob`](./batch-file-job) |
+| [`BloombergHistoricalToFileJob`](./bloomberg-historical-to-file-job) |
+| [`BloombergToFileJob`](./bloomberg-to-file-job) |
+| [`CompressionJob`](./compression-job) |
+| [`CsvToExcelJob`](./csv-to-excel-job) |
+| [`DatabaseBackupJob`](./database-backup-job) |
+| [`DataRequestTaskJob`](./data-request-task-job) |
+| [`DataReviewTaskJob`](./data-review-task-job) |
+| [`DataWarehouseJob`](./data-warehouse-job) |
+| [`DecompressionJob`](./decompression-job) |
+| [`DecryptJob`](./decrypt-job) |
+| [`DemoJob`](./demo-job) |
+| [`EmailerJob`](./emailer-job) |
+| [`EncryptionJob`](./encryption-job) |
+| [`ETLJob`](./etl-job) |
+| [`ExcelToCsvJob`](./excel-to-csv-job) |
+| [`EzeAnalyticsApiToFileJob`](./eze-analytics-api-to-file-job) |
+| [`FileActionJob`](./file-action-job) |
+| [`FileMonitorJob`](./file-monitor-job) |
+| [`FTPMonitorJob`](./ftp-monitor-job) |
+| [`FTPRetrieveJob`](./ftp-retrieve-job) |
+| [`FTPTransmitJob`](./ftp-transmit-job) |
+| [`GenevaLoaderJob`](./geneva-loader-job) |
+| [`GenevaQueryJob`](./geneva-query-job) |
+| [`GlobalRelaySmtpArchiveJob`](./global-relay-smtp-archive-job) |
+| [`Group`](./group) |
+| [`HttpDownloadJob`](./http-download-job) |
+| [`ManualResponseExpirationJob`](./manual-response-expiration-job) |
+| [`ManualResponseJob`](./manual-response-job) |
+| [`MapsApiJob`](./maps-api-job) |
+| [`MultiReportJob`](./multi-report-job) |
+| [`NewDataWarehouseJob`](./new-data-warehouse-job) |
+| [`OpenDataJob`](./open-data-job) |
+| [`ParameterValueListJob`](./parameter-value-list-job) |
+| [`PdfScraperJob`](./pdf-scraper-job) |
+| [`PdfToTextJob`](./pdf-to-text-job) |
+| [`PowerBiToFileJob`](./power-bi-to-file-job) |
+| [`PriceGenevaFromBloombergJob`](./price-geneva-from-bloomberg-job) |
+| [`QuickTaskJob`](./quick-task-job) |
+| [`ReadRslToFileJob`](./read-rsl-to-file-job) |
+| [`RsaDecryptJob`](./rsa-decrypt-job) |
+| [`RsaEncryptionJob`](./rsa-encryption-job) |
+| [`S3BlacklightToFileJob`](./s3-blacklight-to-file-job) |
+| [`SQLBulkLoadJob`](./sql-bulk-load-job) |
+| [`SQLStoredProcJob`](./sql-stored-proc-job) |
+| [`SSISPackageJob`](./ssis-package-job) |
+| [`SSRSReportJob`](./ssrs-report-job) |
+| [`TableToCsvJob`](./table-to-csv-job) |
+| [`TaskJob`](./task-job) |
+| [`UnixCommandJob`](./unix-command-job) |
+| [`UnixHealthMonitorJob`](./unix-health-monitor-job) |
+| [`ValidateCredentialJob`](./validate-credential-job) |
+| [`WebScraperJob`](./web-scraper-job) |
+| [`XsltJob`](./xslt-job) |

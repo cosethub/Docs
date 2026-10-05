@@ -1,0 +1,18 @@
+# `SSISPackageJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `SSISPackageJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `Parameters` | `string` | No | — |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `PackageFilename` | `string` | Emitted after run — map onto a later job input |
+

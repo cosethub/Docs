@@ -1,0 +1,60 @@
+# `EmailerJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `EmailerJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `To` | `string` | Yes | — |
+| `Cc` | `string` | No | — |
+| `Bcc` | `string` | No | — |
+| `Subject` | `string` | No | — |
+| `SubjectDateFormat` | `date_format` | No | Subject Date Format. Secondary: DateFormat |
+| `SubjectDateAdjustment` | `int` | No | Subject Date Format |
+| `SubjectMinusForMonday` | `boolean` | No | Subject Date Format |
+| `CalendarId` | `foreign_key_option` | No | Subject Date Format. Secondary: Calendar |
+| `Message` | `string` | No | — |
+| `AttachmentFileStoreId` | `string` | No | — |
+| `AttachmentFolder` | `string` | No | — |
+| `AttachmentFolderIncludeDate` | `boolean` | No | — |
+| `AttachmentFolderDateFormat` | `date_format` | No | Attachment Folder Date Format. Secondary: DateFormat |
+| `AttachmentFolderDateAdjustment` | `int` | No | Attachment Folder Date Format |
+| `AttachmentFolderMinusForMonday` | `boolean` | No | Attachment Folder Date Format |
+| `FirstAttachmentFileDateFormat` | `date_format` | No | Attachment Date Format. Secondary: DateFormat |
+| `FirstAttachmentIncludeDateInFileName` | `boolean` | No | Attachment Date Format |
+| `FirstAttachmentDateAdjustment` | `int` | No | Attachment Date Format |
+| `FirstAttachmentMinusForMonday` | `boolean` | No | Attachment Date Format |
+| `AttachmentDateAdjustment` | `int` | No | Attachment Date Adjustment |
+| `AttachmentFile` | `CommaSeparatedValues` | No | Attachment Date Adjustment |
+| `SendasEmail` | `boolean` | No | Attachment Date Adjustment |
+| `IncludeInBody` | `boolean` | No | Attachment Date Adjustment |
+| `FontWeight` | `option` | No | Attachment Date Adjustment. Default: `FontWeightOption.ThreeHundred` |
+| `FontSize` | `option` | No | Default: `FontSizeOption.Ten` |
+| `QueryId` | `int` | No | Secondary: Query |
+| `SourceDataType` | `option` | No | — |
+| `EmailServiceOption` | `option` | Yes | Default: `(int` |
+| `CalculatedAttachments` | `string` | No | — |
+| `CredentialId` | `foreign_key_option` | Yes | Secondary: Credential. Credential types: EmailSmtp, GoogleOAuth, MicrosoftOAuth |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedSourceFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedSourceFile` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedTo` | `string` | Calculated To (recipients sent) |
+| `CalculatedCc` | `string` | Calculated To (recipients sent) |
+| `CalculatedBcc` | `string` | Calculated To (recipients sent) |
+
+<details>
+<summary>Hidden / system parameters (2)</summary>
+
+| Parameter | IO | Notes |
+| --- | --- | --- |
+| `AttachmentDateFormat` | input | Usually set by the platform; omit unless you know you need it |
+| `OrganizationId` | input | Usually set by the platform; omit unless you know you need it |
+
+</details>

@@ -1,0 +1,39 @@
+# `SQLStoredProcJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `SQLStoredProcJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `DatabaseType` | `option` | Yes | — |
+| `CredentialId` | `foreign_key_option` | No | Secondary: Credential. Credential types: SqlServer, PostgreSql |
+| `SQLTextProcedure` | `string` | Yes | — |
+| `UseStoredProcedure` | `boolean` | No | — |
+| `CalendarId` | `foreign_key_option` | No | Secondary: Calendar |
+| `SaveOutputFile` | `boolean` | No | Default: `true` |
+| `OutputFileStoreId` | `string` | No | — |
+| `OutputFolder` | `string` | Yes | — |
+| `OutputFile` | `string` | Yes | — |
+| `OutputDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputFolderIncludeDate` | `boolean` | No | Output File Name Date Format |
+| `OutputFileIncludeDate` | `boolean` | No | Output File Name Date Format |
+| `OutputFolderDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputFileDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+| `OutputDateAdjustment` | `int` | No | Output Folder Date Format |
+| `OutputMinusForMonday` | `boolean` | No | Output File Date Format |
+| `FileFormat` | `option` | No | Output File Date Format |
+| `ReportParameters` | `CommaSeparatedValues` | No | Output File Date Format |
+| `KeepHeaders` | `boolean` | No | — |
+| `SqlTimeoutInSeconds` | `int` | No | Default: `300` |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedOutputFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFile` | `string` | Emitted after run — map onto a later job input |
+| `RowCount` | `int` | Emitted after run — map onto a later job input |
+

@@ -34,7 +34,7 @@ const files = [
   'api/index.mdx',
   'api/mcp.mdx',
   'api/jobs-workflows-write.mdx',
-  'api/job-parameter-schemas.mdx',
+  'api/job-parameter-schemas/index.mdx',
   'api/webhooks.mdx'
 ]
 

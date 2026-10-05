@@ -1,0 +1,34 @@
+# `OpenDataJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `OpenDataJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `CredentialId` | `foreign_key_option` | Yes | Secondary: Credential. Credential types: OpenData |
+| `DataDomain` | `string` | Yes | — |
+| `DataSetIdentifier` | `string` | Yes | — |
+| `DataSetColumns` | `string` | Yes | — |
+| `OutputFileStoreId` | `string` | No | — |
+| `OutputFile` | `string` | Yes | — |
+| `OutputFolder` | `string` | Yes | — |
+| `OutputDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputDateAdjustment` | `int` | No | Output File Name Date Format |
+| `OutputMinusForMonday` | `boolean` | No | Output File Name Date Format |
+| `CalendarId` | `foreign_key_option` | No | Output File Name Date Format. Secondary: Calendar |
+| `ColumnsFilter` | `string` | No | — |
+| `OutputFolderIncludeDate` | `boolean` | No | — |
+| `OutputFileIncludeDate` | `boolean` | No | — |
+| `OutputFolderDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+| `OutputFileDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedOutputFolder` | `string` | Output Folder Date Format |
+| `CalculatedOutputFile` | `string` | Output File Date Format |
+

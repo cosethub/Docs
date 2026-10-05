@@ -1,0 +1,36 @@
+# `SSRSReportJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `SSRSReportJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `CredentialId` | `foreign_key_option` | No | Secondary: Credential. Credential types: SqlServerSsrs |
+| `ReportFolderPath` | `string` | No | — |
+| `ReportName` | `string` | Yes | — |
+| `ReportParameters` | `CommaSeparatedValues` | No | — |
+| `OutputFileStoreId` | `string` | No | — |
+| `OutputFolder` | `string` | Yes | — |
+| `OutputFile` | `string` | Yes | — |
+| `OutputDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputDateAdjustment` | `int` | No | Output File Name Date Format |
+| `OutputMinusForMonday` | `boolean` | No | Output File Name Date Format |
+| `CalendarId` | `foreign_key_option` | No | Output File Name Date Format. Secondary: Calendar |
+| `OutputFileFormat` | `option` | Yes | — |
+| `UsePeriodEndDate` | `boolean` | No | — |
+| `OutputFolderIncludeDate` | `boolean` | No | — |
+| `OutputFileIncludeDate` | `boolean` | No | — |
+| `OutputFolderDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+| `OutputFileDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedPeriodEndDate` | `DateTime` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFile` | `string` | Emitted after run — map onto a later job input |
+

@@ -1,0 +1,42 @@
+# `BackstopToFileJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `BackstopToFileJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `SqlServerCredentialId` | `foreign_key_option` | No | Secondary: Credential. Credential types: SqlServer |
+| `CredentialId` | `foreign_key_option` | No | Secondary: Credential. Credential types: BackstopWebService |
+| `Method` | `option` | Yes | — |
+| `OutputFile` | `string` | Yes | — |
+| `OutputFolder` | `string` | Yes | — |
+| `OutputFileStoreId` | `string` | No | — |
+| `OutputDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputDateAdjustment` | `int` | No | Output File Name Date Format |
+| `OutputMinusForMonday` | `boolean` | No | Output File Name Date Format |
+| `CalendarId` | `foreign_key_option` | No | Output File Name Date Format. Secondary: Calendar |
+| `JsonReportDefinition` | `string` | No | — |
+| `RestrictionExpression` | `string` | No | — |
+| `AsOf` | `DateTime` | No | — |
+| `ConnectionStringOverride` | `string` | No | — |
+| `TableName` | `string` | No | — |
+| `BackstopIdColumnName` | `string` | No | — |
+| `SymbolColumnName` | `string` | No | — |
+| `StartDate` | `DateTime` | No | — |
+| `EndDate` | `DateTime` | No | — |
+| `ShouldContinueOnError` | `boolean` | No | Continue On Error. Default: `false` |
+| `OutputFolderIncludeDate` | `boolean` | No | Continue On Error |
+| `OutputFileIncludeDate` | `boolean` | No | Continue On Error |
+| `OutputFolderDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+| `OutputFileDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedOutputFolder` | `string` | Continue On Error |
+| `CalculatedOutputFile` | `string` | Continue On Error |
+

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Generate content/api/job-parameter-schemas.mdx from RyanServer job class [JobInput]/[JobOutput].
+ * Generate content/api/job-parameter-schemas/ (index + one page per job)
+ * from RyanServer job class [JobInput]/[JobOutput].
  * Usage: node scripts/generate-job-parameter-schemas.mjs [path-to-RyanServer]
  */
 import fs from 'node:fs'
@@ -13,7 +14,7 @@ const ryanServer =
   process.argv[2] ||
   path.resolve(docsRoot, '../RyanServer')
 const jobsDir = path.join(ryanServer, 'Ryan.Domain.Jobs/Jobs')
-const outFile = path.join(docsRoot, 'content/api/job-parameter-schemas.mdx')
+const outDir = path.join(docsRoot, 'content/api/job-parameter-schemas')
 
 const PUBLIC_NAME = {
   FakeJob: 'Group',
@@ -24,6 +25,13 @@ const SKIP = new Set([
   'AbstractBloombergJob.cs',
   'UnrecognizedJob.cs',
 ])
+
+function toSlug(name) {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .toLowerCase()
+}
 
 function parseClassFile(filePath) {
   const text = fs.readFileSync(filePath, 'utf8')
@@ -38,7 +46,6 @@ function parseClassFile(filePath) {
     .filter(Boolean)
 
   const params = []
-  // Walk [JobInput]/[JobOutput] attributes with nested (...) / [...] support
   const attrStartRe = /\[(JobInput|JobOutput)\b/g
   let am
   while ((am = attrStartRe.exec(text)) !== null) {
@@ -56,7 +63,6 @@ function parseClassFile(filePath) {
       if (depth >= 1) attrBody += ch
       i++
     }
-    // Skip additional attributes / modifiers until property declaration
     const after = text.slice(i + 1)
     const propMatch = after.match(
       /^\s*(?:\[[^\]]*\]\s*)*(?:public|protected|internal|private)\s+(?:(?:new|override|virtual|async)\s+)*([\w.<>,\s\?\[\]]+?)\s+(\w+)\s*\{/,
@@ -112,7 +118,6 @@ function resolveInheritance(classes) {
     for (const b of c.bases) {
       if (byName.has(b)) inherited.push(...allParams(b, seen))
     }
-    // Child overrides: later same name wins
     const map = new Map()
     for (const p of inherited) map.set(p.name, p)
     for (const p of c.params) map.set(p.name, p)
@@ -134,7 +139,7 @@ function apiType(p) {
   if (t === 'DateTime') return 'DateTime'
   if (t.includes('List') || t.includes('IEnumerable') || t.includes('[]'))
     return 'CommaSeparatedValues'
-  if (/^[A-Z]/.test(t) && !t.includes('.')) return 'option' // enums
+  if (/^[A-Z]/.test(t) && !t.includes('.')) return 'option'
   return 'string'
 }
 
@@ -142,11 +147,10 @@ function escapeCell(s) {
   return String(s ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ')
 }
 
-function renderJob(job) {
+function renderJobPage(job) {
   const publicName = PUBLIC_NAME[job.className] || job.className
   let params = job.resolvedParams
 
-  // Group / FakeJob: schedule virtual params (injected by ScheduleParameterProvider at runtime)
   if (job.className === 'FakeJob') {
     params = [
       ...params,
@@ -209,23 +213,22 @@ function renderJob(job) {
     ]
   }
 
-  // Enrich a few high-traffic enums
   const ENUM_HELP = {
     DataRequestCollectionMode:
       '1 = FileToTable, 2 = FileToLocation, 3 = Form (UI: File to table / File to location / Form)',
     DeliveryMethod: 'Link = 1 (live table/view), Attachment = 2 (file snapshot)',
   }
 
-  const anchor = publicName.toLowerCase()
   const inputs = params.filter((p) => p.kind === 'input' && !p.isHidden)
   const outputs = params.filter((p) => p.kind === 'output' && !p.isHidden)
   const hidden = params.filter((p) => p.isHidden)
 
-  let md = `\n## \`${publicName}\`\n\n`
+  let md = `# \`${publicName}\`\n\n`
   if (PUBLIC_NAME[job.className]) {
     md += `Internal class: \`${job.className}\`.\n\n`
   }
-  md += `Use as \`job_type\` on [create workflow](./jobs-workflows-write#post-workflows) / parameter overrides.\n\n`
+  md += `Parameters for workflow **create / update** (\`jobs_with_parameters[].parameters\`) and run \`parameter_overrides\`.\n\n`
+  md += `\`job_type\`: \`${publicName}\` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)\n\n`
 
   if (!inputs.length && !outputs.length) {
     md += '_No public parameters discovered._\n'
@@ -233,7 +236,7 @@ function renderJob(job) {
   }
 
   if (inputs.length) {
-    md += `### Inputs\n\n`
+    md += `## Inputs\n\n`
     md += `| Parameter | Type | Required | Description |\n| --- | --- | --- | --- |\n`
     for (const p of inputs) {
       const bits = []
@@ -248,7 +251,7 @@ function renderJob(job) {
   }
 
   if (outputs.length) {
-    md += `### Outputs\n\n`
+    md += `## Outputs\n\n`
     md += `| Parameter | Type | Description |\n| --- | --- | --- |\n`
     for (const p of outputs) {
       md += `| \`${p.name}\` | \`${apiType(p)}\` | ${escapeCell(p.description || 'Emitted after run — map onto a later job input')} |\n`
@@ -262,7 +265,7 @@ function renderJob(job) {
     for (const p of hidden) {
       md += `| \`${p.name}\` | ${p.kind} | Usually set by the platform; omit unless you know you need it |\n`
     }
-    md += `\n</details>\n\n`
+    md += `\n</details>\n`
   }
 
   return md
@@ -281,7 +284,6 @@ const files = fs
 const parsed = files
   .map((f) => parseClassFile(path.join(jobsDir, f)))
   .filter(Boolean)
-  // Prefer concrete jobs; include FakeJob for Group
   .filter((c) => c.className !== 'ScheduledJobBase')
 
 const resolved = resolveInheritance(parsed)
@@ -292,25 +294,40 @@ const resolved = resolveInheritance(parsed)
     return an.localeCompare(bn)
   })
 
-const toc = resolved
-  .map((j) => {
-    const n = PUBLIC_NAME[j.className] || j.className
-    return `- [\`${n}\`](#${n.toLowerCase()})`
-  })
-  .join('\n')
+fs.mkdirSync(outDir, { recursive: true })
 
-const body = resolved.map(renderJob).join('')
+for (const existing of fs.readdirSync(outDir)) {
+  if (existing.endsWith('.mdx') || existing === '_meta.js') {
+    fs.unlinkSync(path.join(outDir, existing))
+  }
+}
 
-const header = `import { Callout } from 'nextra/components'
+const metaEntries = { index: 'Overview' }
+const tocRows = []
+
+for (const job of resolved) {
+  const publicName = PUBLIC_NAME[job.className] || job.className
+  const slug = toSlug(publicName)
+  metaEntries[slug] = publicName
+  tocRows.push(`| [\`${publicName}\`](./${slug}) |`)
+  fs.writeFileSync(path.join(outDir, `${slug}.mdx`), renderJobPage(job))
+}
+
+fs.writeFileSync(
+  path.join(outDir, '_meta.js'),
+  `export default ${JSON.stringify(metaEntries, null, 2)}\n`,
+)
+
+const index = `import { Callout } from 'nextra/components'
 
 # Job parameter schemas
 
-Parameter catalog for workflow **create / update** payloads (\`jobs_with_parameters[].parameters\`) and \`parameter_overrides\` on run.
+Parameter catalog for workflow **create / update** payloads (\`jobs_with_parameters[].parameters\`) and \`parameter_overrides\` on run. One page per \`job_type\`.
 
 Generated from RyanServer job classes (\`[JobInput]\` / \`[JobOutput]\`). Prefer live schemas from your tenant when FK option lists matter:
 
 - Instance: \`GET /api/v1/jobs/{jobId}?include_output=true\`
-- By type (private today): \`POST /api/ai-workflow/jobs/parameters\` — see [Jobs & workflows — read](./jobs-workflows-read)
+- By type (private today): \`POST /api/ai-workflow/jobs/parameters\` — see [Jobs & workflows — read](../jobs-workflows-read)
 
 <Callout type="info">
   **Descriptions** come from \`Description\` / \`DisplayName\` when present on the C# property; otherwise the table lists type / secondary hints only. Org-enabled job types may be a subset of this list (\`GET /jobs\`).
@@ -332,14 +349,18 @@ Generated from RyanServer job classes (\`[JobInput]\` / \`[JobOutput]\`). Prefer
 }
 \`\`\`
 
-Root \`Group\` schedule virtual params use snake_case (\`recurrence_period\`, \`start_date\`, …) — see [\`Group\`](#group).
+Root \`Group\` schedule virtual params use snake_case (\`recurrence_period\`, \`start_date\`, …) — see [\`Group\`](./group).
 
 ## Job types
 
-${toc}
-
----
+| \`job_type\` |
+| --- |
+${tocRows.join('\n')}
 `
 
-fs.writeFileSync(outFile, header + body)
-console.log(`Wrote ${outFile} (${resolved.length} job types)`)
+fs.writeFileSync(path.join(outDir, 'index.mdx'), index)
+
+const oldSingle = path.join(docsRoot, 'content/api/job-parameter-schemas.mdx')
+if (fs.existsSync(oldSingle)) fs.unlinkSync(oldSingle)
+
+console.log(`Wrote ${outDir} (${resolved.length} job pages + index)`)

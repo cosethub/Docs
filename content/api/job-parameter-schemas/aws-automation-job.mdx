@@ -1,0 +1,21 @@
+# `AwsAutomationJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `AwsAutomationJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `AwsAccountCredentialId` | `foreign_key_option` | Yes | Secondary: Credential. Credential types: AmazonIdentityAccessManagement |
+| `JobMultiStepSourceParameterDetail` | `option` | No | — |
+| `InstanceIds` | `option` | No | — |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `LaunchedOrStartedInstanceIds` | `option` | Emitted after run — map onto a later job input |
+| `CreatedCredentialId` | `int` | Emitted after run — map onto a later job input |
+

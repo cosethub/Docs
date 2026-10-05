@@ -1,0 +1,31 @@
+# `UnixHealthMonitorJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `UnixHealthMonitorJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `CredentialId` | `foreign_key_option` | Yes | Secondary: Credential. Credential types: Ssh |
+| `PortOverride` | `int` | No | — |
+| `SourceFolder` | `string` | No | — |
+| `SourceFile` | `string` | No | — |
+| `OutputFileStoreId` | `string` | No | — |
+| `OutputFile` | `string` | No | — |
+| `OutputFolder` | `string` | No | — |
+| `OutputDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputDateAdjustment` | `int` | No | Output File Name Date Format |
+| `OutputMinusForMonday` | `boolean` | No | Output File Name Date Format |
+| `CalendarId` | `foreign_key_option` | No | Output File Name Date Format. Secondary: Calendar |
+| `ShouldRunVerifyAga` | `boolean` | No | — |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedOutputFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFile` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedUnixMonitorCommand` | `string` | Emitted after run — map onto a later job input |
+

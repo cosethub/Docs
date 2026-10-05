@@ -1,0 +1,34 @@
+# `GlobalRelaySmtpArchiveJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `GlobalRelaySmtpArchiveJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `CredentialId` | `foreign_key_option` | No | Secondary: Credential. Credential types: EmailSmtp |
+| `SourceFileStoreId` | `string` | No | — |
+| `SourceFolder` | `string` | No | — |
+| `SourceFile` | `string` | No | — |
+| `SourceDateFormat` | `date_format` | No | Source File Name Date Format. Secondary: DateFormat |
+| `SourceDateAdjustment` | `int` | No | Source File Name Date Format |
+| `MinusForMonday` | `boolean` | No | Source File Name Date Format |
+| `CalendarId` | `foreign_key_option` | No | Source File Name Date Format. Secondary: Calendar |
+| `SmtpRecipient` | `string` | No | — |
+| `SmtpHeaderField` | `string` | No | — |
+| `SmtpHeaderValue` | `string` | No | — |
+| `CorporateEmailDomain` | `string` | No | — |
+| `SourceFolderIncludeDate` | `boolean` | No | — |
+| `SourceFileIncludeDate` | `boolean` | No | — |
+| `SourceFolderDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+| `SourceFileDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedSourceFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedSourceFile` | `string` | Emitted after run — map onto a later job input |
+

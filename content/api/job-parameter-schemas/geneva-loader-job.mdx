@@ -1,0 +1,54 @@
+# `GenevaLoaderJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `GenevaLoaderJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `DatabaseType` | `option` | No | — |
+| `CredentialId` | `foreign_key_option` | Yes | Secondary: Credential. Credential types: Geneva |
+| `SqlCredentialId` | `foreign_key_option` | No | Secondary: Credential. Credential types: SqlServer, PostgreSql |
+| `SqlTimeoutInSeconds` | `int` | No | Default: `300` |
+| `CalendarId` | `foreign_key_option` | No | Secondary: Calendar |
+| `SourceFileFormat` | `option` | No | — |
+| `OtherParameters` | `string` | No | — |
+| `OutputType` | `option` | No | — |
+| `StoredProcedureName` | `string` | No | — |
+| `UseStoredProcedure` | `boolean` | No | — |
+| `ReportParameters` | `CommaSeparatedValues` | No | — |
+| `RecordType` | `option` | Yes | — |
+| `AllOrNothingCommit` | `boolean` | No | — |
+| `SourceType` | `string` | Yes | — |
+| `SourceFileStoreId` | `string` | No | — |
+| `SourceFolder` | `string` | No | — |
+| `SourceFile` | `string` | No | — |
+| `SourceDateFormat` | `date_format` | No | Source File Name Date Format. Secondary: DateFormat |
+| `SourceDateAdjustment` | `int` | No | Source File Name Date Format |
+| `MinusForMonday` | `boolean` | No | Source File Name Date Format |
+| `SourceFolderIncludeDate` | `boolean` | No | Source File Name Date Format |
+| `SourceFileIncludeDate` | `boolean` | No | Source File Name Date Format |
+| `SourceFolderDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+| `SourceFileDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+| `OutputFileStoreId` | `string` | No | Source Folder Date Format |
+| `OutputFolder` | `string` | Yes | Source File Date Format |
+| `OutputFile` | `string` | Yes | Source File Date Format |
+| `OutputDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputDateAdjustment` | `int` | No | Output File Name Date Format |
+| `OutputMinusForMonday` | `boolean` | No | Output File Name Date Format |
+| `OutputFolderIncludeDate` | `boolean` | No | Output File Name Date Format |
+| `OutputFileIncludeDate` | `boolean` | No | Output File Name Date Format |
+| `OutputFolderDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+| `OutputFileDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedSourceFolder` | `string` | Output Folder Date Format |
+| `CalculatedSourceFile` | `string` | Output File Date Format |
+| `CalculatedOutputFolder` | `string` | Output File Date Format |
+| `CalculatedOutputFile` | `string` | Output File Date Format |
+

@@ -1,0 +1,34 @@
+# `TableToCsvJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `TableToCsvJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `DataWarehouseId` | `int` | No | — |
+| `Table` | `string` | No | — |
+| `CalendarId` | `foreign_key_option` | No | Secondary: Calendar |
+| `Where` | `string` | No | — |
+| `OutputFileStoreId` | `string` | No | — |
+| `OutputFolder` | `string` | No | — |
+| `OutputFile` | `string` | No | — |
+| `OutputDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputDateAdjustment` | `int` | No | Output File Name Date Format |
+| `OutputMinusForMonday` | `boolean` | No | Output File Name Date Format |
+| `OutputFolderIncludeDate` | `boolean` | No | — |
+| `OutputFileIncludeDate` | `boolean` | No | — |
+| `OutputFolderDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+| `OutputFileDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+| `CsvHeaderSource` | `option` | No | Output Folder Date Format |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedOutputFolder` | `string` | Output File Name Date Format |
+| `CalculatedOutputFile` | `string` | Output File Name Date Format |
+| `ExportedRowCount` | `int` | Output File Date Format |
+

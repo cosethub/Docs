@@ -1,0 +1,45 @@
+# `SQLBulkLoadJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `SQLBulkLoadJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `SourceFolder` | `string` | Yes | — |
+| `SourceFile` | `string` | Yes | — |
+| `SourceDateFormat` | `date_format` | No | Source File Name Date Format. Secondary: DateFormat |
+| `SourceDateAdjustment` | `int` | No | Source File Name Date Format |
+| `MinusForMonday` | `boolean` | No | Source File Name Date Format |
+| `CalendarId` | `foreign_key_option` | No | Source File Name Date Format. Secondary: Calendar |
+| `ColumnDelimiter` | `string` | No | — |
+| `TextQualifier` | `string` | No | — |
+| `TableName` | `string` | No | — |
+| `DatabaseType` | `option` | Yes | — |
+| `CredentialId` | `foreign_key_option` | No | Secondary: Credential. Credential types: SqlServer, PostgreSql |
+| `DeleteRowsInTable` | `boolean` | No | — |
+| `DropTargetTable` | `boolean` | No | — |
+| `AddIdentityColumn` | `boolean` | No | — |
+| `IdentityColumnName` | `string` | No | — |
+| `FirstRowHasHeaders` | `boolean` | No | — |
+| `SkipStartingRows` | `int` | No | — |
+| `TrimTableAndColumnHeaders` | `boolean` | No | Default: `false` |
+| `SourceFolderIncludeDate` | `boolean` | No | — |
+| `SourceFileIncludeDate` | `boolean` | No | — |
+| `SourceFolderDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+| `SourceFileDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+| `SourceFileStoreId` | `string` | No | Source Folder Date Format |
+| `RegisterInWarehouseUi` | `boolean` | No | Source File Date Format. Default: `true` |
+| `EntityTypeOptionId` | `int` | No | Register Table In Warehouse UI |
+| `WarehouseUiDisplayName` | `string` | No | Register Table In Warehouse UI |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedSourceFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedSourceFile` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedTableName` | `string` | Emitted after run — map onto a later job input |
+

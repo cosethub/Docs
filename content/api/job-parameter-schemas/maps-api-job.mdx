@@ -1,0 +1,38 @@
+# `MapsApiJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `MapsApiJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `MapsCredentialId` | `foreign_key_option` | Yes | Secondary: Credential. Credential types: MapsInterface |
+| `SqlCredentialId` | `foreign_key_option` | Yes | Secondary: Credential. Credential types: SqlServer |
+| `SqlTimeoutInSeconds` | `int` | Yes | Default: `300` |
+| `SourceFileStoreId` | `string` | No | — |
+| `SourceFileOverride` | `string` | No | — |
+| `OutputFileStoreId` | `string` | No | — |
+| `OutputFile` | `string` | No | — |
+| `OutputFolder` | `string` | No | — |
+| `OutputDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputDateAdjustment` | `int` | No | Output File Name Date Format |
+| `OutputMinusForMonday` | `boolean` | No | Output File Name Date Format |
+| `CalendarId` | `foreign_key_option` | No | Output File Name Date Format. Secondary: Calendar |
+| `ApiVersion` | `option` | No | Default: `MapsApiVersionOption.One` |
+| `OutputFolderIncludeDate` | `boolean` | No | — |
+| `OutputFileIncludeDate` | `boolean` | No | — |
+| `OutputFolderDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+| `OutputFileDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedSourceFile` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedSourceFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFile` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFolder` | `string` | Emitted after run — map onto a later job input |
+| `RequestCount` | `int` | Output Folder Date Format |
+

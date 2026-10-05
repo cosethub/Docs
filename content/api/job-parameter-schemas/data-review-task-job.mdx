@@ -1,0 +1,61 @@
+# `DataReviewTaskJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `DataReviewTaskJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `FailOnNoResponse` | `boolean` | No | — |
+| `TaskJobType` | `int` | No | — |
+| `Users` | `string` | Yes | — |
+| `Roles` | `string` | Yes | — |
+| `ResponseDueInIntervalId` | `option` | Yes | Secondary: Interval |
+| `ResponseDueInNumber` | `int` | Yes | — |
+| `RemindBeforeNumber` | `int` | No | — |
+| `RemindBeforeIntervalId` | `option` | No | Secondary: Interval |
+| `UseImportData` | `boolean` | No | Default: `false` |
+| `CredentialId` | `foreign_key_option` | No | Secondary: Credential. Credential types: SqlServer |
+| `ImportTableName` | `string` | No | — |
+| `UsersToEmail` | `string` | No | — |
+| `GroupsToEmail` | `string` | No | — |
+| `Subject` | `string` | Yes | — |
+| `Message` | `string` | No | — |
+| `DeliveryMethod` | `option` | Yes | Link = 1 (live table/view), Attachment = 2 (file snapshot) |
+| `DataWarehouseId` | `int` | No | — |
+| `OrganizationName` | `string` | No | — |
+| `DataWarehouseName` | `string` | No | — |
+| `Table` | `string` | No | — |
+| `Where` | `string` | No | — |
+| `CalendarId` | `foreign_key_option` | No | Secondary: Calendar |
+| `OutputFileStoreId` | `string` | No | — |
+| `OutputFolder` | `string` | No | — |
+| `OutputFile` | `string` | No | — |
+| `OutputExtension` | `string` | No | — |
+| `OutputDateAdjustment` | `int` | No | — |
+| `OutputMinusForMonday` | `boolean` | No | — |
+| `OutputFolderIncludeDate` | `boolean` | No | — |
+| `OutputFileIncludeDate` | `boolean` | No | — |
+| `OutputDateFormat` | `date_format` | No | Secondary: DateFormat |
+| `OutputFolderDateFormat` | `date_format` | No | Secondary: DateFormat |
+| `OutputFileDateFormat` | `date_format` | No | Secondary: DateFormat |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `DataForReview` | `string` | Emitted after run — map onto a later job input |
+
+<details>
+<summary>Hidden / system parameters (4)</summary>
+
+| Parameter | IO | Notes |
+| --- | --- | --- |
+| `JobKey` | input | Usually set by the platform; omit unless you know you need it |
+| `PropagatedOutputPath` | input | Usually set by the platform; omit unless you know you need it |
+| `OrganizationId` | input | Usually set by the platform; omit unless you know you need it |
+| `TaskInstanceId` | input | Usually set by the platform; omit unless you know you need it |
+
+</details>

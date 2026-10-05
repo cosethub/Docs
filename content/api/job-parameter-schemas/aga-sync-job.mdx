@@ -1,0 +1,33 @@
+# `AgaSyncJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `AgaSyncJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `CredentialId` | `foreign_key_option` | Yes | Secondary: Credential. Credential types: SqlServer |
+| `WarehouseCredentialId` | `int` | Yes | — |
+| `OutputFileStoreId` | `string` | No | — |
+| `ConversionDate` | `DateTime` | No | — |
+| `CurrentDate` | `DateTime` | No | — |
+| `KnowledgeDate` | `DateTime` | No | — |
+| `PriorKnowledgeDate` | `DateTime` | No | — |
+| `Portfolio` | `string` | No | — |
+| `OutputFolderDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+| `CalendarId` | `foreign_key_option` | No | Output Folder Date Format. Secondary: Calendar |
+| `RuntimeOption` | `int` | Yes | Output Folder Date Format |
+| `OnlyRunLoaderGeneration` | `boolean` | No | Output Folder Date Format. Default: `false` |
+| `UniqueId` | `string` | No | — |
+| `FileFormat` | `option` | Yes | — |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `MasterFile` | `string` | Emitted after run — map onto a later job input |
+| `OutputFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFolder` | `string` | Emitted after run — map onto a later job input |
+

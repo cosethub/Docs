@@ -1,0 +1,32 @@
+# `DataWarehouseJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `DataWarehouseJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `CalendarId` | `foreign_key_option` | No | Secondary: Calendar |
+| `GenevaCredentialId` | `foreign_key_option` | Yes | Secondary: Credential. Credential types: Geneva |
+| `StagingCredentialId` | `foreign_key_option` | Yes | Secondary: Credential. Credential types: SqlServer, PostgreSql |
+| `WarehouseCredentialId` | `foreign_key_option` | Yes | Secondary: Credential. Credential types: SqlServer, PostgreSql |
+| `DatabaseType` | `option` | Yes | — |
+| `StreamToSql` | `boolean` | No | — |
+| `NumConcurrentSqlBulkLoads` | `int` | No | — |
+| `NumSqlBulkLoadChildThreads` | `int` | No | — |
+| `SqlTimeout` | `int` | No | — |
+| `IsClosedPeriod` | `boolean` | No | — |
+| `ForcePeriod` | `boolean` | No | — |
+| `OutputFileStoreId` | `string` | No | — |
+| `Folder` | `string` | Yes | — |
+| `UniqueId` | `string` | No | — |
+| `FileFormat` | `option` | Yes | — |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedOutputFolder` | `string` | Emitted after run — map onto a later job input |
+

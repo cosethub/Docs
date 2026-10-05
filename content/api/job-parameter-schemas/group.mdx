@@ -1,0 +1,18 @@
+# `Group`
+
+Internal class: `FakeJob`.
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `Group` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `recurrence_period` | `string` | Yes | Schedule recurrence. Values: Onetime, Daily, Weekly, Monthly, Hourly, EveryOtherWeek, Quarterly, Every6Months, Yearly, Custom |
+| `start_date` | `DateTime` | Yes | ISO start datetime, e.g. 2026-01-01T09:00:00 |
+| `has_expiration_date` | `boolean` | No | When true, schedule ends on expiration_date. Default: `false` |
+| `expiration_date` | `DateTime` | No | ISO end datetime when has_expiration_date is true |
+| `daily_recur_every_x_day` | `int` | No | For Daily only: run every N days (1 = every day) |
+

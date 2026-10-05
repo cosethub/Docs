@@ -1,0 +1,27 @@
+# `FTPMonitorJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `FTPMonitorJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `FilePath` | `string` | Yes | — |
+| `FileName` | `string` | Yes | — |
+| `DateAdjustment` | `int` | No | — |
+| `DateFormat` | `date_format` | No | Source File Name Date Format. Secondary: DateFormat |
+| `ShouldFileExist` | `boolean` | No | Source File Name Date Format |
+| `ModifiedBefore` | `DateTime` | No | Source File Name Date Format |
+| `ModifiedAfter` | `DateTime` | No | Source File Name Date Format |
+| `FileExpectedInNumber` | `int` | No | Source File Name Date Format |
+| `FileExpectedInIntervalId` | `option` | No | Secondary: Interval |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedFilePath` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedFileName` | `string` | Emitted after run — map onto a later job input |
+

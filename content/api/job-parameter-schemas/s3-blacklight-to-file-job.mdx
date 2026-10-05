@@ -1,0 +1,49 @@
+# `S3BlacklightToFileJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `S3BlacklightToFileJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `CredentialId` | `foreign_key_option` | No | Secondary: Credential. Credential types: S3PartnersBlacklight |
+| `Method` | `option` | Yes | — |
+| `FromDate` | `DateTime` | No | — |
+| `ToDate` | `DateTime` | No | — |
+| `BusinessDate` | `DateTime` | No | — |
+| `Currency` | `string` | Yes | — |
+| `SourceFolder` | `string` | Yes | — |
+| `SourceFile` | `string` | Yes | — |
+| `SourceDateFormat` | `date_format` | No | Source File Name Date Format. Secondary: DateFormat |
+| `SourceDateAdjustment` | `int` | No | Source File Name Date Format |
+| `MinusForMonday` | `boolean` | No | Source File Name Date Format |
+| `SourceFirstRowHasHeaders` | `boolean` | No | Source File Name Date Format |
+| `SourceFileStoreId` | `string` | No | Source File Name Date Format |
+| `OutputFileStoreId` | `string` | No | — |
+| `OutputFile` | `string` | Yes | — |
+| `OutputFolder` | `string` | Yes | — |
+| `OutputDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputDateAdjustment` | `int` | No | Output File Name Date Format |
+| `OutputMinusForMonday` | `boolean` | No | Output File Name Date Format |
+| `CalendarId` | `foreign_key_option` | No | Output File Name Date Format. Secondary: Calendar |
+| `SourceFolderIncludeDate` | `boolean` | No | — |
+| `SourceFileIncludeDate` | `boolean` | No | — |
+| `OutputFolderIncludeDate` | `boolean` | No | — |
+| `OutputFileIncludeDate` | `boolean` | No | — |
+| `SourceFolderDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+| `SourceFileDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+| `OutputFolderDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+| `OutputFileDateFormat` | `date_format` | No | Source File Date Format. Secondary: DateFormat |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedSourceFile` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedSourceFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFile` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFolder` | `string` | Emitted after run — map onto a later job input |
+| `RequestCount` | `int` | Output Folder Date Format |
+

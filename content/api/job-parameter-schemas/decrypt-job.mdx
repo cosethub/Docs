@@ -1,0 +1,45 @@
+# `DecryptJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `DecryptJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `SourceFileStoreId` | `string` | No | — |
+| `SourceFolder` | `string` | No | — |
+| `SourceFile` | `string` | No | — |
+| `SourceDateFormat` | `date_format` | No | Source File Name Date Format. Secondary: DateFormat |
+| `SourceDateAdjustment` | `int` | No | Source File Name Date Format |
+| `MinusForMonday` | `boolean` | No | Source File Name Date Format |
+| `OutputFileStoreId` | `string` | No | Source File Name Date Format |
+| `OutputFolder` | `string` | Yes | Source File Name Date Format |
+| `OutputFile` | `string` | Yes | — |
+| `OutputDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputDateAdjustment` | `int` | No | Output File Name Date Format |
+| `OutputMinusForMonday` | `boolean` | No | Output File Name Date Format |
+| `CalendarId` | `foreign_key_option` | No | Output File Name Date Format. Secondary: Calendar |
+| `Password` | `string` | No | — |
+| `KeyFileStoreId` | `string` | No | — |
+| `PublicKeyPath` | `string` | No | — |
+| `PrivateKeyPath` | `string` | Yes | — |
+| `SourceFolderIncludeDate` | `boolean` | No | — |
+| `SourceFileIncludeDate` | `boolean` | No | — |
+| `OutputFolderIncludeDate` | `boolean` | No | — |
+| `OutputFileIncludeDate` | `boolean` | No | — |
+| `SourceFolderDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+| `SourceFileDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+| `OutputFolderDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+| `OutputFileDateFormat` | `date_format` | No | Source File Date Format. Secondary: DateFormat |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedSourceFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedSourceFile` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFile` | `string` | Emitted after run — map onto a later job input |
+

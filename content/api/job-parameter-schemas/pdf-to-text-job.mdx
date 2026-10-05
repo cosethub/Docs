@@ -1,0 +1,41 @@
+# `PdfToTextJob`
+
+Parameters for workflow **create / update** (`jobs_with_parameters[].parameters`) and run `parameter_overrides`.
+
+`job_type`: `PdfToTextJob` · [Create workflow](../jobs-workflows-write#post-workflows) · [All job schemas](./)
+
+## Inputs
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `SourceFolder` | `string` | Yes | — |
+| `SourceFile` | `string` | Yes | — |
+| `SourceFileStoreId` | `string` | No | — |
+| `OutputFileStoreId` | `string` | No | — |
+| `SourceDateFormat` | `date_format` | No | Source File Name Date Format. Secondary: DateFormat |
+| `SourceDateAdjustment` | `int` | No | Source File Name Date Format |
+| `SourceFolderIncludeDate` | `boolean` | No | Source File Name Date Format |
+| `SourceFileIncludeDate` | `boolean` | No | Source File Name Date Format |
+| `SourceFolderDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+| `SourceFileDateFormat` | `date_format` | No | Source Folder Date Format. Secondary: DateFormat |
+| `MinusForMonday` | `boolean` | No | Source Folder Date Format |
+| `OutputFolder` | `string` | Yes | Source File Date Format |
+| `OutputFile` | `string` | Yes | Source File Date Format |
+| `OutputDateFormat` | `date_format` | No | Output File Name Date Format. Secondary: DateFormat |
+| `OutputDateAdjustment` | `int` | No | Output File Name Date Format |
+| `OutputMinusForMonday` | `boolean` | No | Output File Name Date Format |
+| `OutputFolderIncludeDate` | `boolean` | No | Output File Name Date Format |
+| `OutputFileIncludeDate` | `boolean` | No | Output File Name Date Format |
+| `OutputFolderDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+| `OutputFileDateFormat` | `date_format` | No | Output Folder Date Format. Secondary: DateFormat |
+| `CalendarId` | `foreign_key_option` | No | Output Folder Date Format. Secondary: Calendar |
+
+## Outputs
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `CalculatedSourceFolder` | `string` | Output File Date Format |
+| `CalculatedSourceFile` | `string` | Output File Date Format |
+| `CalculatedOutputFolder` | `string` | Emitted after run — map onto a later job input |
+| `CalculatedOutputFile` | `string` | Emitted after run — map onto a later job input |
+
