@@ -25,6 +25,7 @@ const files = [
   'workflows/examples/sftp-download.mdx',
   'workflows/examples/table-to-csv-view.mdx',
   'workflows/examples/data-review.mdx',
+  'workflows/examples/load-review-send.mdx',
   'workflows/job-types/data-request-task.mdx',
   'workflows/job-types/data-review-task.mdx',
   'checklists/index.mdx',
