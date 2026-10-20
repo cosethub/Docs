@@ -44,7 +44,7 @@ CoSet Docs live at https://cosethub.github.io/Docs/ · Product site https://www.
 - [Job parameter schemas](https://cosethub.github.io/Docs/api/job-parameter-schemas/): Per–job-type inputs/outputs for create workflow
 - [Jobs & workflows — write](https://cosethub.github.io/Docs/api/jobs-workflows-write/): Run job, create workflow, AI chat writes
 - [MCP server](https://cosethub.github.io/Docs/api/mcp/): Coming soon — hosted tenant MCP over Public API
-- [Jobs & workflows — read](https://cosethub.github.io/Docs/api/jobs-workflows-read/): Job detail, runs, error analysis
+- [Jobs & workflows — read](https://cosethub.github.io/Docs/api/jobs-workflows-read/): Job detail, runs, workflow list search (job type and parameter values), error analysis
 - [Webhooks](https://cosethub.github.io/Docs/api/webhooks/): Event subscriptions including data monitor alerts
 - [Warehouses API](https://cosethub.github.io/Docs/api/warehouses/): Tables, views, rows, exports
 - [Data monitors API](https://cosethub.github.io/Docs/api/data-monitors/): CRUD and evaluation

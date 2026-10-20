@@ -155,6 +155,38 @@ Full planned mapping. Tools marked **read** vs **write** for Read Only API keys.
 | `coset_load_ai_workflow_context` | `POST /ai-workflow/chats/{chatId}/context` | W |
 | `coset_delete_ai_workflow_chat` | `DELETE /ai-workflow/chats/{chatId}` | W |
 
+### Workflow list search (`coset_list_workflows`)
+
+`coset_list_workflows` takes the same filters as [`GET /workflows`](./jobs-workflows-read#get-workflows). Use it to find trees by a job inside them, and by workflow name.
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `q` | `string` | Workflow name search |
+| `roots` | `boolean` | Roots only |
+| `folder_id` | `integer` | With `roots: true` |
+| `job_type` | `string` or `string[]` | Optional. Internal type key (`FTPMonitorJob`, …). Use alone, or with `parameters`. An array matches any of those types. |
+| `parameters` | `{ name, value }[]` | Optional. Stored **input** parameters. Use alone, or with `job_type`. `value` is an exact string. |
+
+Send `job_type`, `parameters`, or both. When you send both, one job in the tree has to satisfy the type and every parameter together. Pass credential ids as the Credential Hub id. On FTP Monitor, that input is `CredentialId` (form label **FTP Server Credentials**).
+
+Workflows with an FTP Monitor on credential `8841`:
+
+```json
+{
+  "name": "coset_list_workflows",
+  "arguments": {
+    "job_type": "FTPMonitorJob",
+    "parameters": [
+      { "name": "CredentialId", "value": "8841" }
+    ]
+  }
+}
+```
+
+The tool returns the workflow list (id, name, status). Call `coset_get_workflow` on a hit when you need the tree.
+
+Matching rules, repeated types, and the REST encoding of `parameters`: [Job and parameter search](./jobs-workflows-read#job-and-parameter-search).
+
 ### Warehouses
 
 | MCP tool | REST | RW |

@@ -426,7 +426,7 @@ curl -sS -H "Authorization: Bearer $TOKEN" \
 
 ## `GET /workflows`
 
-List workflows.
+List workflows. Filter by workflow name, by a job type anywhere in the tree, and by stored input parameter values on that job.
 
 | | |
 | --- | --- |
@@ -439,7 +439,53 @@ List workflows.
 | --- | --- | --- | --- |
 | `roots` | `boolean` | `false` | Roots only |
 | `folder_id` | `integer` | — | With `roots=true` |
-| `q` | `string` | — | Name search |
+| `q` | `string` | — | Workflow name search |
+| `job_type` | `string` | — | Optional. Internal job type key. Use alone, or with `parameters`. Repeat to allow more than one type. |
+| `parameters` | `string` | — | Optional. JSON array of `{ "name", "value" }` input matches. Use alone, or with `job_type`. See [Job and parameter search](#job-and-parameter-search). |
+
+Send `job_type`, `parameters`, or both. Either filter is enough on its own.
+
+MCP: the same fields are arguments on `coset_list_workflows` — [Workflow list search](./mcp#workflow-list-search-coset_list_workflows). `parameters` is a JSON array there, not a string.
+
+### Job and parameter search
+
+A workflow is returned when **one job in its tree** satisfies every constraint you sent. You can send `job_type` only, `parameters` only, or both. `q` is separate and must also match the workflow name when you set it.
+
+| You send | Match |
+| --- | --- |
+| `job_type` | That job’s type is one of the given keys (`FTPMonitorJob`, `ETLJob`, …). Keys are the `job_type` values in [Job parameter schemas](./job-parameter-schemas). |
+| `parameters` | That **same** job stores every listed input. Each `name` is the stored parameter name, not the form label. Each `value` is an exact string match. |
+| Both | That job has one of the types **and** every parameter. |
+| `parameters` only | Any job type, as long as one job has every name/value. |
+| `job_type` only | Any workflow that contains that job type. |
+
+`parameters` does not search output parameters or workflow-parameter defaults. Omit it, or send `[]`, to skip parameter matching.
+
+Credential fields are the Credential Hub **id**, not the credential name. On FTP Monitor, FTP Download, and FTP Transmit, **FTP Server Credentials** is stored as `CredentialId`.
+
+Find every workflow whose tree has an FTP Monitor using credential `8841`:
+
+```bash
+curl -sS -G \
+  -H "Authorization: Bearer $TOKEN" \
+  --data-urlencode "job_type=FTPMonitorJob" \
+  --data-urlencode 'parameters=[{"name":"CredentialId","value":"8841"}]' \
+  "https://portal.cosethub.com/api/v1/workflows"
+```
+
+Add another object to `parameters` when the same job must match more than one input (folder and credential, for example). Repeat `job_type` when more than one type is acceptable:
+
+```text
+job_type=FTPMonitorJob&job_type=FTPRetrieveJob&parameters=[{"name":"CredentialId","value":"8841"}]
+```
+
+That returns workflows where one job is an FTP Monitor **or** an FTP Download, and that job’s `CredentialId` is `8841`.
+
+### Errors
+
+| HTTP | `code` | When |
+| --- | --- | --- |
+| `400` | `validation_error` | `parameters` is not a JSON array of `{ name, value }` strings, or `job_type` is not a known type |
 
 ### Response `200 OK`
 
