@@ -1,3 +1,5 @@
+import { Tabs } from 'nextra/components'
+
 # Data monitors
 
 Configure and read **database table/view data monitors** — conditions on warehouse entities, status codes, trigger jobs, and alerts.
@@ -261,13 +263,83 @@ Create a monitor (ensures type if needed when `columns` are provided).
 
 ### Example
 
-```bash
-curl -sS -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"BBG price repair — marl zero","escalation_path_group_id":15,"conditions":[{"status_code_id":25,"trigger_job_id":null,"rules":{"relation_to_previous":"and","groups":[{"field":"marl","operator":"=","value":"0","relation_to_previous":"and"}]}}]}' \
-  "https://portal.cosethub.com/api/v1/warehouses/7/entities/ref.v_bbg_price_repair/data-monitors"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/warehouses/7/entities/ref.v_bbg_price_repair/data-monitors",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: "BBG price repair — marl zero",
+      escalation_path_group_id: 15,
+      conditions: [
+        {
+          status_code_id: 25,
+          trigger_job_id: null,
+          rules: {
+            relation_to_previous: "and",
+            groups: [
+              {
+                field: "marl",
+                operator: "=",
+                value: "0",
+                relation_to_previous: "and",
+              },
+            ],
+          },
+        },
+      ],
+    }),
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/warehouses/7/entities/ref.v_bbg_price_repair/data-monitors",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json={
+        "name": "BBG price repair — marl zero",
+        "escalation_path_group_id": 15,
+        "conditions": [
+            {
+                "status_code_id": 25,
+                "trigger_job_id": None,
+                "rules": {
+                    "relation_to_previous": "and",
+                    "groups": [
+                        {
+                            "field": "marl",
+                            "operator": "=",
+                            "value": "0",
+                            "relation_to_previous": "and",
+                        }
+                    ],
+                },
+            }
+        ],
+    },
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 

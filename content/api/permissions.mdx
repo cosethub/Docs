@@ -1,3 +1,5 @@
+import { Tabs } from 'nextra/components'
+
 # Permissions & groups
 
 Manage **groups**, **user ↔ group membership**, and **warehouse access** for tables and views. Callers use these endpoints to grant Read / ReadWrite (and related levels) the same way the product Admin and warehouse permission sidebars do.
@@ -329,13 +331,43 @@ You can also set membership from the group side via [`PATCH /groups/{groupId}`](
 
 ### Example
 
-```bash
-curl -sS -X PUT \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"group_ids":[12,18]}' \
-  "https://portal.cosethub.com/api/v1/users/101/groups"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/users/101/groups",
+  {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ group_ids: [12, 18] }),
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.put(
+    "https://portal.cosethub.com/api/v1/users/101/groups",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json={"group_ids": [12, 18]},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -411,13 +443,51 @@ Updated `TableAccessPolicy`.
 
 ### Example
 
-```bash
-curl -sS -X PUT \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"grants":[{"principal_type":"group","principal_id":12,"access":"read_write"}]}' \
-  "https://portal.cosethub.com/api/v1/warehouses/7/table-access/ref.equity_master"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/warehouses/7/table-access/ref.equity_master",
+  {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      grants: [
+        { principal_type: "group", principal_id: 12, access: "read_write" },
+      ],
+    }),
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.put(
+    "https://portal.cosethub.com/api/v1/warehouses/7/table-access/ref.equity_master",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json={
+        "grants": [
+            {"principal_type": "group", "principal_id": 12, "access": "read_write"}
+        ]
+    },
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -490,13 +560,53 @@ Updated `ViewAccessPolicy`.
 
 ### Example
 
-```bash
-curl -sS -X PUT \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"grants":[{"principal_type":"group","principal_id":12,"access":"read_only"}],"owner_user_ids":[101]}' \
-  "https://portal.cosethub.com/api/v1/warehouses/7/views/ref.UBS_recon/access"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/warehouses/7/views/ref.UBS_recon/access",
+  {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      grants: [
+        { principal_type: "group", principal_id: 12, access: "read_only" },
+      ],
+      owner_user_ids: [101],
+    }),
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.put(
+    "https://portal.cosethub.com/api/v1/warehouses/7/views/ref.UBS_recon/access",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json={
+        "grants": [
+            {"principal_type": "group", "principal_id": 12, "access": "read_only"}
+        ],
+        "owner_user_ids": [101],
+    },
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 

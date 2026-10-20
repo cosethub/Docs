@@ -1,3 +1,5 @@
+import { Tabs } from 'nextra/components'
+
 # Jobs & workflows — write
 
 Trigger runs, create workflows, and mutate AI workflow builder chats.
@@ -140,16 +142,54 @@ Trigger a job (or workflow root) run.
 
 ### Examples
 
-```bash
-# Trigger with API key + overrides (v2)
-curl -sS -X POST \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "X-Access-Key: $JOB_ACCESS_KEY" \
-  -H "X-Api-Version: 2" \
-  -H "Content-Type: application/json" \
-  -d '{"run_only_this_job":false,"parameter_overrides":{"AsOfDate":"2026-07-11"}}' \
-  "https://portal.cosethub.com/api/v1/jobs/1042/run"
+Trigger with an API key and parameter overrides (API version 2).
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch("https://portal.cosethub.com/api/v1/jobs/1042/run", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+    "X-Access-Key": process.env.JOB_ACCESS_KEY,
+    "X-Api-Version": "2",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    run_only_this_job: false,
+    parameter_overrides: { AsOfDate: "2026-07-11" },
+  }),
+});
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/jobs/1042/run",
+    headers={
+        "Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}",
+        "X-Access-Key": os.environ["JOB_ACCESS_KEY"],
+        "X-Api-Version": "2",
+    },
+    json={
+        "run_only_this_job": False,
+        "parameter_overrides": {"AsOfDate": "2026-07-11"},
+    },
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ### Legacy notes
 
@@ -211,14 +251,45 @@ Poll [`GET /jobs/{jobId}/error-analysis`](./jobs-workflows-read#get-jobsjobiderr
 
 ### Example
 
-```bash
-# Trigger log analysis agent for root job 1001
-curl -sS -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"force":false}' \
-  "https://portal.cosethub.com/api/v1/jobs/1001/error-analysis"
+Trigger log analysis for root job 1001.
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/jobs/1001/error-analysis",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ force: false }),
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/jobs/1001/error-analysis",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json={"force": False},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -265,13 +336,43 @@ You can also **read** analysis by workflow id or any job id (root or sub): see [
 
 ### Example
 
-```bash
-curl -sS -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"force":false}' \
-  "https://portal.cosethub.com/api/v1/job-runs/$RUN_ID/error-analysis"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  `https://portal.cosethub.com/api/v1/job-runs/${process.env.RUN_ID}/error-analysis`,
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ force: false }),
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    f"https://portal.cosethub.com/api/v1/job-runs/{os.environ['RUN_ID']}/error-analysis",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json={"force": False},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -342,13 +443,48 @@ Create a workflow from a full job graph.
 }
 ```
 
-```bash
-curl -sS -X POST \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d @workflow.json \
-  "https://portal.cosethub.com/api/v1/workflows"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+import { readFile } from "node:fs/promises";
+
+const workflow = JSON.parse(await readFile("workflow.json", "utf8"));
+
+const response = await fetch("https://portal.cosethub.com/api/v1/workflows", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify(workflow),
+});
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import json
+import os
+import requests
+
+with open("workflow.json") as f:
+    workflow = json.load(f)
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/workflows",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json=workflow,
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -457,13 +593,53 @@ Array of updates:
 
 Empty body on success.
 
-```bash
-curl -sS -X PATCH \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '[{"job_instance_id":"inst_etl_01","parameters":[{"name":"SourceTable","value":"raw_orders_v2"}]}]' \
-  "https://portal.cosethub.com/api/v1/ai-workflow/chats/$CHAT_ID/parameters"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  `https://portal.cosethub.com/api/v1/ai-workflow/chats/${process.env.CHAT_ID}/parameters`,
+  {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify([
+      {
+        job_instance_id: "inst_etl_01",
+        parameters: [{ name: "SourceTable", value: "raw_orders_v2" }],
+      },
+    ]),
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.patch(
+    f"https://portal.cosethub.com/api/v1/ai-workflow/chats/{os.environ['CHAT_ID']}/parameters",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json=[
+        {
+            "job_instance_id": "inst_etl_01",
+            "parameters": [{"name": "SourceTable", "value": "raw_orders_v2"}],
+        }
+    ],
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 

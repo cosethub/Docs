@@ -1,3 +1,5 @@
+import { Tabs } from 'nextra/components'
+
 # Jobs & workflows — read
 
 Discover job types, inspect definitions, poll runs, list workflows, load AI workflow builder chats, and fetch **AI error analysis** for failed runs.
@@ -178,10 +180,34 @@ List runnable job types for the organization.
 
 > Legacy root key: `job_list`.
 
-```bash
-curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
-  "https://portal.cosethub.com/api/v1/jobs"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch("https://portal.cosethub.com/api/v1/jobs", {
+  headers: { Authorization: `Bearer ${process.env.ACCESS_TOKEN}` },
+});
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.get(
+    "https://portal.cosethub.com/api/v1/jobs",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -347,11 +373,39 @@ To **trigger** the log analysis agent for a root job id (instead of only reading
 
 ### Example
 
-```bash
-# Root or child job id both work
-curl -sS -H "Authorization: Bearer $TOKEN" \
-  "https://portal.cosethub.com/api/v1/jobs/1042/error-analysis"
+A root or child job id both work.
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/jobs/1042/error-analysis",
+  {
+    headers: { Authorization: `Bearer ${process.env.ACCESS_TOKEN}` },
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.get(
+    "https://portal.cosethub.com/api/v1/jobs/1042/error-analysis",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -417,10 +471,37 @@ Failed and partially failed runs are analyzed automatically when workflow log an
 
 ### Example
 
-```bash
-curl -sS -H "Authorization: Bearer $TOKEN" \
-  "https://portal.cosethub.com/api/v1/job-runs/$RUN_ID/error-analysis"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  `https://portal.cosethub.com/api/v1/job-runs/${process.env.RUN_ID}/error-analysis`,
+  {
+    headers: { Authorization: `Bearer ${process.env.ACCESS_TOKEN}` },
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.get(
+    f"https://portal.cosethub.com/api/v1/job-runs/{os.environ['RUN_ID']}/error-analysis",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -465,13 +546,47 @@ Credential fields are the Credential Hub **id**, not the credential name. On FTP
 
 Find every workflow whose tree has an FTP Monitor using credential `8841`:
 
-```bash
-curl -sS -G \
-  -H "Authorization: Bearer $TOKEN" \
-  --data-urlencode "job_type=FTPMonitorJob" \
-  --data-urlencode 'parameters=[{"name":"CredentialId","value":"8841"}]' \
-  "https://portal.cosethub.com/api/v1/workflows"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const params = new URLSearchParams({
+  job_type: "FTPMonitorJob",
+  parameters: JSON.stringify([{ name: "CredentialId", value: "8841" }]),
+});
+
+const response = await fetch(
+  `https://portal.cosethub.com/api/v1/workflows?${params}`,
+  {
+    headers: { Authorization: `Bearer ${process.env.ACCESS_TOKEN}` },
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import json
+import os
+import requests
+
+response = requests.get(
+    "https://portal.cosethub.com/api/v1/workflows",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    params={
+        "job_type": "FTPMonitorJob",
+        "parameters": json.dumps([{"name": "CredentialId", "value": "8841"}]),
+    },
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 Add another object to `parameters` when the same job must match more than one input (folder and credential, for example). Repeat `job_type` when more than one type is acceptable:
 
@@ -615,10 +730,37 @@ Same `WorkflowErrorAnalysis` shape as [`GET /jobs/{jobId}/error-analysis`](#get-
 
 ### Example
 
-```bash
-curl -sS -H "Authorization: Bearer $TOKEN" \
-  "https://portal.cosethub.com/api/v1/workflows/1001/error-analysis"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/workflows/1001/error-analysis",
+  {
+    headers: { Authorization: `Bearer ${process.env.ACCESS_TOKEN}` },
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.get(
+    "https://portal.cosethub.com/api/v1/workflows/1001/error-analysis",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 

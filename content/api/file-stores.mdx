@@ -1,3 +1,5 @@
+import { Tabs } from 'nextra/components'
+
 # File stores
 
 Browse, download, upload, and manage file store objects.
@@ -102,10 +104,38 @@ List stores for the organization.
 
 > Legacy returns a raw array of store DTOs (PascalCase). v1 wraps as `{ stores: […] }` with snake_case.
 
-```bash
-curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
-  "https://portal.cosethub.com/api/v1/file-stores?store_type=FileStore"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/file-stores?store_type=FileStore",
+  {
+    headers: { Authorization: `Bearer ${process.env.ACCESS_TOKEN}` },
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.get(
+    "https://portal.cosethub.com/api/v1/file-stores",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    params={"store_type": "FileStore"},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -183,12 +213,40 @@ Presigned download URL for a file path.
 
 > Legacy: `{ "Url": "…" }` only. v1 adds snake_case `url` and optional `expires_at`.
 
-```bash
-curl -sS -G \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  --data-urlencode "path=inbound/positions.csv" \
-  "https://portal.cosethub.com/api/v1/file-stores/3/download-url"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const params = new URLSearchParams({ path: "inbound/positions.csv" });
+
+const response = await fetch(
+  `https://portal.cosethub.com/api/v1/file-stores/3/download-url?${params}`,
+  {
+    headers: { Authorization: `Bearer ${process.env.ACCESS_TOKEN}` },
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.get(
+    "https://portal.cosethub.com/api/v1/file-stores/3/download-url",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    params={"path": "inbound/positions.csv"},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -337,13 +395,53 @@ Multipart file upload into a folder path.
 
 Empty body on success.
 
-```bash
-curl -sS -X POST \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -F "path=inbound/july/" \
-  -F "file=@./positions.csv" \
-  "https://portal.cosethub.com/api/v1/file-stores/3/upload"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+import { readFile } from "node:fs/promises";
+
+const form = new FormData();
+form.append("path", "inbound/july/");
+form.append(
+  "file",
+  new Blob([await readFile("./positions.csv")]),
+  "positions.csv",
+);
+
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/file-stores/3/upload",
+  {
+    method: "POST",
+    headers: { Authorization: `Bearer ${process.env.ACCESS_TOKEN}` },
+    body: form,
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+with open("./positions.csv", "rb") as f:
+    response = requests.post(
+        "https://portal.cosethub.com/api/v1/file-stores/3/upload",
+        headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+        data={"path": "inbound/july/"},
+        files={"file": ("positions.csv", f)},
+    )
+
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -460,13 +558,43 @@ Delete a file or folder.
 
 Empty body.
 
-```bash
-curl -sS -X DELETE \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"path":"inbound/old-file.csv"}' \
-  "https://portal.cosethub.com/api/v1/file-stores/3/items"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/file-stores/3/items",
+  {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ path: "inbound/old-file.csv" }),
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.delete(
+    "https://portal.cosethub.com/api/v1/file-stores/3/items",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json={"path": "inbound/old-file.csv"},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 

@@ -1,3 +1,5 @@
+import { Tabs } from 'nextra/components'
+
 # Auth & account
 
 Health checks, token issuance, and org identity.
@@ -37,9 +39,27 @@ Liveness probe for load balancers and monitors.
 
 ### Example
 
-```bash
-curl -sS "https://portal.cosethub.com/api/v1/health"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch("https://portal.cosethub.com/api/v1/health");
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import requests
+
+response = requests.get("https://portal.cosethub.com/api/v1/health")
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -93,12 +113,48 @@ Also accepted as `application/x-www-form-urlencoded` (standard OAuth2).
 
 ### Example
 
-```bash
-curl -sS -X POST \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET&scope=warehouses:read" \
-  "https://portal.cosethub.com/api/v1/oauth/token"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const body = new URLSearchParams({
+  grant_type: "client_credentials",
+  client_id: process.env.CLIENT_ID,
+  client_secret: process.env.CLIENT_SECRET,
+  scope: "warehouses:read",
+});
+
+const response = await fetch("https://portal.cosethub.com/api/v1/oauth/token", {
+  method: "POST",
+  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  body,
+});
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/oauth/token",
+    data={
+        "grant_type": "client_credentials",
+        "client_id": os.environ["CLIENT_ID"],
+        "client_secret": os.environ["CLIENT_SECRET"],
+        "scope": "warehouses:read",
+    },
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -140,11 +196,34 @@ Current principal: user (or service account), organization, and granted scopes.
 
 ### Example
 
-```bash
-curl -sS \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  "https://portal.cosethub.com/api/v1/me"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch("https://portal.cosethub.com/api/v1/me", {
+  headers: { Authorization: `Bearer ${process.env.ACCESS_TOKEN}` },
+});
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.get(
+    "https://portal.cosethub.com/api/v1/me",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -190,11 +269,37 @@ Organization metadata for the authenticated tenant.
 
 ### Example
 
-```bash
-curl -sS \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  "https://portal.cosethub.com/api/v1/organizations/55"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/organizations/55",
+  {
+    headers: { Authorization: `Bearer ${process.env.ACCESS_TOKEN}` },
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.get(
+    "https://portal.cosethub.com/api/v1/organizations/55",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 

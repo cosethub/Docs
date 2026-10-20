@@ -1,3 +1,5 @@
+import { Tabs } from 'nextra/components'
+
 # Webhooks & events
 
 Subscribe to outbound events and poll an event stream.
@@ -132,13 +134,46 @@ Register a webhook.
 
 Store `secret` immediately — subsequent GETs return a masked value.
 
-```bash
-curl -sS -X POST \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://hooks.acme.com/ryan","events":["job.run.completed","job.run.failed"]}' \
-  "https://portal.cosethub.com/api/v1/webhooks"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch("https://portal.cosethub.com/api/v1/webhooks", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    url: "https://hooks.acme.com/ryan",
+    events: ["job.run.completed", "job.run.failed"],
+  }),
+});
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/webhooks",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json={
+        "url": "https://hooks.acme.com/ryan",
+        "events": ["job.run.completed", "job.run.failed"],
+    },
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
