@@ -11,6 +11,6 @@ export default {
   'jobs-workflows-read': 'Jobs & workflows — read',
   'jobs-workflows-write': 'Jobs & workflows — write',
   'job-parameter-schemas': 'Job parameter schemas',
-  mcp: 'MCP server (coming soon)',
+  mcp: 'MCP server',
   webhooks: 'Webhooks & events',
 }

@@ -2,7 +2,7 @@
 
 > Concatenated high-value CoSet documentation for AI agents. Prefer https://cosethub.github.io/Docs/llms.txt to choose pages; use this file for bulk context.
 
-Generated: 2026-10-05
+Generated: 2026-10-29
 
 ---
 
@@ -225,7 +225,7 @@ Content-Type: application/json
 }
 ```
 
-Poll [`GET /job-runs/{runId}`](/api/jobs-workflows-read#get-job-runsrunid) for status and `output_refs`. Details: [Jobs & workflows — write](/api/jobs-workflows-write). For Claude/Cursor agents, see the planned hosted [MCP server](/api/mcp) (`https://portal.cosethub.com/mcp`, tools such as `coset_run_job`, `coset_get_job_run`, …).
+Poll [`GET /job-runs/{runId}`](/api/jobs-workflows-read#get-job-runsrunid) for status and `output_refs`. Details: [Jobs & workflows — write](/api/jobs-workflows-write). For Claude Code or Cursor, use the hosted [MCP server](/api/mcp) (`https://portal.cosethub.com/mcp`, tools such as `coset_run_job`, `coset_get_job_run`, …).
 
 ## Events back to your systems
 
@@ -618,7 +618,7 @@ Open **Workflow Automation** to create, edit, and run workflows.
 | [Parameters and outputs](./parameters) | Job inputs, output mappings, named workflow parameters |
 | [Create with AI](./ai-workflows) | Describe a workflow in chat; review and save the draft tree |
 | [Job types](./job-types) | One page per job type — what it does and how it works |
-| [Examples](./examples) | Simple trees for email gathering, SFTP, Table to CSV + views, Data Review |
+| [Examples](./examples) | Simple trees for email gathering, SFTP, Table to CSV + views, Data Review, load → review → send |
 | [Automate with CoSet](/automate) | Problem → tree/API map (SFTP→SQL, missing files, recon, API trigger, period close) |
 | [Checklists](/checklists) | Watch jobs and monitors on a period-close board; **Add to Checklist** from a tree |
 
@@ -1043,6 +1043,88 @@ No CSV step — reviewers open the view in product.
 - Placing **Data Review Task** after data is ready  
 - Link to **table or view** vs file attachment  
 - **On success** / **On failure** branching on approve / reject
+
+---
+
+Source: https://cosethub.github.io/Docs/workflows/examples/load-review-send/
+
+# Load, review, and send
+
+<video controls playsInline preload="metadata" width="720" src="../../../examples/e2e-view-workflow.mp4">
+  A browser that plays MP4 can play this recording.
+</video>
+
+[Download the recording](../../../examples/e2e-view-workflow.mp4) (MP4).
+
+**Goal:** Load a trades file into a warehouse table, roll it up in a view, send that aggregate for approval, then export the approved result to CSV and email it.
+
+The recording is the workflow **loads test_fa_trades**. The table is `test_fa_trades`. The view groups by asset category and settlement date and sums commission and net amount.
+
+## Tree
+
+The root job is the load. Each later step runs **On success** of the one above it, so the CSV and the email run only after the review is approved.
+
+```
+loads test_fa_trades                         SQL Bulk Load
+ └── send trade aggregate                    Data Review Task    [On success]
+      └── export daily aggregate to csv      Table to CSV        [On success]
+           └── send reviewed trades to dan   Email               [On success]
+```
+
+
+
+## 1. Load the file
+
+Job type: [SQL Bulk Load](../job-types/sql-bulk-load)
+
+**loads test_fa_trades** reads the source file and loads it into `test_fa_trades`. Later jobs use that table only through the view, not as the file that gets emailed.
+
+## 2. Aggregate the trades
+
+Build the view on the warehouse **Views** tab with [Create View using AI](/views/ai-views), after the table exists.
+
+Prompt used in the recording:
+
+```text
+give me a view to group test_fa_trades by asset category and settlement date. sum commission and net amount
+```
+
+The draft is an aggregate view (one row per group, not one row per trade):
+
+| Setting | Value |
+| --- | --- |
+| **I want to** | Aggregates / roll up groups of rows |
+| **Group by** | `asset_category`, `settlement_date` |
+| **Select** | `asset_category`, **SUM** `commission` → `total_commission`, **SUM** `net_amount` → `total_net_amount`, `settlement_date` |
+
+
+
+Save the view before you point the review and the export at it. Manual equivalent: [Group by & aggregates](/views/group-by).
+
+## 3. Review, then export and email
+
+| Job | Type | Runs when |
+| --- | --- | --- |
+| **send trade aggregate** | [Data Review Task](../job-types/data-review-task) | Load succeeds. Reviewer approves or rejects the aggregate. |
+| **export daily aggregate to csv** | [Table to CSV](../job-types/table-to-csv) | Review is approved. Source is `View: ref.test_fa_trades_by_asset_category`, not `test_fa_trades`. |
+| **send reviewed trades to dan** | [Email](../job-types/email) | Export succeeds. Attach the CSV with [output mapping](../parameters) from Table to CSV `CalculatedOutputFolder` / `CalculatedOutputFile`. |
+
+The review email names the warehouse and the view (`CoSet DB` / `ref.test_fa_trades_by_asset_category`) and links to the live rows. Filters is empty.
+
+
+
+Opening that link shows one row per asset category and settlement date, with the same columns as the view, and **Reject** and **Approve**.
+
+
+
+**Approve** makes the review succeed, so the export and the email run. **Reject** makes the review fail, so those children do not run.
+
+## What you practiced
+
+- [SQL Bulk Load](../job-types/sql-bulk-load) of a file into a warehouse table
+- An aggregate [view](/views/group-by) drafted in [Create with AI](/views/ai-views)
+- [Data Review Task](../job-types/data-review-task) as the gate before distribution
+- [Table to CSV](../job-types/table-to-csv) of that view, then [Email](../job-types/email)
 
 ---
 
@@ -1707,20 +1789,18 @@ If IP restriction is turned off (`I do not want to restrict API access by IP`), 
 | [Jobs & workflows — read](./jobs-workflows-read) | Job types, definitions, runs, workflows, AI chats, error analysis |
 | [Jobs & workflows — write](./jobs-workflows-write) | Run jobs, create workflows, mutate AI chats, request error analysis |
 | [Job parameter schemas](./job-parameter-schemas) | Per–job-type inputs/outputs for create workflow and run overrides |
-| [MCP server](./mcp) | **Coming soon** — hosted MCP (`https://portal.cosethub.com/mcp`) over Public API |
+| [MCP server](./mcp) | Hosted MCP (`https://portal.cosethub.com/mcp`) over Public API |
 | [Webhooks & events](./webhooks) | Subscriptions — including `data_monitor.alert.*` |
 
 ---
 
 Source: https://cosethub.github.io/Docs/api/mcp/
 
-# MCP server (coming soon)
+# MCP server
 
-CoSet hosts a public [MCP](https://modelcontextprotocol.io/) endpoint on your tenant so Claude, Cursor, and other agents can run workflows, query warehouses, triage data-monitor alerts, and work period-close checklists — without installing a local adapter or reimplementing REST in every prompt.
+CoSet hosts a public [MCP](https://modelcontextprotocol.io/) endpoint on your tenant so Claude Code, Cursor, and other agents can run workflows, query warehouses, triage data-monitor alerts, and work period-close checklists — without installing a local adapter or reimplementing REST in every prompt.
 
 The hosted server is a thin tool layer over `/api/v1`. Same scopes, permissions, and side effects as the Public API.
-
-
 
 ## What the MCP server is
 
@@ -1790,11 +1870,13 @@ If the API key has an **IP allow list**, allow the egress IPs of the MCP **clien
 
 See [Auth & account](./auth) and the [API overview](./index) for issuing clients and keys.
 
-## Connect (Cursor / Claude)
+## Getting started (Claude Code / Cursor)
 
-When the endpoint is live, add the tenant MCP URL to your client. Exact JSON keys vary by client version; the pattern is a **remote** MCP server with auth headers (not a local `command` / stdio process).
+1. In the product **API** dashboard (**Manage API Keys**), create an API key. Set the permission to **Users** and select your user account so the key uses that user’s role.
+2. Set aliases.
+3. Add the hosted MCP URL in Claude Code or Cursor and send that key on the connection. Use your tenant host if you are not on **portal.cosethub.com**. Do not commit the key.
 
-### Cursor (remote MCP)
+### Cursor
 
 ```json
 {
@@ -1802,28 +1884,29 @@ When the endpoint is live, add the tenant MCP URL to your client. Exact JSON key
     "coset": {
       "url": "https://portal.cosethub.com/mcp",
       "headers": {
-        "Authorization": "Bearer YOUR_ACCESS_TOKEN"
+        "Authorization": "Bearer YOUR_API_KEY"
       }
     }
   }
 }
 ```
 
-Replace the token (and the host if you are on a custom install). Prefer a short-lived OAuth access token from [Auth & account](./auth); rotate via your secrets store rather than committing the value.
+### Claude Code
+
+```bash
+claude mcp add --transport http coset https://portal.cosethub.com/mcp \
+  --header "Authorization: Bearer YOUR_API_KEY"
+```
 
 ### What happens in chat
 
 1. You ask: *“List our workflows”* or *“Run job 1042 with AsOfDate 2026-09-02”*.
-2. The **model** chooses a tool name and JSON arguments (it does not receive your token).
+2. The **model** chooses a tool name and JSON arguments (it does not receive your key).
 3. The **MCP client** sends the tool call to `https://portal.cosethub.com/mcp`.
 4. The **hosted server** authorizes the session and calls CoSet REST.
 5. JSON/text comes back through MCP → model → reply.
 
 To poll a run, use `coset_get_job_run` (`GET /job-runs/{runId}`) — see [Jobs & workflows — read](./jobs-workflows-read).
-
-### Claude Desktop / other hosts
-
-Same idea: remote MCP URL + Bearer (or API key) header. Follow the host’s docs for remote / HTTP MCP servers once CoSet publishes the transport details with GA.
 
 ## Tool design rules
 
@@ -1838,7 +1921,7 @@ Tool names use prefix `coset_` and snake_case, e.g. `coset_run_job`.
 
 ## Tool catalog
 
-Full planned mapping. Tools marked **read** vs **write** for Read Only API keys.
+Tools marked **read** vs **write** for Read Only API keys.
 
 ### Jobs & workflows
 
@@ -1866,6 +1949,38 @@ Full planned mapping. Tools marked **read** vs **write** for Read Only API keys.
 | `coset_generate_ai_workflow` | `POST /ai-workflow/chats/{chatId}/workflows` | W |
 | `coset_load_ai_workflow_context` | `POST /ai-workflow/chats/{chatId}/context` | W |
 | `coset_delete_ai_workflow_chat` | `DELETE /ai-workflow/chats/{chatId}` | W |
+
+### Workflow list search (`coset_list_workflows`)
+
+`coset_list_workflows` takes the same filters as [`GET /workflows`](./jobs-workflows-read#get-workflows). Use it to find trees by a job inside them, and by workflow name.
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `q` | `string` | Workflow name search |
+| `roots` | `boolean` | Roots only |
+| `folder_id` | `integer` | With `roots: true` |
+| `job_type` | `string` or `string[]` | Optional. Internal type key (`FTPMonitorJob`, …). Use alone, or with `parameters`. An array matches any of those types. |
+| `parameters` | `{ name, value }[]` | Optional. Stored **input** parameters. Use alone, or with `job_type`. `value` is an exact string. |
+
+Send `job_type`, `parameters`, or both. When you send both, one job in the tree has to satisfy the type and every parameter together. Pass credential ids as the Credential Hub id. On FTP Monitor, that input is `CredentialId` (form label **FTP Server Credentials**).
+
+Workflows with an FTP Monitor on credential `8841`:
+
+```json
+{
+  "name": "coset_list_workflows",
+  "arguments": {
+    "job_type": "FTPMonitorJob",
+    "parameters": [
+      { "name": "CredentialId", "value": "8841" }
+    ]
+  }
+}
+```
+
+The tool returns the workflow list (id, name, status). Call `coset_get_workflow` on a hit when you need the tree.
+
+Matching rules, repeated types, and the REST encoding of `parameters`: [Job and parameter search](./jobs-workflows-read#job-and-parameter-search).
 
 ### Warehouses
 
@@ -2025,10 +2140,10 @@ Phase 1 is enough to trigger and debug workflows from Claude/Cursor against the 
 
 Most teams should use the **hosted** endpoint above. A local stdio adapter (your process calls `/api/v1` with a token) remains useful for:
 
-- Developing against a private network or stub API before the tenant MCP URL is enabled
+- Developing against a private network or stub API
 - Air-gapped agent hosts that cannot reach `*.cosethub.com/mcp` but can reach `/api/v1`
 
-That path is not the product default. Prefer REST from scripts ([Trigger from scripts](/automate/trigger-from-scripts)) or wait for the hosted MCP URL.
+That path is not the product default. Prefer the hosted MCP URL, or REST from scripts ([Trigger from scripts](/automate/trigger-from-scripts)).
 
 ## Related
 
@@ -2185,16 +2300,54 @@ Trigger a job (or workflow root) run.
 
 ### Examples
 
-```bash
-# Trigger with API key + overrides (v2)
-curl -sS -X POST \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "X-Access-Key: $JOB_ACCESS_KEY" \
-  -H "X-Api-Version: 2" \
-  -H "Content-Type: application/json" \
-  -d '{"run_only_this_job":false,"parameter_overrides":{"AsOfDate":"2026-07-11"}}' \
-  "https://portal.cosethub.com/api/v1/jobs/1042/run"
+Trigger with an API key and parameter overrides (API version 2).
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch("https://portal.cosethub.com/api/v1/jobs/1042/run", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+    "X-Access-Key": process.env.JOB_ACCESS_KEY,
+    "X-Api-Version": "2",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    run_only_this_job: false,
+    parameter_overrides: { AsOfDate: "2026-07-11" },
+  }),
+});
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/jobs/1042/run",
+    headers={
+        "Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}",
+        "X-Access-Key": os.environ["JOB_ACCESS_KEY"],
+        "X-Api-Version": "2",
+    },
+    json={
+        "run_only_this_job": False,
+        "parameter_overrides": {"AsOfDate": "2026-07-11"},
+    },
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ### Legacy notes
 
@@ -2256,14 +2409,45 @@ Poll [`GET /jobs/{jobId}/error-analysis`](./jobs-workflows-read#get-jobsjobiderr
 
 ### Example
 
-```bash
-# Trigger log analysis agent for root job 1001
-curl -sS -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"force":false}' \
-  "https://portal.cosethub.com/api/v1/jobs/1001/error-analysis"
+Trigger log analysis for root job 1001.
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/jobs/1001/error-analysis",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ force: false }),
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/jobs/1001/error-analysis",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json={"force": False},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -2310,13 +2494,43 @@ You can also **read** analysis by workflow id or any job id (root or sub): see [
 
 ### Example
 
-```bash
-curl -sS -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"force":false}' \
-  "https://portal.cosethub.com/api/v1/job-runs/$RUN_ID/error-analysis"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  `https://portal.cosethub.com/api/v1/job-runs/${process.env.RUN_ID}/error-analysis`,
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ force: false }),
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    f"https://portal.cosethub.com/api/v1/job-runs/{os.environ['RUN_ID']}/error-analysis",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json={"force": False},
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -2387,13 +2601,48 @@ Create a workflow from a full job graph.
 }
 ```
 
-```bash
-curl -sS -X POST \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d @workflow.json \
-  "https://portal.cosethub.com/api/v1/workflows"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+import { readFile } from "node:fs/promises";
+
+const workflow = JSON.parse(await readFile("workflow.json", "utf8"));
+
+const response = await fetch("https://portal.cosethub.com/api/v1/workflows", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify(workflow),
+});
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import json
+import os
+import requests
+
+with open("workflow.json") as f:
+    workflow = json.load(f)
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/workflows",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json=workflow,
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -2502,13 +2751,53 @@ Array of updates:
 
 Empty body on success.
 
-```bash
-curl -sS -X PATCH \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '[{"job_instance_id":"inst_etl_01","parameters":[{"name":"SourceTable","value":"raw_orders_v2"}]}]' \
-  "https://portal.cosethub.com/api/v1/ai-workflow/chats/$CHAT_ID/parameters"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  `https://portal.cosethub.com/api/v1/ai-workflow/chats/${process.env.CHAT_ID}/parameters`,
+  {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify([
+      {
+        job_instance_id: "inst_etl_01",
+        parameters: [{ name: "SourceTable", value: "raw_orders_v2" }],
+      },
+    ]),
+  },
+);
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.patch(
+    f"https://portal.cosethub.com/api/v1/ai-workflow/chats/{os.environ['CHAT_ID']}/parameters",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json=[
+        {
+            "job_instance_id": "inst_etl_01",
+            "parameters": [{"name": "SourceTable", "value": "raw_orders_v2"}],
+        }
+    ],
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
@@ -2816,13 +3105,46 @@ Register a webhook.
 
 Store `secret` immediately — subsequent GETs return a masked value.
 
-```bash
-curl -sS -X POST \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://hooks.acme.com/ryan","events":["job.run.completed","job.run.failed"]}' \
-  "https://portal.cosethub.com/api/v1/webhooks"
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch("https://portal.cosethub.com/api/v1/webhooks", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    url: "https://hooks.acme.com/ryan",
+    events: ["job.run.completed", "job.run.failed"],
+  }),
+});
+
+const data = await response.json();
 ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/webhooks",
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
+    json={
+        "url": "https://hooks.acme.com/ryan",
+        "events": ["job.run.completed", "job.run.failed"],
+    },
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
 
 ---
 
