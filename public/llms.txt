@@ -46,7 +46,7 @@ CoSet Docs live at https://cosethub.github.io/Docs/ · Product site https://www.
 - [MCP server](https://cosethub.github.io/Docs/api/mcp/): Hosted tenant MCP over Public API
 - [Jobs & workflows — read](https://cosethub.github.io/Docs/api/jobs-workflows-read/): Job detail, runs, workflow list search (job type and parameter values), error analysis
 - [Webhooks](https://cosethub.github.io/Docs/api/webhooks/): Event subscriptions including data monitor alerts
-- [Warehouses API](https://cosethub.github.io/Docs/api/warehouses/): Tables, views, rows, exports
+- [Warehouses API](https://cosethub.github.io/Docs/api/warehouses/): Tables, view definitions, rows, exports
 - [Data monitors API](https://cosethub.github.io/Docs/api/data-monitors/): CRUD and evaluation
 - [Checklists API](https://cosethub.github.io/Docs/api/checklists/): Planned REST for period boards
 - [Permissions](https://cosethub.github.io/Docs/api/permissions/): Groups, table access, view grants
