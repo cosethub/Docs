@@ -153,11 +153,12 @@ One side of a condition, or a conditional Then / Default.
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `kind` | `string` | `column` or `literal` |
+| `kind` | `string` | `column`, `literal`, or `preset` |
 | `table` | `string` | `kind: column` |
 | `column` | `string` | `kind: column`. Source column, or a select-column display name when the filter is on calculated output |
 | `value_type` | `string` | `kind: literal`. `number`, `text`, `date`, or `boolean` |
 | `value` | `any` | `kind: literal` |
+| `preset` | `string` | `kind: preset`. Date picker preset. `Beginning of day`, `End of day`, `Begin Today`, `Begin Yesterday` |
 
 ### `ViewConditionGroup`
 
@@ -185,6 +186,18 @@ The root `where` and a join `on` omit `type`. A group nested inside `items` sets
 | Number, boolean | `=`, `<>`, `>`, `>=`, `<`, `<=`, `is null`, `is not null` |
 | Text | `=`, `contains`, `does not contain`, `is null`, `is not null` |
 | Date | `between` (`start` and `end`) |
+
+A date `between` can use presets on `start` and `end`. For a trade date, **Beginning of day** through **End of day** keeps every timestamp on that date.
+
+```json
+{
+  "type": "condition",
+  "left": { "kind": "column", "table": "trades", "column": "TradeDate" },
+  "operator": "between",
+  "start": { "kind": "preset", "preset": "Beginning of day" },
+  "end": { "kind": "preset", "preset": "End of day" }
+}
+```
 
 ### `ColumnSchema`
 

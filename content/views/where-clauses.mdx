@@ -45,10 +45,12 @@ Typical comparison operators:
 
 Date conditions use a **between** range:
 
-- **Start** — beginning of the inclusive window
-- **End** — end of the inclusive window
+- **Start** — inclusive start
+- **End** — inclusive end
 
-Date pickers may support presets and job calendars when a calendar is configured for the warehouse context.
+Start and End take a date or a preset. Presets include **Beginning of day**, **End of day**, **Begin Today**, and **Begin Yesterday**.
+
+A trade-date window is `TradeDate` between **Beginning of day** and **End of day**. Timestamps later that same day stay inside the view. The same presets are valid on a Table to CSV filter.
 
 ![Date condition showing Start / between / End](./images/where-date.png)
 

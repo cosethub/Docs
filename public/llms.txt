@@ -18,6 +18,7 @@ CoSet Docs live at https://cosethub.github.io/Docs/ · Product site https://www.
 - [Reconcile PB vs FA positions](https://cosethub.github.io/Docs/automate/reconcile-positions/): Dual loads → View breaks → Table to CSV / review
 - [Trigger runs from scripts](https://cosethub.github.io/Docs/automate/trigger-from-scripts/): Airflow/cron via POST /jobs/{id}/run
 - [Month-end / period close](https://cosethub.github.io/Docs/automate/period-close/): Checklists on a period calendar
+- [Recipes](https://cosethub.github.io/Docs/recipes/): Coming-soon catalog. Apply stands up a workflow, view, monitor, or checklist. Includes data-request sign-off and view-to-CSV export
 
 ## Workflows
 
@@ -50,6 +51,7 @@ CoSet Docs live at https://cosethub.github.io/Docs/ · Product site https://www.
 - [Data monitors API](https://cosethub.github.io/Docs/api/data-monitors/): CRUD and evaluation
 - [Checklists API](https://cosethub.github.io/Docs/api/checklists/): Planned REST for period boards
 - [Permissions](https://cosethub.github.io/Docs/api/permissions/): Groups, table access, view grants
+- [Recipes API](https://cosethub.github.io/Docs/api/recipes/): Coming soon. List, get, apply, poll recipe applies
 
 ## Optional
 

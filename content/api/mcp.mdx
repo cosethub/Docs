@@ -57,6 +57,7 @@ Everything documented under Public API **except**:
 | [File stores](./file-stores) | Browse, upload, download URLs | File landing zones for pipelines |
 | [Jobs & workflows — read](./jobs-workflows-read) | Types, definitions, runs, error analysis | Discover and inspect |
 | [Jobs & workflows — write](./jobs-workflows-write) | Run job, create workflow, AI chat | Trigger and mutate |
+| [Recipes](./recipes) | Catalog and apply | Coming soon. List, read, apply, poll |
 
 ## Authentication
 
@@ -334,6 +335,84 @@ One row per fund: `SUM(MarketValue)` and `COUNT(*)`.
 
 To change the grain later, call `coset_update_view` with `view_name` `ref.mv_by_fund` and the same body plus a `Strategy` group-by column. That replace is [PUT view](./warehouses#put-warehouseswarehouseidviewsviewname). Expected rows: [Market value by fund](./warehouses#market-value-by-fund).
 
+### Recipes
+
+Coming soon. These tools are not registered on the hosted server. Until they ship, calls fail with `501` `not_implemented`. Catalog ids and parameters: [Recipes](/recipes). REST: [Recipes API](./recipes).
+
+| MCP tool | REST | RW |
+| --- | --- | --- |
+| `coset_list_recipes` | `GET /recipes` | R |
+| `coset_get_recipe` | `GET /recipes/{recipeId}` | R |
+| `coset_apply_recipe` | `POST /recipes/{recipeId}/apply` | W |
+| `coset_get_recipe_apply` | `GET /recipe-applies/{applyId}` | R |
+
+`coset_apply_recipe` creates workflows, views, data monitors, or a checklist in the tenant. Production side effect. Pass `idempotency_key` when the client has one; the server sends it as `Idempotency-Key`. `run_after_apply` defaults to false. After apply, poll `coset_get_recipe_apply`.
+
+#### Read the position-break recipe
+
+```json
+{
+  "name": "coset_get_recipe",
+  "arguments": {
+    "recipe_id": "position-break-recon"
+  }
+}
+```
+
+#### Apply SFTP file into SQL
+
+```json
+{
+  "name": "coset_apply_recipe",
+  "arguments": {
+    "recipe_id": "sftp-file-to-sql",
+    "idempotency_key": "b7d21e44-1c08-4a6e-8f55-9c0a3d6e2b18",
+    "name": "Daily PB positions load",
+    "run_after_apply": false,
+    "parameters": {
+      "ftp_credential_id": 8841,
+      "remote_path": "/outbound",
+      "file_pattern": "positions_*.csv",
+      "warehouse_id": 7,
+      "target_table": "ApexPrime_Positions",
+      "schedule": "weekdays 07:00",
+      "alert_to": ["ops@example.com"]
+    }
+  }
+}
+```
+
+#### Collect one row, sign off, export the view
+
+`collection_mode` `form` is a single row. Use `file_to_table` when that person uploads a CSV instead. The view where is `TradeDate` from `Beginning of day` to `End of day`. After the sign-off, Table to CSV writes `View: ref.manual_trades`.
+
+```json
+{
+  "name": "coset_apply_recipe",
+  "arguments": {
+    "recipe_id": "data-request-signoff",
+    "idempotency_key": "e8f04b21-9a63-4c7d-b150-3d2c6f8a1e09",
+    "name": "Manual trade entry",
+    "run_after_apply": false,
+    "parameters": {
+      "collection_mode": "form",
+      "warehouse_id": 7,
+      "target_table": "manual_trades",
+      "request_to": ["trader@example.com"],
+      "signoff_to": ["ops-signoff@example.com"],
+      "email_to": ["middle-office@example.com"],
+      "trade_date_column": "TradeDate",
+      "date_start_preset": "Beginning of day",
+      "date_end_preset": "End of day",
+      "schema": "ref",
+      "view_name": "manual_trades",
+      "schedule": "weekdays 16:00",
+      "response_due": "4 hours"
+    }
+  }
+}
+```
+
 ### Data monitors
 
 | MCP tool | REST | RW |
@@ -453,6 +532,7 @@ Ship bundled prompts that reference [Automate with CoSet](/automate) playbooks:
 | **2 — Data & alerts** | Warehouse query/export read, view definitions, data monitor alerts |
 | **3 — Close** | Checklists run, history, reset |
 | **4 — Platform** | Credentials, file stores, permissions, workflow create, AI chat |
+| **5 — Recipes** | `coset_list_recipes`, `coset_get_recipe`, `coset_apply_recipe`, `coset_get_recipe_apply` |
 
 Phase 1 is enough to trigger and debug workflows from Claude/Cursor against the hosted URL.
 
@@ -461,7 +541,7 @@ Phase 1 is enough to trigger and debug workflows from Claude/Cursor against the 
 - Honor API key **Read Only** and **Users**-linked permissions — hide write tools or pass through 403.
 - Respect **IP allow list** on the MCP **client** egress IP.
 - Do not log Bearer tokens, `X-Access-Key`, or credential `data` payloads.
-- `coset_run_job` and `coset_run_checklist_item` are **production side effects** — descriptions must say so.
+- `coset_run_job`, `coset_run_checklist_item`, and `coset_apply_recipe` are **production side effects** — descriptions must say so. `coset_apply_recipe` is not registered until the recipes rollout.
 - Poll `coset_get_job_run` with backoff; do not hammer list endpoints in a tight loop.
 
 ## Local / self-hosted adapter (optional)
@@ -480,4 +560,5 @@ That path is not the product default. Prefer the hosted MCP URL, or REST from sc
 | [Public API overview](./index) | Auth, keys, IP restriction |
 | [Conventions](./conventions) | Errors, pagination, idempotency |
 | [Automate with CoSet](/automate) | Problem → tree mapping for agents |
+| [Recipes](/recipes) | Catalog the coming-soon recipe tools apply |
 | [Trigger from scripts](/automate/trigger-from-scripts) | Same REST patterns without MCP |

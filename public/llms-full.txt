@@ -2,7 +2,7 @@
 
 > Concatenated high-value CoSet documentation for AI agents. Prefer https://cosethub.github.io/Docs/llms.txt to choose pages; use this file for bulk context.
 
-Generated: 2026-11-06
+Generated: 2026-11-09
 
 ---
 
@@ -26,6 +26,7 @@ Use this page when you (or an AI agent) need to map a **business automation ques
 | Reconcile book vs custodian / PB vs FA positions | [Reconcile PB vs FA positions](./reconcile-positions) |
 | Fire the same workflow from Airflow, cron, or an internal tool | [Trigger runs from scripts](./trigger-from-scripts) |
 | Track month-end / daily NAV close without a spreadsheet | [Month-end / period close](./period-close) |
+| Apply a parameterized template (workflow, view, monitor, checklist) | [Recipes](/recipes) |
 
 ## Mental model (one paragraph)
 
@@ -1789,6 +1790,7 @@ If IP restriction is turned off (`I do not want to restrict API access by IP`), 
 | [Jobs & workflows — read](./jobs-workflows-read) | Job types, definitions, runs, workflows, AI chats, error analysis |
 | [Jobs & workflows — write](./jobs-workflows-write) | Run jobs, create workflows, mutate AI chats, request error analysis |
 | [Job parameter schemas](./job-parameter-schemas) | Per–job-type inputs/outputs for create workflow and run overrides |
+| [Recipes](./recipes) | Coming soon. Catalog and apply for workflow, view, monitor, and checklist templates |
 | [MCP server](./mcp) | Hosted MCP (`https://portal.cosethub.com/mcp`) over Public API |
 | [Webhooks & events](./webhooks) | Subscriptions — including `data_monitor.alert.*` |
 
@@ -1853,6 +1855,7 @@ Everything documented under Public API **except**:
 | [File stores](./file-stores) | Browse, upload, download URLs | File landing zones for pipelines |
 | [Jobs & workflows — read](./jobs-workflows-read) | Types, definitions, runs, error analysis | Discover and inspect |
 | [Jobs & workflows — write](./jobs-workflows-write) | Run job, create workflow, AI chat | Trigger and mutate |
+| [Recipes](./recipes) | Catalog and apply | Coming soon. List, read, apply, poll |
 
 ## Authentication
 
@@ -2130,6 +2133,84 @@ One row per fund: `SUM(MarketValue)` and `COUNT(*)`.
 
 To change the grain later, call `coset_update_view` with `view_name` `ref.mv_by_fund` and the same body plus a `Strategy` group-by column. That replace is [PUT view](./warehouses#put-warehouseswarehouseidviewsviewname). Expected rows: [Market value by fund](./warehouses#market-value-by-fund).
 
+### Recipes
+
+Coming soon. These tools are not registered on the hosted server. Until they ship, calls fail with `501` `not_implemented`. Catalog ids and parameters: [Recipes](/recipes). REST: [Recipes API](./recipes).
+
+| MCP tool | REST | RW |
+| --- | --- | --- |
+| `coset_list_recipes` | `GET /recipes` | R |
+| `coset_get_recipe` | `GET /recipes/{recipeId}` | R |
+| `coset_apply_recipe` | `POST /recipes/{recipeId}/apply` | W |
+| `coset_get_recipe_apply` | `GET /recipe-applies/{applyId}` | R |
+
+`coset_apply_recipe` creates workflows, views, data monitors, or a checklist in the tenant. Production side effect. Pass `idempotency_key` when the client has one; the server sends it as `Idempotency-Key`. `run_after_apply` defaults to false. After apply, poll `coset_get_recipe_apply`.
+
+#### Read the position-break recipe
+
+```json
+{
+  "name": "coset_get_recipe",
+  "arguments": {
+    "recipe_id": "position-break-recon"
+  }
+}
+```
+
+#### Apply SFTP file into SQL
+
+```json
+{
+  "name": "coset_apply_recipe",
+  "arguments": {
+    "recipe_id": "sftp-file-to-sql",
+    "idempotency_key": "b7d21e44-1c08-4a6e-8f55-9c0a3d6e2b18",
+    "name": "Daily PB positions load",
+    "run_after_apply": false,
+    "parameters": {
+      "ftp_credential_id": 8841,
+      "remote_path": "/outbound",
+      "file_pattern": "positions_*.csv",
+      "warehouse_id": 7,
+      "target_table": "ApexPrime_Positions",
+      "schedule": "weekdays 07:00",
+      "alert_to": ["ops@example.com"]
+    }
+  }
+}
+```
+
+#### Collect one row, sign off, export the view
+
+`collection_mode` `form` is a single row. Use `file_to_table` when that person uploads a CSV instead. The view where is `TradeDate` from `Beginning of day` to `End of day`. After the sign-off, Table to CSV writes `View: ref.manual_trades`.
+
+```json
+{
+  "name": "coset_apply_recipe",
+  "arguments": {
+    "recipe_id": "data-request-signoff",
+    "idempotency_key": "e8f04b21-9a63-4c7d-b150-3d2c6f8a1e09",
+    "name": "Manual trade entry",
+    "run_after_apply": false,
+    "parameters": {
+      "collection_mode": "form",
+      "warehouse_id": 7,
+      "target_table": "manual_trades",
+      "request_to": ["trader@example.com"],
+      "signoff_to": ["ops-signoff@example.com"],
+      "email_to": ["middle-office@example.com"],
+      "trade_date_column": "TradeDate",
+      "date_start_preset": "Beginning of day",
+      "date_end_preset": "End of day",
+      "schema": "ref",
+      "view_name": "manual_trades",
+      "schedule": "weekdays 16:00",
+      "response_due": "4 hours"
+    }
+  }
+}
+```
+
 ### Data monitors
 
 | MCP tool | REST | RW |
@@ -2249,6 +2330,7 @@ Ship bundled prompts that reference [Automate with CoSet](/automate) playbooks:
 | **2 — Data & alerts** | Warehouse query/export read, view definitions, data monitor alerts |
 | **3 — Close** | Checklists run, history, reset |
 | **4 — Platform** | Credentials, file stores, permissions, workflow create, AI chat |
+| **5 — Recipes** | `coset_list_recipes`, `coset_get_recipe`, `coset_apply_recipe`, `coset_get_recipe_apply` |
 
 Phase 1 is enough to trigger and debug workflows from Claude/Cursor against the hosted URL.
 
@@ -2257,7 +2339,7 @@ Phase 1 is enough to trigger and debug workflows from Claude/Cursor against the 
 - Honor API key **Read Only** and **Users**-linked permissions — hide write tools or pass through 403.
 - Respect **IP allow list** on the MCP **client** egress IP.
 - Do not log Bearer tokens, `X-Access-Key`, or credential `data` payloads.
-- `coset_run_job` and `coset_run_checklist_item` are **production side effects** — descriptions must say so.
+- `coset_run_job`, `coset_run_checklist_item`, and `coset_apply_recipe` are **production side effects** — descriptions must say so. `coset_apply_recipe` is not registered until the recipes rollout.
 - Poll `coset_get_job_run` with backoff; do not hammer list endpoints in a tight loop.
 
 ## Local / self-hosted adapter (optional)
@@ -2276,7 +2358,768 @@ That path is not the product default. Prefer the hosted MCP URL, or REST from sc
 | [Public API overview](./index) | Auth, keys, IP restriction |
 | [Conventions](./conventions) | Errors, pagination, idempotency |
 | [Automate with CoSet](/automate) | Problem → tree mapping for agents |
+| [Recipes](/recipes) | Catalog the coming-soon recipe tools apply |
 | [Trigger from scripts](/automate/trigger-from-scripts) | Same REST patterns without MCP |
+
+---
+
+Source: https://cosethub.github.io/Docs/api/recipes/
+
+# Recipes
+
+List the recipe catalog, read one recipe, and apply it into a tenant.
+
+> **Base:** `/api/v1`  
+> **Auth:** `Authorization: Bearer {token}`  
+> **Scopes:** `recipes:read` / `recipes:write`
+
+A recipe is a parameterized template. Applying it creates the workflow, view, data monitor, or checklist the template describes. The caller supplies credential ids, warehouse ids, table names, and recipients. The recipe does not embed secrets.
+
+The human-readable catalog, with the same ids, is [Recipes](/recipes).
+
+
+
+---
+
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `GET` | [`/recipes`](#get-recipes) | List the catalog |
+| `GET` | [`/recipes/{recipeId}`](#get-recipesrecipeid) | One recipe and its parameters |
+| `POST` | [`/recipes/{recipeId}/apply`](#post-recipesrecipeidapply) | Create the resources in this tenant |
+| `GET` | [`/recipe-applies/{applyId}`](#get-recipe-appliesapplyid) | Poll an apply |
+
+## Shared types
+
+### `RecipeSummary`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `string` | Stable slug, for example `position-break-recon` |
+| `name` | `string` | Display name |
+| `summary` | `string` | One line on what applying it stands up |
+| `creates` | `string[]` | `workflow`, `view`, `data_monitor`, `checklist` |
+| `docs_path` | `string` | Anchor on [Recipes](/recipes) |
+
+### `RecipeParameter`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | Argument name on apply |
+| `type` | `string` | `string`, `integer`, `boolean`, or `string[]` |
+| `required` | `boolean` | |
+| `description` | `string` | |
+| `default_value` | `any` | Present when the recipe has a default |
+
+### `RecipeDetail`
+
+`RecipeSummary` plus:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `parameters` | `RecipeParameter[]` | Filled in on apply |
+| `resources` | `object` | What a successful apply creates. Shape depends on `creates` |
+
+### `RecipeApply`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `apply_id` | `string` | Opaque id |
+| `recipe_id` | `string` | |
+| `status` | `string` | `pending`, `running`, `completed`, `failed` |
+| `name` | `string` | Name requested for the root resource |
+| `created` | `object` | Populated when `status` is `completed` |
+| `error` | `string \| null` | Present when `status` is `failed` |
+| `created_at` | `string` | ISO 8601 |
+| `completed_at` | `string \| null` | ISO 8601 |
+
+`created` uses whichever keys the recipe produces:
+
+| Key | Type | When |
+| --- | --- | --- |
+| `workflow_id` | `integer` | A workflow was created |
+| `view_qualified_names` | `string[]` | Views were created |
+| `data_monitor_ids` | `integer[]` | Data monitors were created |
+| `checklist_id` | `integer` | A checklist was created |
+
+---
+
+## `GET /recipes`
+
+List catalog recipes.
+
+| | |
+| --- | --- |
+| **Status** | Coming soon |
+| **Scopes** | `recipes:read` |
+
+#### Query parameters
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `q` | `string` | — | Name or id search |
+| `creates` | `string` | — | Keep recipes that create this resource kind |
+
+#### Response `200 OK`
+
+```json
+{
+  "recipes": [
+    {
+      "id": "sftp-file-to-sql",
+      "name": "SFTP file into SQL",
+      "summary": "Wait for a counterparty file, download it, and bulk load a warehouse table.",
+      "creates": ["workflow"],
+      "docs_path": "/recipes#sftp-file-to-sql"
+    },
+    {
+      "id": "position-break-recon",
+      "name": "Position break recon",
+      "summary": "Join book and custodian quantities, keep today's breaks, and email the CSV after sign-off.",
+      "creates": ["view", "workflow", "data_monitor"],
+      "docs_path": "/recipes#position-break-recon"
+    },
+    {
+      "id": "data-request-signoff",
+      "name": "Data request, sign-off, export",
+      "summary": "Collect one row or a CSV, wait for a personal sign-off, then export the view to CSV.",
+      "creates": ["view", "workflow"],
+      "docs_path": "/recipes#data-request-signoff"
+    }
+  ]
+}
+```
+
+---
+
+## `GET /recipes/{recipeId}`
+
+Read one recipe, including the parameters apply requires.
+
+| | |
+| --- | --- |
+| **Status** | Coming soon |
+| **Scopes** | `recipes:read` |
+
+#### Path parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `recipeId` | `string` | Catalog id |
+
+#### Response `200 OK`
+
+```json
+{
+  "id": "position-break-recon",
+  "name": "Position break recon",
+  "summary": "Join book and custodian quantities, keep today's breaks, and email the CSV after sign-off.",
+  "creates": ["view", "workflow", "data_monitor"],
+  "docs_path": "/recipes#position-break-recon",
+  "parameters": [
+    { "name": "warehouse_id", "type": "integer", "required": true, "description": "Warehouse that holds both position tables" },
+    { "name": "book_table", "type": "string", "required": true, "description": "Book or prime-broker positions table" },
+    { "name": "custodian_table", "type": "string", "required": true, "description": "Custodian or fund-admin positions table" },
+    { "name": "book_qty_column", "type": "string", "required": true, "description": "Quantity column on the book table" },
+    { "name": "custodian_qty_column", "type": "string", "required": true, "description": "Quantity column on the custodian table" },
+    { "name": "key_columns", "type": "string[]", "required": false, "description": "Join keys", "default_value": ["AsOfDate", "Account", "Security"] },
+    { "name": "trade_date_column", "type": "string", "required": false, "description": "Date column in the where", "default_value": "AsOfDate" },
+    { "name": "date_start_preset", "type": "string", "required": false, "description": "Where start preset", "default_value": "Beginning of day" },
+    { "name": "date_end_preset", "type": "string", "required": false, "description": "Where end preset", "default_value": "End of day" },
+    { "name": "schema", "type": "string", "required": false, "description": "View schema", "default_value": "ref" },
+    { "name": "view_name", "type": "string", "required": false, "description": "View name", "default_value": "position_breaks" },
+    { "name": "email_to", "type": "string[]", "required": true, "description": "Sign-off and approved-CSV recipients" }
+  ],
+  "resources": {
+    "view": "Inner join on key_columns, calculated Diff, where Diff <> 0 and AsOfDate between Beginning of day and End of day",
+    "workflow": "Group → Table to CSV (the view) → Data Review Task (personal sign-off) → Email on approval",
+    "data_monitor": "Alert while the break view still returns rows"
+  }
+}
+```
+
+#### Errors
+
+| HTTP | `code` | When |
+| --- | --- | --- |
+| `404` | `not_found` | Unknown `recipeId` |
+| `501` | `not_implemented` | Route not deployed yet |
+
+---
+
+## `POST /recipes/{recipeId}/apply`
+
+Create the recipe’s resources in the caller’s organization. Production side effect. Does not run the new workflow unless `run_after_apply` is true.
+
+| | |
+| --- | --- |
+| **Status** | Coming soon |
+| **Scopes** | `recipes:write` |
+
+The caller also needs the underlying access for each resource the recipe creates (Workflow Automation, Database Views, data monitors, or checklists).
+
+#### Headers
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `Idempotency-Key` | No | UUID. A retry with the same key and body returns the original apply |
+
+#### Request body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | `string` | Yes | Name for the root workflow or checklist |
+| `parameters` | `object` | Yes | Values for the recipe’s `parameters` |
+| `run_after_apply` | `boolean` | No | Default `false`. When `true`, start the new workflow after create |
+
+#### Response `202 Accepted`
+
+```json
+{
+  "apply_id": "rpa_4c91e2",
+  "recipe_id": "position-break-recon",
+  "status": "pending",
+  "name": "Daily book vs custodian breaks",
+  "created": {},
+  "error": null,
+  "created_at": "2026-11-09T16:40:00Z",
+  "completed_at": null
+}
+```
+
+Poll [`GET /recipe-applies/{applyId}`](#get-recipe-appliesapplyid).
+
+#### Errors
+
+| HTTP | `code` | When |
+| --- | --- | --- |
+| `404` | `not_found` | Unknown recipe |
+| `422` | `validation_error` | Missing parameter, unknown table, or a credential id the caller cannot use |
+| `501` | `not_implemented` | Route not deployed yet |
+
+### Examples
+
+#### Position breaks
+
+Stands up `ref.position_breaks` with `Diff <> 0` and `AsOfDate` from **Beginning of day** to **End of day**. Table to CSV exports that view, Data Review Task is the personal sign-off, and Email sends the CSV after approval. A monitor stays on the view. Walkthrough: [position-break-recon](/recipes#position-break-recon).
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/recipes/position-break-recon/apply",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": "a4e8c1d0-6b32-4f90-9c17-2d5b8e0a6f44",
+    },
+    body: JSON.stringify({
+      name: "Daily book vs custodian breaks",
+      run_after_apply: false,
+      parameters: {
+        warehouse_id: 7,
+        book_table: "book_positions",
+        custodian_table: "custodian_positions",
+        book_qty_column: "BookQty",
+        custodian_qty_column: "CustodianQty",
+        key_columns: ["AsOfDate", "Account", "Security"],
+        trade_date_column: "AsOfDate",
+        date_start_preset: "Beginning of day",
+        date_end_preset: "End of day",
+        schema: "ref",
+        view_name: "position_breaks",
+        email_to: ["ops-recon@example.com"],
+      },
+    }),
+  },
+);
+
+const data = await response.json();
+```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/recipes/position-break-recon/apply",
+    headers={
+        "Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}",
+        "Idempotency-Key": "a4e8c1d0-6b32-4f90-9c17-2d5b8e0a6f44",
+    },
+    json={
+        "name": "Daily book vs custodian breaks",
+        "run_after_apply": False,
+        "parameters": {
+            "warehouse_id": 7,
+            "book_table": "book_positions",
+            "custodian_table": "custodian_positions",
+            "book_qty_column": "BookQty",
+            "custodian_qty_column": "CustodianQty",
+            "key_columns": ["AsOfDate", "Account", "Security"],
+            "trade_date_column": "AsOfDate",
+            "date_start_preset": "Beginning of day",
+            "date_end_preset": "End of day",
+            "schema": "ref",
+            "view_name": "position_breaks",
+            "email_to": ["ops-recon@example.com"],
+        },
+    },
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
+
+#### SFTP file into SQL
+
+Stands up FTP Monitor → FTP Download → SQL Bulk Load, with Email on monitor failure. Walkthrough: [sftp-file-to-sql](/recipes#sftp-file-to-sql).
+
+```json
+{
+  "name": "Daily PB positions load",
+  "run_after_apply": false,
+  "parameters": {
+    "ftp_credential_id": 8841,
+    "remote_path": "/outbound",
+    "file_pattern": "positions_*.csv",
+    "warehouse_id": 7,
+    "target_table": "ApexPrime_Positions",
+    "schedule": "weekdays 07:00",
+    "alert_to": ["ops@example.com"]
+  }
+}
+```
+
+```
+POST /api/v1/recipes/sftp-file-to-sql/apply
+```
+
+#### One row or a CSV, then sign-off, then the view as CSV
+
+`collection_mode` `form` asks one person to enter a single row into `manual_trades`. `file_to_table` asks them to upload a CSV into the same table. The view keeps `TradeDate` from **Beginning of day** to **End of day**. Data Review Task is the personal sign-off. Table to CSV exports `View: ref.manual_trades` only after approval, and Email attaches that file. Walkthrough: [data-request-signoff](/recipes#data-request-signoff).
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/recipes/data-request-signoff/apply",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": "c3a91e70-5d44-4b18-8f02-6e1d9a4c7b55",
+    },
+    body: JSON.stringify({
+      name: "Manual trade entry",
+      run_after_apply: false,
+      parameters: {
+        collection_mode: "form",
+        warehouse_id: 7,
+        target_table: "manual_trades",
+        request_to: ["trader@example.com"],
+        signoff_to: ["ops-signoff@example.com"],
+        email_to: ["middle-office@example.com"],
+        trade_date_column: "TradeDate",
+        date_start_preset: "Beginning of day",
+        date_end_preset: "End of day",
+        schema: "ref",
+        view_name: "manual_trades",
+        schedule: "weekdays 16:00",
+        response_due: "4 hours",
+      },
+    }),
+  },
+);
+
+const data = await response.json();
+```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/recipes/data-request-signoff/apply",
+    headers={
+        "Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}",
+        "Idempotency-Key": "c3a91e70-5d44-4b18-8f02-6e1d9a4c7b55",
+    },
+    json={
+        "name": "Manual trade entry",
+        "run_after_apply": False,
+        "parameters": {
+            "collection_mode": "form",
+            "warehouse_id": 7,
+            "target_table": "manual_trades",
+            "request_to": ["trader@example.com"],
+            "signoff_to": ["ops-signoff@example.com"],
+            "email_to": ["middle-office@example.com"],
+            "trade_date_column": "TradeDate",
+            "date_start_preset": "Beginning of day",
+            "date_end_preset": "End of day",
+            "schema": "ref",
+            "view_name": "manual_trades",
+            "schedule": "weekdays 16:00",
+            "response_due": "4 hours",
+        },
+    },
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
+
+Same body with `"collection_mode": "file_to_table"` when the person uploads a CSV instead of typing one row.
+
+#### Export a view to CSV
+
+Table to CSV on an existing view, filtered to the trade date, then a personal sign-off, then Email. Walkthrough: [export-view-email](/recipes#export-view-email).
+
+```json
+{
+  "name": "Send signed position breaks",
+  "run_after_apply": false,
+  "parameters": {
+    "warehouse_id": 7,
+    "view_name": "ref.position_breaks",
+    "trade_date_column": "AsOfDate",
+    "date_start_preset": "Beginning of day",
+    "date_end_preset": "End of day",
+    "email_to": ["ops-recon@example.com"],
+    "schedule": "weekdays 08:30",
+    "subject": "Position breaks for sign-off"
+  }
+}
+```
+
+```
+POST /api/v1/recipes/export-view-email/apply
+```
+
+---
+
+## `GET /recipe-applies/{applyId}`
+
+Poll an apply started by [`POST /recipes/{recipeId}/apply`](#post-recipesrecipeidapply).
+
+| | |
+| --- | --- |
+| **Status** | Coming soon |
+| **Scopes** | `recipes:read` |
+
+#### Response `200 OK`
+
+```json
+{
+  "apply_id": "rpa_4c91e2",
+  "recipe_id": "position-break-recon",
+  "status": "completed",
+  "name": "Daily book vs custodian breaks",
+  "created": {
+    "workflow_id": 1204,
+    "view_qualified_names": ["ref.position_breaks"],
+    "data_monitor_ids": [88]
+  },
+  "error": null,
+  "created_at": "2026-11-09T16:40:00Z",
+  "completed_at": "2026-11-09T16:40:18Z"
+}
+```
+
+When `run_after_apply` was true and the apply created a workflow, `created` also includes `run_id`. Poll that run with [`GET /job-runs/{runId}`](./jobs-workflows-read#get-job-runsrunid).
+
+---
+
+Source: https://cosethub.github.io/Docs/recipes/
+
+# Recipes
+
+Parameterized templates for the ops patterns already documented in CoSet. Each id below is the `recipeId` the [Recipes API](/api/recipes) and the MCP tools will use.
+
+Applying a recipe creates the workflow, view, data monitor, or checklist in your tenant. You pass credential ids, warehouse ids, table names, and recipients. The recipe does not copy secrets into the template.
+
+[`data-request-signoff`](#data-request-signoff), [`export-view-email`](#export-view-email), [`position-break-recon`](#position-break-recon), and [`load-review-send`](#load-review-send) put a person in the middle of an automated tree. Someone enters a row or a CSV, or signs off a view, and the next job exports that view to CSV and sends the file.
+
+
+
+## Catalog
+
+| Id | Stands up | Start from |
+| --- | --- | --- |
+| [`sftp-file-to-sql`](#sftp-file-to-sql) | Workflow | [SFTP file into SQL](/automate/sftp-to-sql) |
+| [`missing-file-alert`](#missing-file-alert) | Workflow | [Alert when a file is missing](/automate/missing-file-alerts) |
+| [`email-attachment-to-sql`](#email-attachment-to-sql) | Workflow | [Email data gathering](/workflows/examples/email-data-gathering) |
+| [`pgp-decrypt-and-load`](#pgp-decrypt-and-load) | Workflow | [Decrypt File - PGP](/workflows/job-types/decrypt-file-pgp) |
+| [`position-break-recon`](#position-break-recon) | View, workflow, data monitor | [Reconcile PB vs FA](/automate/reconcile-positions) |
+| [`export-view-email`](#export-view-email) | Workflow | [Table to CSV (views)](/workflows/examples/table-to-csv-view) |
+| [`data-request-signoff`](#data-request-signoff) | View, workflow | [Data request task](/workflows/job-types/data-request-task) |
+| [`load-review-send`](#load-review-send) | View, workflow | [Load, review, and send](/workflows/examples/load-review-send) |
+| [`break-row-monitor`](#break-row-monitor) | Data monitor | [Data monitors](/warehouses/data-monitors) |
+| [`bloomberg-price-backfill`](#bloomberg-price-backfill) | View | [Bloomberg price backfill](/views/examples/bloomberg-price-backfill) |
+| [`month-end-close-board`](#month-end-close-board) | Checklist | [Month-end / period close](/automate/period-close) |
+
+Parameter names match [`GET /recipes/{recipeId}`](/api/recipes#get-recipesrecipeid). Apply with [`POST /recipes/{recipeId}/apply`](/api/recipes#post-recipesrecipeidapply).
+
+## sftp-file-to-sql
+
+**SFTP file into SQL.** Weekday FTP Monitor, FTP Download on success, SQL Bulk Load on success, Email on monitor failure.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `ftp_credential_id` | `integer` | Yes | Credential Hub id for the SFTP site |
+| `remote_path` | `string` | Yes | Remote folder |
+| `file_pattern` | `string` | Yes | File name pattern, for example `positions_*.csv` |
+| `warehouse_id` | `integer` | Yes | Target warehouse |
+| `target_table` | `string` | Yes | Table SQL Bulk Load writes |
+| `schedule` | `string` | Yes | Monitor schedule, for example `weekdays 07:00` |
+| `alert_to` | `string[]` | Yes | Recipients when the file never arrives |
+| `excel_to_csv` | `boolean` | No | Insert Convert Excel to CSV before the load. Default `false` |
+
+The download’s folder and file name are output-mapped into SQL Bulk Load. The recipe does not paste a dated path.
+
+## missing-file-alert
+
+**Alert when a file is missing.** FTP Monitor through a cutoff. Email fires on failure. No download and no load.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `ftp_credential_id` | `integer` | Yes | Credential Hub id |
+| `remote_path` | `string` | Yes | Remote folder |
+| `file_pattern` | `string` | Yes | Expected file pattern |
+| `schedule` | `string` | Yes | How long the monitor waits |
+| `alert_to` | `string[]` | Yes | Recipients |
+| `process_name` | `string` | Yes | Used in the email subject with the as-of date |
+
+For a mailbox instead of SFTP, use [`email-attachment-to-sql`](#email-attachment-to-sql) and keep its On failure Email.
+
+## email-attachment-to-sql
+
+**Email attachment into SQL.** Email Check for sender and subject, then SQL Bulk Load. Optional Excel to CSV.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `mailbox_credential_id` | `integer` | Yes | Mailbox credential |
+| `from_address` | `string` | No | Sender filter |
+| `subject_contains` | `string` | No | Subject filter |
+| `warehouse_id` | `integer` | Yes | Target warehouse |
+| `target_table` | `string` | Yes | Load target |
+| `schedule` | `string` | Yes | When to check the mailbox |
+| `alert_to` | `string[]` | Yes | Recipients when no matching mail arrives |
+| `excel_to_csv` | `boolean` | No | Default `false` |
+
+## pgp-decrypt-and-load
+
+**PGP decrypt, then load.** FTP Download, Decrypt File - PGP, SQL Bulk Load. Email on download failure.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `ftp_credential_id` | `integer` | Yes | SFTP credential |
+| `pgp_credential_id` | `integer` | Yes | PGP key credential |
+| `remote_path` | `string` | Yes | Remote folder |
+| `file_pattern` | `string` | Yes | Encrypted file pattern |
+| `warehouse_id` | `integer` | Yes | Target warehouse |
+| `target_table` | `string` | Yes | Load target |
+| `schedule` | `string` | Yes | When to download |
+| `alert_to` | `string[]` | Yes | Failure recipients |
+
+## position-break-recon
+
+**Book versus custodian quantity breaks, then a personal sign-off, then the CSV.** Inner join on the key columns, calculated `Diff`. The where keeps `Diff <> 0` and limits the as-of column to the trade date: **Beginning of day** through **End of day**.
+
+```
+Group
+ └── Table to CSV                         View: ref.position_breaks
+      └── Data Review Task                [On success]  personal sign-off of the CSV
+           └── Email                      [On success]  approved file
+           └── Email                      [On failure]  rejection
+```
+
+A data monitor stays on while the view still returns rows. The review is the checkpoint. The export and the email run only after that person approves.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `warehouse_id` | `integer` | Yes | Warehouse that holds both tables |
+| `book_table` | `string` | Yes | Book or prime-broker positions |
+| `custodian_table` | `string` | Yes | Custodian or fund-admin positions |
+| `book_qty_column` | `string` | Yes | Quantity on the book table |
+| `custodian_qty_column` | `string` | Yes | Quantity on the custodian table |
+| `key_columns` | `string[]` | No | Join keys. Default `AsOfDate`, `Account`, `Security` |
+| `trade_date_column` | `string` | No | Date column for the where. Default `AsOfDate` |
+| `date_start_preset` | `string` | No | Where start. Default `Beginning of day` |
+| `date_end_preset` | `string` | No | Where end. Default `End of day` |
+| `schema` | `string` | No | Default `ref` |
+| `view_name` | `string` | No | Default `position_breaks` |
+| `email_to` | `string[]` | Yes | Person who signs off, and who receives the approved CSV |
+
+The where on that view:
+
+```json
+{
+  "op": "and",
+  "items": [
+    {
+      "type": "condition",
+      "left": { "kind": "column", "column": "Diff" },
+      "operator": "<>",
+      "right": { "kind": "literal", "value_type": "number", "value": 0 }
+    },
+    {
+      "type": "condition",
+      "left": { "kind": "column", "table": "book_positions", "column": "AsOfDate" },
+      "operator": "between",
+      "start": { "kind": "preset", "preset": "Beginning of day" },
+      "end": { "kind": "preset", "preset": "End of day" }
+    }
+  ]
+}
+```
+
+Preset names are the date picker values. `Begin Today` and `Begin Yesterday` are the same kind of preset. See [Where clauses](/views/where-clauses).
+
+Both tables must already exist. Land them with [`sftp-file-to-sql`](#sftp-file-to-sql) first. Sample files and expected break rows: [Reconciliation](/views/examples/reconciliation).
+
+## export-view-email
+
+**Export a view to CSV and hand the file off after sign-off.** Table to CSV reads `View: {view_name}`. Its filter is the trade-date where: `trade_date_column` between **Beginning of day** and **End of day**. Data Review Task is the personal sign-off of that CSV. Approve sends the file. Reject sends the rejection email and does not attach the CSV.
+
+```
+Group
+ └── Table to CSV              View: ref.position_breaks
+      filter: TradeDate between Beginning of day and End of day
+      └── Data Review Task     [On success]  personal sign-off
+           └── Email           [On success]  attach CalculatedOutputFile
+           └── Email           [On failure]  rejected
+```
+
+This is the last mile of a view. The view already did the join and the columns. Table to CSV writes that result. The person signs the snapshot. Email delivers it.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `warehouse_id` | `integer` | Yes | Warehouse |
+| `view_name` | `string` | Yes | Schema-qualified view, for example `ref.position_breaks` |
+| `trade_date_column` | `string` | No | Filter column. Default `TradeDate` |
+| `date_start_preset` | `string` | No | Filter start. Default `Beginning of day` |
+| `date_end_preset` | `string` | No | Filter end. Default `End of day` |
+| `email_to` | `string[]` | Yes | Sign-off and delivery recipients |
+| `schedule` | `string` | Yes | When the export runs |
+| `subject` | `string` | Yes | Email subject |
+
+The view is not created here. Use [`position-break-recon`](#position-break-recon) or [`data-request-signoff`](#data-request-signoff) when the view has to be created in the same apply. Walkthrough: [Table to CSV (views)](/workflows/examples/table-to-csv-view).
+
+## data-request-signoff
+
+**Ask a person for data, sign it off, then export the view to CSV.** The tree stops twice. First on a [Data request task](/workflows/job-types/data-request-task), then on a [Data Review Task](/workflows/job-types/data-review-task). Everything after an approval is automatic.
+
+```
+Data request task                         [schedule]
+ └── Data Review Task                     [On success]  personal sign-off
+      └── Table to CSV                    [On success]  View: ref.manual_trades
+           └── Email                      [On success]  the CSV
+ └── Email                                [On failure]  no response, or rejected
+```
+
+`collection_mode` picks what the person sends:
+
+| Mode | What they do |
+| --- | --- |
+| `form` | Enter one row. The form is the columns of `target_table`. Submit inserts that row. |
+| `file_to_table` | Upload a CSV. The file loads into `target_table`. |
+
+The view is those rows with `trade_date_column` between `date_start_preset` and `date_end_preset` (default **Beginning of day** to **End of day**). The sign-off opens that view. Table to CSV exports the same view, so the file that goes out is the signed set.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `collection_mode` | `string` | Yes | `form` for one row, or `file_to_table` for a CSV |
+| `warehouse_id` | `integer` | Yes | Warehouse |
+| `target_table` | `string` | Yes | Table the form inserts into, or the CSV loads into |
+| `request_to` | `string[]` | Yes | Person who enters the row or uploads the CSV |
+| `signoff_to` | `string[]` | Yes | Person who approves or rejects |
+| `email_to` | `string[]` | Yes | Who receives the CSV after approval |
+| `trade_date_column` | `string` | No | Default `TradeDate` |
+| `date_start_preset` | `string` | No | Default `Beginning of day` |
+| `date_end_preset` | `string` | No | Default `End of day` |
+| `schema` | `string` | No | Default `ref` |
+| `view_name` | `string` | Yes | View name, for example `manual_trades` |
+| `schedule` | `string` | Yes | When the request goes out |
+| `response_due` | `string` | No | How long the request waits. Default `4 hours` |
+
+## load-review-send
+
+**Load a file, aggregate it, personal sign-off, then export the view to CSV.** SQL Bulk Load into `target_table`. A view groups by `group_by_columns`, sums `measure_columns`, and keeps `trade_date_column` between **Beginning of day** and **End of day**. Data Review Task is the sign-off of that view. On approval, Table to CSV exports the view and Email attaches the CSV.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `source_file` | `string` | Yes | File the bulk load reads on first apply. Later runs should use output mapping from an upstream download |
+| `warehouse_id` | `integer` | Yes | Warehouse |
+| `target_table` | `string` | Yes | Load target |
+| `group_by_columns` | `string[]` | Yes | View group-by columns |
+| `measure_columns` | `string[]` | Yes | Columns to SUM |
+| `trade_date_column` | `string` | No | Date where. Default `settlement_date` |
+| `date_start_preset` | `string` | No | Default `Beginning of day` |
+| `date_end_preset` | `string` | No | Default `End of day` |
+| `schema` | `string` | No | Default `ref` |
+| `view_name` | `string` | Yes | Aggregate view name |
+| `email_to` | `string[]` | Yes | Person who signs off, and who receives the CSV |
+
+Worked example: group trades by asset category and settlement date, sum commission and net amount. See [Load, review, and send](/workflows/examples/load-review-send).
+
+## break-row-monitor
+
+**Alert while a view still has rows.** Data monitor on an existing table or view. Does not build the view and does not send the file.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `warehouse_id` | `integer` | Yes | Warehouse |
+| `entity_name` | `string` | Yes | Table or view, for example `ref.position_breaks` |
+| `name` | `string` | Yes | Monitor name |
+| `escalation_path_group_id` | `integer` | No | Group to notify |
+
+Use this when the break view already exists and the close board should light up while rows remain. Checklist attachment is [`month-end-close-board`](#month-end-close-board).
+
+## bloomberg-price-backfill
+
+**Left join positions to PX_LAST.** Keeps every position row. Attaches `PxLast` when security, security type, and as-of date match. Positions with no price stay in the view with a null price.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `warehouse_id` | `integer` | Yes | Warehouse |
+| `positions_table` | `string` | Yes | Positions that need a price |
+| `prices_table` | `string` | Yes | Bloomberg PX_LAST rows |
+| `schema` | `string` | No | Default `ref` |
+| `view_name` | `string` | No | Default `positions_with_px_last` |
+
+Both tables are already loaded. The price file itself comes from Bloomberg to File, outside this recipe. Sample: [Bloomberg price backfill](/views/examples/bloomberg-price-backfill).
+
+## month-end-close-board
+
+**Checklist on a period calendar.** Creates the board and attaches the jobs and monitors you already have. It does not build the upstream SFTP or recon trees.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | `string` | Yes | Checklist name, for example `Month-end NAV` |
+| `period_calendar_id` | `integer` | Yes | Daily or month-end calendar |
+| `group_ids` | `integer[]` | Yes | Groups that can see the board |
+| `milestone_job_ids` | `integer[]` | Yes | Workflow roots to watch, in close order |
+| `data_monitor_ids` | `integer[]` | No | Exception feeds, such as the break-row monitor |
+
+Typical members: PB load, FA load, recon export, break monitor, sign-off task. See [Month-end / period close](/automate/period-close).
 
 ---
 

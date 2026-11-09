@@ -89,6 +89,7 @@ Some domains use domain-specific wrappers (`workflows`, `runs`, `chats`) instead
 | `409` | `conflict` | Duplicate or state conflict |
 | `422` | `validation_error` | Schema / field validation failed |
 | `429` | `rate_limited` | Too many requests |
+| `501` | `not_implemented` | Route is documented and not deployed yet |
 | `500` | `internal_error` | Unexpected server error |
 
 ## Scopes
@@ -111,6 +112,8 @@ Some domains use domain-specific wrappers (`workflows`, `runs`, `chats`) instead
 | `workflows:write` | Create workflows |
 | `ai-workflow:read` | List / get workflow builder chats |
 | `ai-workflow:write` | Create / update / delete chats, generate workflows |
+| `recipes:read` | List and read recipes; poll applies |
+| `recipes:write` | Apply a recipe into the tenant |
 | `webhooks:read` | List webhooks and poll events |
 | `webhooks:write` | Register / update / delete webhooks |
 

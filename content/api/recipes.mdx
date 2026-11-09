@@ -1,0 +1,483 @@
+import { Callout, Tabs } from 'nextra/components'
+
+# Recipes
+
+List the recipe catalog, read one recipe, and apply it into a tenant.
+
+> **Base:** `/api/v1`  
+> **Auth:** `Authorization: Bearer {token}`  
+> **Scopes:** `recipes:read` / `recipes:write`
+
+A recipe is a parameterized template. Applying it creates the workflow, view, data monitor, or checklist the template describes. The caller supplies credential ids, warehouse ids, table names, and recipients. The recipe does not embed secrets.
+
+The human-readable catalog, with the same ids, is [Recipes](/recipes).
+
+<Callout type="info">
+  **Coming soon.** These routes are not deployed. Until they ship, `GET` and `POST` return `501` with `code: not_implemented`. The hosted MCP server does not register the recipe tools yet.
+</Callout>
+
+---
+
+## Endpoints
+
+| Method | Path | Action |
+| --- | --- | --- |
+| `GET` | [`/recipes`](#get-recipes) | List the catalog |
+| `GET` | [`/recipes/{recipeId}`](#get-recipesrecipeid) | One recipe and its parameters |
+| `POST` | [`/recipes/{recipeId}/apply`](#post-recipesrecipeidapply) | Create the resources in this tenant |
+| `GET` | [`/recipe-applies/{applyId}`](#get-recipe-appliesapplyid) | Poll an apply |
+
+## Shared types
+
+### `RecipeSummary`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `string` | Stable slug, for example `position-break-recon` |
+| `name` | `string` | Display name |
+| `summary` | `string` | One line on what applying it stands up |
+| `creates` | `string[]` | `workflow`, `view`, `data_monitor`, `checklist` |
+| `docs_path` | `string` | Anchor on [Recipes](/recipes) |
+
+### `RecipeParameter`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | Argument name on apply |
+| `type` | `string` | `string`, `integer`, `boolean`, or `string[]` |
+| `required` | `boolean` | |
+| `description` | `string` | |
+| `default_value` | `any` | Present when the recipe has a default |
+
+### `RecipeDetail`
+
+`RecipeSummary` plus:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `parameters` | `RecipeParameter[]` | Filled in on apply |
+| `resources` | `object` | What a successful apply creates. Shape depends on `creates` |
+
+### `RecipeApply`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `apply_id` | `string` | Opaque id |
+| `recipe_id` | `string` | |
+| `status` | `string` | `pending`, `running`, `completed`, `failed` |
+| `name` | `string` | Name requested for the root resource |
+| `created` | `object` | Populated when `status` is `completed` |
+| `error` | `string \| null` | Present when `status` is `failed` |
+| `created_at` | `string` | ISO 8601 |
+| `completed_at` | `string \| null` | ISO 8601 |
+
+`created` uses whichever keys the recipe produces:
+
+| Key | Type | When |
+| --- | --- | --- |
+| `workflow_id` | `integer` | A workflow was created |
+| `view_qualified_names` | `string[]` | Views were created |
+| `data_monitor_ids` | `integer[]` | Data monitors were created |
+| `checklist_id` | `integer` | A checklist was created |
+
+---
+
+## `GET /recipes`
+
+List catalog recipes.
+
+| | |
+| --- | --- |
+| **Status** | Coming soon |
+| **Scopes** | `recipes:read` |
+
+#### Query parameters
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| `q` | `string` | — | Name or id search |
+| `creates` | `string` | — | Keep recipes that create this resource kind |
+
+#### Response `200 OK`
+
+```json
+{
+  "recipes": [
+    {
+      "id": "sftp-file-to-sql",
+      "name": "SFTP file into SQL",
+      "summary": "Wait for a counterparty file, download it, and bulk load a warehouse table.",
+      "creates": ["workflow"],
+      "docs_path": "/recipes#sftp-file-to-sql"
+    },
+    {
+      "id": "position-break-recon",
+      "name": "Position break recon",
+      "summary": "Join book and custodian quantities, keep today's breaks, and email the CSV after sign-off.",
+      "creates": ["view", "workflow", "data_monitor"],
+      "docs_path": "/recipes#position-break-recon"
+    },
+    {
+      "id": "data-request-signoff",
+      "name": "Data request, sign-off, export",
+      "summary": "Collect one row or a CSV, wait for a personal sign-off, then export the view to CSV.",
+      "creates": ["view", "workflow"],
+      "docs_path": "/recipes#data-request-signoff"
+    }
+  ]
+}
+```
+
+---
+
+## `GET /recipes/{recipeId}`
+
+Read one recipe, including the parameters apply requires.
+
+| | |
+| --- | --- |
+| **Status** | Coming soon |
+| **Scopes** | `recipes:read` |
+
+#### Path parameters
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `recipeId` | `string` | Catalog id |
+
+#### Response `200 OK`
+
+```json
+{
+  "id": "position-break-recon",
+  "name": "Position break recon",
+  "summary": "Join book and custodian quantities, keep today's breaks, and email the CSV after sign-off.",
+  "creates": ["view", "workflow", "data_monitor"],
+  "docs_path": "/recipes#position-break-recon",
+  "parameters": [
+    { "name": "warehouse_id", "type": "integer", "required": true, "description": "Warehouse that holds both position tables" },
+    { "name": "book_table", "type": "string", "required": true, "description": "Book or prime-broker positions table" },
+    { "name": "custodian_table", "type": "string", "required": true, "description": "Custodian or fund-admin positions table" },
+    { "name": "book_qty_column", "type": "string", "required": true, "description": "Quantity column on the book table" },
+    { "name": "custodian_qty_column", "type": "string", "required": true, "description": "Quantity column on the custodian table" },
+    { "name": "key_columns", "type": "string[]", "required": false, "description": "Join keys", "default_value": ["AsOfDate", "Account", "Security"] },
+    { "name": "trade_date_column", "type": "string", "required": false, "description": "Date column in the where", "default_value": "AsOfDate" },
+    { "name": "date_start_preset", "type": "string", "required": false, "description": "Where start preset", "default_value": "Beginning of day" },
+    { "name": "date_end_preset", "type": "string", "required": false, "description": "Where end preset", "default_value": "End of day" },
+    { "name": "schema", "type": "string", "required": false, "description": "View schema", "default_value": "ref" },
+    { "name": "view_name", "type": "string", "required": false, "description": "View name", "default_value": "position_breaks" },
+    { "name": "email_to", "type": "string[]", "required": true, "description": "Sign-off and approved-CSV recipients" }
+  ],
+  "resources": {
+    "view": "Inner join on key_columns, calculated Diff, where Diff <> 0 and AsOfDate between Beginning of day and End of day",
+    "workflow": "Group → Table to CSV (the view) → Data Review Task (personal sign-off) → Email on approval",
+    "data_monitor": "Alert while the break view still returns rows"
+  }
+}
+```
+
+#### Errors
+
+| HTTP | `code` | When |
+| --- | --- | --- |
+| `404` | `not_found` | Unknown `recipeId` |
+| `501` | `not_implemented` | Route not deployed yet |
+
+---
+
+## `POST /recipes/{recipeId}/apply`
+
+Create the recipe’s resources in the caller’s organization. Production side effect. Does not run the new workflow unless `run_after_apply` is true.
+
+| | |
+| --- | --- |
+| **Status** | Coming soon |
+| **Scopes** | `recipes:write` |
+
+The caller also needs the underlying access for each resource the recipe creates (Workflow Automation, Database Views, data monitors, or checklists).
+
+#### Headers
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `Idempotency-Key` | No | UUID. A retry with the same key and body returns the original apply |
+
+#### Request body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | `string` | Yes | Name for the root workflow or checklist |
+| `parameters` | `object` | Yes | Values for the recipe’s `parameters` |
+| `run_after_apply` | `boolean` | No | Default `false`. When `true`, start the new workflow after create |
+
+#### Response `202 Accepted`
+
+```json
+{
+  "apply_id": "rpa_4c91e2",
+  "recipe_id": "position-break-recon",
+  "status": "pending",
+  "name": "Daily book vs custodian breaks",
+  "created": {},
+  "error": null,
+  "created_at": "2026-11-09T16:40:00Z",
+  "completed_at": null
+}
+```
+
+Poll [`GET /recipe-applies/{applyId}`](#get-recipe-appliesapplyid).
+
+#### Errors
+
+| HTTP | `code` | When |
+| --- | --- | --- |
+| `404` | `not_found` | Unknown recipe |
+| `422` | `validation_error` | Missing parameter, unknown table, or a credential id the caller cannot use |
+| `501` | `not_implemented` | Route not deployed yet |
+
+### Examples
+
+#### Position breaks
+
+Stands up `ref.position_breaks` with `Diff <> 0` and `AsOfDate` from **Beginning of day** to **End of day**. Table to CSV exports that view, Data Review Task is the personal sign-off, and Email sends the CSV after approval. A monitor stays on the view. Walkthrough: [position-break-recon](/recipes#position-break-recon).
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/recipes/position-break-recon/apply",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": "a4e8c1d0-6b32-4f90-9c17-2d5b8e0a6f44",
+    },
+    body: JSON.stringify({
+      name: "Daily book vs custodian breaks",
+      run_after_apply: false,
+      parameters: {
+        warehouse_id: 7,
+        book_table: "book_positions",
+        custodian_table: "custodian_positions",
+        book_qty_column: "BookQty",
+        custodian_qty_column: "CustodianQty",
+        key_columns: ["AsOfDate", "Account", "Security"],
+        trade_date_column: "AsOfDate",
+        date_start_preset: "Beginning of day",
+        date_end_preset: "End of day",
+        schema: "ref",
+        view_name: "position_breaks",
+        email_to: ["ops-recon@example.com"],
+      },
+    }),
+  },
+);
+
+const data = await response.json();
+```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/recipes/position-break-recon/apply",
+    headers={
+        "Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}",
+        "Idempotency-Key": "a4e8c1d0-6b32-4f90-9c17-2d5b8e0a6f44",
+    },
+    json={
+        "name": "Daily book vs custodian breaks",
+        "run_after_apply": False,
+        "parameters": {
+            "warehouse_id": 7,
+            "book_table": "book_positions",
+            "custodian_table": "custodian_positions",
+            "book_qty_column": "BookQty",
+            "custodian_qty_column": "CustodianQty",
+            "key_columns": ["AsOfDate", "Account", "Security"],
+            "trade_date_column": "AsOfDate",
+            "date_start_preset": "Beginning of day",
+            "date_end_preset": "End of day",
+            "schema": "ref",
+            "view_name": "position_breaks",
+            "email_to": ["ops-recon@example.com"],
+        },
+    },
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
+
+#### SFTP file into SQL
+
+Stands up FTP Monitor → FTP Download → SQL Bulk Load, with Email on monitor failure. Walkthrough: [sftp-file-to-sql](/recipes#sftp-file-to-sql).
+
+```json
+{
+  "name": "Daily PB positions load",
+  "run_after_apply": false,
+  "parameters": {
+    "ftp_credential_id": 8841,
+    "remote_path": "/outbound",
+    "file_pattern": "positions_*.csv",
+    "warehouse_id": 7,
+    "target_table": "ApexPrime_Positions",
+    "schedule": "weekdays 07:00",
+    "alert_to": ["ops@example.com"]
+  }
+}
+```
+
+```
+POST /api/v1/recipes/sftp-file-to-sql/apply
+```
+
+#### One row or a CSV, then sign-off, then the view as CSV
+
+`collection_mode` `form` asks one person to enter a single row into `manual_trades`. `file_to_table` asks them to upload a CSV into the same table. The view keeps `TradeDate` from **Beginning of day** to **End of day**. Data Review Task is the personal sign-off. Table to CSV exports `View: ref.manual_trades` only after approval, and Email attaches that file. Walkthrough: [data-request-signoff](/recipes#data-request-signoff).
+
+<Tabs items={['JavaScript', 'Python']}>
+  <Tabs.Tab>
+
+```js
+const response = await fetch(
+  "https://portal.cosethub.com/api/v1/recipes/data-request-signoff/apply",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": "c3a91e70-5d44-4b18-8f02-6e1d9a4c7b55",
+    },
+    body: JSON.stringify({
+      name: "Manual trade entry",
+      run_after_apply: false,
+      parameters: {
+        collection_mode: "form",
+        warehouse_id: 7,
+        target_table: "manual_trades",
+        request_to: ["trader@example.com"],
+        signoff_to: ["ops-signoff@example.com"],
+        email_to: ["middle-office@example.com"],
+        trade_date_column: "TradeDate",
+        date_start_preset: "Beginning of day",
+        date_end_preset: "End of day",
+        schema: "ref",
+        view_name: "manual_trades",
+        schedule: "weekdays 16:00",
+        response_due: "4 hours",
+      },
+    }),
+  },
+);
+
+const data = await response.json();
+```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+
+```python
+import os
+import requests
+
+response = requests.post(
+    "https://portal.cosethub.com/api/v1/recipes/data-request-signoff/apply",
+    headers={
+        "Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}",
+        "Idempotency-Key": "c3a91e70-5d44-4b18-8f02-6e1d9a4c7b55",
+    },
+    json={
+        "name": "Manual trade entry",
+        "run_after_apply": False,
+        "parameters": {
+            "collection_mode": "form",
+            "warehouse_id": 7,
+            "target_table": "manual_trades",
+            "request_to": ["trader@example.com"],
+            "signoff_to": ["ops-signoff@example.com"],
+            "email_to": ["middle-office@example.com"],
+            "trade_date_column": "TradeDate",
+            "date_start_preset": "Beginning of day",
+            "date_end_preset": "End of day",
+            "schema": "ref",
+            "view_name": "manual_trades",
+            "schedule": "weekdays 16:00",
+            "response_due": "4 hours",
+        },
+    },
+)
+response.raise_for_status()
+data = response.json()
+```
+
+  </Tabs.Tab>
+</Tabs>
+
+Same body with `"collection_mode": "file_to_table"` when the person uploads a CSV instead of typing one row.
+
+#### Export a view to CSV
+
+Table to CSV on an existing view, filtered to the trade date, then a personal sign-off, then Email. Walkthrough: [export-view-email](/recipes#export-view-email).
+
+```json
+{
+  "name": "Send signed position breaks",
+  "run_after_apply": false,
+  "parameters": {
+    "warehouse_id": 7,
+    "view_name": "ref.position_breaks",
+    "trade_date_column": "AsOfDate",
+    "date_start_preset": "Beginning of day",
+    "date_end_preset": "End of day",
+    "email_to": ["ops-recon@example.com"],
+    "schedule": "weekdays 08:30",
+    "subject": "Position breaks for sign-off"
+  }
+}
+```
+
+```
+POST /api/v1/recipes/export-view-email/apply
+```
+
+---
+
+## `GET /recipe-applies/{applyId}`
+
+Poll an apply started by [`POST /recipes/{recipeId}/apply`](#post-recipesrecipeidapply).
+
+| | |
+| --- | --- |
+| **Status** | Coming soon |
+| **Scopes** | `recipes:read` |
+
+#### Response `200 OK`
+
+```json
+{
+  "apply_id": "rpa_4c91e2",
+  "recipe_id": "position-break-recon",
+  "status": "completed",
+  "name": "Daily book vs custodian breaks",
+  "created": {
+    "workflow_id": 1204,
+    "view_qualified_names": ["ref.position_breaks"],
+    "data_monitor_ids": [88]
+  },
+  "error": null,
+  "created_at": "2026-11-09T16:40:00Z",
+  "completed_at": "2026-11-09T16:40:18Z"
+}
+```
+
+When `run_after_apply` was true and the apply created a workflow, `created` also includes `run_id`. Poll that run with [`GET /job-runs/{runId}`](./jobs-workflows-read#get-job-runsrunid).

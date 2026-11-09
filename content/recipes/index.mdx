@@ -1,0 +1,279 @@
+---
+asIndexPage: true
+---
+
+import { Callout } from 'nextra/components'
+
+# Recipes
+
+Parameterized templates for the ops patterns already documented in CoSet. Each id below is the `recipeId` the [Recipes API](/api/recipes) and the MCP tools will use.
+
+Applying a recipe creates the workflow, view, data monitor, or checklist in your tenant. You pass credential ids, warehouse ids, table names, and recipients. The recipe does not copy secrets into the template.
+
+[`data-request-signoff`](#data-request-signoff), [`export-view-email`](#export-view-email), [`position-break-recon`](#position-break-recon), and [`load-review-send`](#load-review-send) put a person in the middle of an automated tree. Someone enters a row or a CSV, or signs off a view, and the next job exports that view to CSV and sends the file.
+
+<Callout type="info">
+  **Coming soon.** The catalog on this page is the contract. [`GET /recipes`](/api/recipes#get-recipes), [`POST /recipes/{recipeId}/apply`](/api/recipes#post-recipesrecipeidapply), and the MCP tools `coset_list_recipes`, `coset_get_recipe`, `coset_apply_recipe`, and `coset_get_recipe_apply` are not deployed yet.
+</Callout>
+
+## Catalog
+
+| Id | Stands up | Start from |
+| --- | --- | --- |
+| [`sftp-file-to-sql`](#sftp-file-to-sql) | Workflow | [SFTP file into SQL](/automate/sftp-to-sql) |
+| [`missing-file-alert`](#missing-file-alert) | Workflow | [Alert when a file is missing](/automate/missing-file-alerts) |
+| [`email-attachment-to-sql`](#email-attachment-to-sql) | Workflow | [Email data gathering](/workflows/examples/email-data-gathering) |
+| [`pgp-decrypt-and-load`](#pgp-decrypt-and-load) | Workflow | [Decrypt File - PGP](/workflows/job-types/decrypt-file-pgp) |
+| [`position-break-recon`](#position-break-recon) | View, workflow, data monitor | [Reconcile PB vs FA](/automate/reconcile-positions) |
+| [`export-view-email`](#export-view-email) | Workflow | [Table to CSV (views)](/workflows/examples/table-to-csv-view) |
+| [`data-request-signoff`](#data-request-signoff) | View, workflow | [Data request task](/workflows/job-types/data-request-task) |
+| [`load-review-send`](#load-review-send) | View, workflow | [Load, review, and send](/workflows/examples/load-review-send) |
+| [`break-row-monitor`](#break-row-monitor) | Data monitor | [Data monitors](/warehouses/data-monitors) |
+| [`bloomberg-price-backfill`](#bloomberg-price-backfill) | View | [Bloomberg price backfill](/views/examples/bloomberg-price-backfill) |
+| [`month-end-close-board`](#month-end-close-board) | Checklist | [Month-end / period close](/automate/period-close) |
+
+Parameter names match [`GET /recipes/{recipeId}`](/api/recipes#get-recipesrecipeid). Apply with [`POST /recipes/{recipeId}/apply`](/api/recipes#post-recipesrecipeidapply).
+
+## sftp-file-to-sql
+
+**SFTP file into SQL.** Weekday FTP Monitor, FTP Download on success, SQL Bulk Load on success, Email on monitor failure.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `ftp_credential_id` | `integer` | Yes | Credential Hub id for the SFTP site |
+| `remote_path` | `string` | Yes | Remote folder |
+| `file_pattern` | `string` | Yes | File name pattern, for example `positions_*.csv` |
+| `warehouse_id` | `integer` | Yes | Target warehouse |
+| `target_table` | `string` | Yes | Table SQL Bulk Load writes |
+| `schedule` | `string` | Yes | Monitor schedule, for example `weekdays 07:00` |
+| `alert_to` | `string[]` | Yes | Recipients when the file never arrives |
+| `excel_to_csv` | `boolean` | No | Insert Convert Excel to CSV before the load. Default `false` |
+
+The download’s folder and file name are output-mapped into SQL Bulk Load. The recipe does not paste a dated path.
+
+## missing-file-alert
+
+**Alert when a file is missing.** FTP Monitor through a cutoff. Email fires on failure. No download and no load.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `ftp_credential_id` | `integer` | Yes | Credential Hub id |
+| `remote_path` | `string` | Yes | Remote folder |
+| `file_pattern` | `string` | Yes | Expected file pattern |
+| `schedule` | `string` | Yes | How long the monitor waits |
+| `alert_to` | `string[]` | Yes | Recipients |
+| `process_name` | `string` | Yes | Used in the email subject with the as-of date |
+
+For a mailbox instead of SFTP, use [`email-attachment-to-sql`](#email-attachment-to-sql) and keep its On failure Email.
+
+## email-attachment-to-sql
+
+**Email attachment into SQL.** Email Check for sender and subject, then SQL Bulk Load. Optional Excel to CSV.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `mailbox_credential_id` | `integer` | Yes | Mailbox credential |
+| `from_address` | `string` | No | Sender filter |
+| `subject_contains` | `string` | No | Subject filter |
+| `warehouse_id` | `integer` | Yes | Target warehouse |
+| `target_table` | `string` | Yes | Load target |
+| `schedule` | `string` | Yes | When to check the mailbox |
+| `alert_to` | `string[]` | Yes | Recipients when no matching mail arrives |
+| `excel_to_csv` | `boolean` | No | Default `false` |
+
+## pgp-decrypt-and-load
+
+**PGP decrypt, then load.** FTP Download, Decrypt File - PGP, SQL Bulk Load. Email on download failure.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `ftp_credential_id` | `integer` | Yes | SFTP credential |
+| `pgp_credential_id` | `integer` | Yes | PGP key credential |
+| `remote_path` | `string` | Yes | Remote folder |
+| `file_pattern` | `string` | Yes | Encrypted file pattern |
+| `warehouse_id` | `integer` | Yes | Target warehouse |
+| `target_table` | `string` | Yes | Load target |
+| `schedule` | `string` | Yes | When to download |
+| `alert_to` | `string[]` | Yes | Failure recipients |
+
+## position-break-recon
+
+**Book versus custodian quantity breaks, then a personal sign-off, then the CSV.** Inner join on the key columns, calculated `Diff`. The where keeps `Diff <> 0` and limits the as-of column to the trade date: **Beginning of day** through **End of day**.
+
+```
+Group
+ └── Table to CSV                         View: ref.position_breaks
+      └── Data Review Task                [On success]  personal sign-off of the CSV
+           └── Email                      [On success]  approved file
+           └── Email                      [On failure]  rejection
+```
+
+A data monitor stays on while the view still returns rows. The review is the checkpoint. The export and the email run only after that person approves.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `warehouse_id` | `integer` | Yes | Warehouse that holds both tables |
+| `book_table` | `string` | Yes | Book or prime-broker positions |
+| `custodian_table` | `string` | Yes | Custodian or fund-admin positions |
+| `book_qty_column` | `string` | Yes | Quantity on the book table |
+| `custodian_qty_column` | `string` | Yes | Quantity on the custodian table |
+| `key_columns` | `string[]` | No | Join keys. Default `AsOfDate`, `Account`, `Security` |
+| `trade_date_column` | `string` | No | Date column for the where. Default `AsOfDate` |
+| `date_start_preset` | `string` | No | Where start. Default `Beginning of day` |
+| `date_end_preset` | `string` | No | Where end. Default `End of day` |
+| `schema` | `string` | No | Default `ref` |
+| `view_name` | `string` | No | Default `position_breaks` |
+| `email_to` | `string[]` | Yes | Person who signs off, and who receives the approved CSV |
+
+The where on that view:
+
+```json
+{
+  "op": "and",
+  "items": [
+    {
+      "type": "condition",
+      "left": { "kind": "column", "column": "Diff" },
+      "operator": "<>",
+      "right": { "kind": "literal", "value_type": "number", "value": 0 }
+    },
+    {
+      "type": "condition",
+      "left": { "kind": "column", "table": "book_positions", "column": "AsOfDate" },
+      "operator": "between",
+      "start": { "kind": "preset", "preset": "Beginning of day" },
+      "end": { "kind": "preset", "preset": "End of day" }
+    }
+  ]
+}
+```
+
+Preset names are the date picker values. `Begin Today` and `Begin Yesterday` are the same kind of preset. See [Where clauses](/views/where-clauses).
+
+Both tables must already exist. Land them with [`sftp-file-to-sql`](#sftp-file-to-sql) first. Sample files and expected break rows: [Reconciliation](/views/examples/reconciliation).
+
+## export-view-email
+
+**Export a view to CSV and hand the file off after sign-off.** Table to CSV reads `View: {view_name}`. Its filter is the trade-date where: `trade_date_column` between **Beginning of day** and **End of day**. Data Review Task is the personal sign-off of that CSV. Approve sends the file. Reject sends the rejection email and does not attach the CSV.
+
+```
+Group
+ └── Table to CSV              View: ref.position_breaks
+      filter: TradeDate between Beginning of day and End of day
+      └── Data Review Task     [On success]  personal sign-off
+           └── Email           [On success]  attach CalculatedOutputFile
+           └── Email           [On failure]  rejected
+```
+
+This is the last mile of a view. The view already did the join and the columns. Table to CSV writes that result. The person signs the snapshot. Email delivers it.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `warehouse_id` | `integer` | Yes | Warehouse |
+| `view_name` | `string` | Yes | Schema-qualified view, for example `ref.position_breaks` |
+| `trade_date_column` | `string` | No | Filter column. Default `TradeDate` |
+| `date_start_preset` | `string` | No | Filter start. Default `Beginning of day` |
+| `date_end_preset` | `string` | No | Filter end. Default `End of day` |
+| `email_to` | `string[]` | Yes | Sign-off and delivery recipients |
+| `schedule` | `string` | Yes | When the export runs |
+| `subject` | `string` | Yes | Email subject |
+
+The view is not created here. Use [`position-break-recon`](#position-break-recon) or [`data-request-signoff`](#data-request-signoff) when the view has to be created in the same apply. Walkthrough: [Table to CSV (views)](/workflows/examples/table-to-csv-view).
+
+## data-request-signoff
+
+**Ask a person for data, sign it off, then export the view to CSV.** The tree stops twice. First on a [Data request task](/workflows/job-types/data-request-task), then on a [Data Review Task](/workflows/job-types/data-review-task). Everything after an approval is automatic.
+
+```
+Data request task                         [schedule]
+ └── Data Review Task                     [On success]  personal sign-off
+      └── Table to CSV                    [On success]  View: ref.manual_trades
+           └── Email                      [On success]  the CSV
+ └── Email                                [On failure]  no response, or rejected
+```
+
+`collection_mode` picks what the person sends:
+
+| Mode | What they do |
+| --- | --- |
+| `form` | Enter one row. The form is the columns of `target_table`. Submit inserts that row. |
+| `file_to_table` | Upload a CSV. The file loads into `target_table`. |
+
+The view is those rows with `trade_date_column` between `date_start_preset` and `date_end_preset` (default **Beginning of day** to **End of day**). The sign-off opens that view. Table to CSV exports the same view, so the file that goes out is the signed set.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `collection_mode` | `string` | Yes | `form` for one row, or `file_to_table` for a CSV |
+| `warehouse_id` | `integer` | Yes | Warehouse |
+| `target_table` | `string` | Yes | Table the form inserts into, or the CSV loads into |
+| `request_to` | `string[]` | Yes | Person who enters the row or uploads the CSV |
+| `signoff_to` | `string[]` | Yes | Person who approves or rejects |
+| `email_to` | `string[]` | Yes | Who receives the CSV after approval |
+| `trade_date_column` | `string` | No | Default `TradeDate` |
+| `date_start_preset` | `string` | No | Default `Beginning of day` |
+| `date_end_preset` | `string` | No | Default `End of day` |
+| `schema` | `string` | No | Default `ref` |
+| `view_name` | `string` | Yes | View name, for example `manual_trades` |
+| `schedule` | `string` | Yes | When the request goes out |
+| `response_due` | `string` | No | How long the request waits. Default `4 hours` |
+
+## load-review-send
+
+**Load a file, aggregate it, personal sign-off, then export the view to CSV.** SQL Bulk Load into `target_table`. A view groups by `group_by_columns`, sums `measure_columns`, and keeps `trade_date_column` between **Beginning of day** and **End of day**. Data Review Task is the sign-off of that view. On approval, Table to CSV exports the view and Email attaches the CSV.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `source_file` | `string` | Yes | File the bulk load reads on first apply. Later runs should use output mapping from an upstream download |
+| `warehouse_id` | `integer` | Yes | Warehouse |
+| `target_table` | `string` | Yes | Load target |
+| `group_by_columns` | `string[]` | Yes | View group-by columns |
+| `measure_columns` | `string[]` | Yes | Columns to SUM |
+| `trade_date_column` | `string` | No | Date where. Default `settlement_date` |
+| `date_start_preset` | `string` | No | Default `Beginning of day` |
+| `date_end_preset` | `string` | No | Default `End of day` |
+| `schema` | `string` | No | Default `ref` |
+| `view_name` | `string` | Yes | Aggregate view name |
+| `email_to` | `string[]` | Yes | Person who signs off, and who receives the CSV |
+
+Worked example: group trades by asset category and settlement date, sum commission and net amount. See [Load, review, and send](/workflows/examples/load-review-send).
+
+## break-row-monitor
+
+**Alert while a view still has rows.** Data monitor on an existing table or view. Does not build the view and does not send the file.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `warehouse_id` | `integer` | Yes | Warehouse |
+| `entity_name` | `string` | Yes | Table or view, for example `ref.position_breaks` |
+| `name` | `string` | Yes | Monitor name |
+| `escalation_path_group_id` | `integer` | No | Group to notify |
+
+Use this when the break view already exists and the close board should light up while rows remain. Checklist attachment is [`month-end-close-board`](#month-end-close-board).
+
+## bloomberg-price-backfill
+
+**Left join positions to PX_LAST.** Keeps every position row. Attaches `PxLast` when security, security type, and as-of date match. Positions with no price stay in the view with a null price.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `warehouse_id` | `integer` | Yes | Warehouse |
+| `positions_table` | `string` | Yes | Positions that need a price |
+| `prices_table` | `string` | Yes | Bloomberg PX_LAST rows |
+| `schema` | `string` | No | Default `ref` |
+| `view_name` | `string` | No | Default `positions_with_px_last` |
+
+Both tables are already loaded. The price file itself comes from Bloomberg to File, outside this recipe. Sample: [Bloomberg price backfill](/views/examples/bloomberg-price-backfill).
+
+## month-end-close-board
+
+**Checklist on a period calendar.** Creates the board and attaches the jobs and monitors you already have. It does not build the upstream SFTP or recon trees.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | `string` | Yes | Checklist name, for example `Month-end NAV` |
+| `period_calendar_id` | `integer` | Yes | Daily or month-end calendar |
+| `group_ids` | `integer[]` | Yes | Groups that can see the board |
+| `milestone_job_ids` | `integer[]` | Yes | Workflow roots to watch, in close order |
+| `data_monitor_ids` | `integer[]` | No | Exception feeds, such as the break-row monitor |
+
+Typical members: PB load, FA load, recon export, break monitor, sign-off task. See [Month-end / period close](/automate/period-close).
