@@ -71,133 +71,91 @@ Table and view **ACL management** (screen access, view roles, owners) is documen
 
 ### `ViewDefinition`
 
-The warehouse **Views** tab saves this object. `POST` and `PUT` take it as the body. `GET` returns it.
+The warehouse **Views** tab saves this object. `POST` and `PUT` take it as the body. `GET` returns it. Property names are PascalCase.
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `schema` | `string` | Letters, numbers, and underscores. Max 20. Often `ref` |
-| `name` | `string` | Letters, numbers, and underscores. Must start with a letter or underscore. Max 50 |
-| `description` | `string \| null` | |
-| `base_table` | `string` | Primary table or view |
-| `row_mode` | `string` | `all_rows` or `aggregate` |
-| `joins` | `ViewJoin[]` | Optional related tables. Use `[]` when there is no join |
-| `group_by` | `ViewGroupColumn[]` | Required when `row_mode` is `aggregate` |
-| `columns` | `ViewColumn[]` | At least one. Array order is output order |
-| `where` | `ViewConditionGroup \| null` | Optional row filter |
+| `Schema` | `string` | Letters, digits, and underscores. Must start with a letter or underscore. Often `ref` |
+| `Name` | `string` | Same character rules as `Schema` |
+| `Description` | `string \| null` | Omitted on `PUT` clears it |
+| `Table` | `string` | Schema-qualified base table, for example `ref.book_positions`. Omitted on `PUT` clears it |
+| `JoinCriteria` | `JoinCriteria[]` | Optional related tables. Use `[]` when there is no join |
+| `GroupByColumns` | `GroupByColumn[]` | Use `[]` when every matching row stays visible. Fill this to roll rows up |
+| `SelectColumns` | `SelectColumn[]` | At least one. Array order is output order |
+| `Where` | `WhereGroup \| null` | Optional row filter |
 
-`schema` and `name` on a `PUT` must match the path.
+`Schema` and `Name` on a `PUT` must match the path. The saved spelling is kept. Roles, owners, and tags sent on `PUT` are ignored. The saved ones stay.
 
-### `ViewJoin`
+`GET` also returns `Id`, `OrganizationId`, `WarehouseId`, `IsEnabled`, `Tags`, `WarehouseViewRoles`, and `OwnerIds`.
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `join_type` | `string` | `inner`, `left`, `right`, `full` |
-| `left_table` | `string` | Base table, or a table introduced by an earlier join |
-| `right_table` | `string` | Table or view being brought in |
-| `on` | `ViewConditionGroup` | At least one match condition |
-
-### `ViewGroupColumn`
+### `JoinCriteria`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `table` | `string` | Source table |
-| `column` | `string` | Category column |
+| `Table1` | `string` | Schema-qualified left table |
+| `Table2` | `string` | Schema-qualified table being brought in |
+| `JoinType` | `string` | `INNER`, `LEFT`, `RIGHT`, or `FULL` |
+| `Children` | `array` | Match conditions. Each item is a `JoinCondition`, or a group with `"Type": "group"` and its own `Children` |
 
-### `ViewColumn`
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `type` | `string` | `reference`, `calculated`, `conditional`, `sum`, `count`, `avg`, `min`, `max` |
-| `display_name` | `string` | Unique in the view. Same character rules as `name` |
-| `table` | `string` | `reference` only. Source table |
-| `column` | `string` | `reference` only. Source column |
-| `expression` | `ViewExpression` | `calculated` only |
-| `when` | `object[]` | `conditional` only. Each item is `{ "condition": ViewConditionGroup, "then": ViewValue }` |
-| `default` | `ViewValue \| null` | `conditional` only. Used when no `when` matches |
-| `distinct` | `boolean` | `sum`, `count`, and `avg` only. Default `false`. Not valid with `COUNT(*)` |
-| `inner` | `ViewAggregateInner` | `sum`, `count`, `avg`, `min`, `max` only |
-
-Aggregate column types require `row_mode` `aggregate`. `sum`, `avg`, `min`, and `max` require an inner column, calculated expression, or conditional. `count` with `"inner": { "type": "star" }` is `COUNT(*)`.
-
-### `ViewAggregateInner`
+### `JoinCondition`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `type` | `string` | `column`, `calculated`, `conditional`, or `star` |
-| `table` | `string` | `column` only |
-| `column` | `string` | `column` only |
-| `expression` | `ViewExpression` | `calculated` only |
-| `when` | `object[]` | `conditional` only. Same When / Then shape as a conditional column |
-| `default` | `ViewValue \| null` | `conditional` only |
+| `Type` | `string` | `condition` |
+| `LeadingLogicalOperator` | `string \| null` | `AND` or `OR`. Omit on the first child |
+| `Source1` | `object` | `{ "Column": "schema.table.column" }` |
+| `Operator` | `string` | Usually `=` |
+| `Source2` | `object` | Same shape as `Source1` |
+| `CastToDate` | `boolean` | Compare the date and ignore time |
 
-`star` is valid only as the inner of `count`.
-
-### `ViewExpression`
-
-A calculated value. Either a column or literal, or an operator node. Nest operator nodes for order of operations: `(Quantity * Price) - Cost` is a `-` node whose `left` is a `*` node.
+### `GroupByColumn`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `kind` | `string` | `column` or `literal` on a leaf |
-| `table` | `string` | `kind: column`. Source table |
-| `column` | `string` | `kind: column`. Source column. Not a select-column display name |
-| `value_type` | `string` | `kind: literal`. `number`, `text`, `date`, or `boolean` |
-| `value` | `any` | `kind: literal` |
-| `operator` | `string` | `+`, `-`, `*`, `/`, `^` |
-| `left` | `ViewExpression` | Operator node |
-| `right` | `ViewExpression` | Operator node |
+| `Table` | `string` | Schema-qualified source table |
+| `Column` | `string` | Category column |
 
-### `ViewValue`
-
-One side of a condition, or a conditional Then / Default.
+### `SelectColumn`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `kind` | `string` | `column`, `literal`, or `preset` |
-| `table` | `string` | `kind: column` |
-| `column` | `string` | `kind: column`. Source column, or a select-column display name when the filter is on calculated output |
-| `value_type` | `string` | `kind: literal`. `number`, `text`, `date`, or `boolean` |
-| `value` | `any` | `kind: literal` |
-| `preset` | `string` | `kind: preset`. Date picker preset. `Beginning of day`, `End of day`, `Begin Today`, `Begin Yesterday` |
+| `Type` | `string` | `Reference`, `Calculated`, `SUM`, `COUNT`, `AVG`, `MIN`, `MAX`, `Conditional`, or `Coalesce` |
+| `DisplayName` | `string` | Unique in the view. Same character rules as `Name` |
+| `Source` | `object` | `Reference`, and an aggregate over one column. `{ "Table": "schema.table", "ColumnConfig": { "ColumnName": "Column" } }` |
+| `Calculation` | `string` | `Calculated`, `Conditional`, and `Coalesce`. A JSON string, not an object |
+| `IsDistinct` | `boolean` | `SUM`, `COUNT`, and `AVG` only. Default `false`. Not valid on `COUNT(*)` |
+| `InnerType` | `string` | Aggregates only. `Column`, `Calculated`, or `Conditional` |
 
-### `ViewConditionGroup`
+`SUM`, `AVG`, `MIN`, and `MAX` need `GroupByColumns`. `COUNT(*)` is `Type` `COUNT` with no `Source`.
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `op` | `string` | `and` or `or` |
-| `items` | `array` | Each item is a `ViewCondition` (`"type": "condition"`) or a nested group (`"type": "group"`) |
+A calculated `Calculation` string is a group. The first child has no `LeadingOperator`. The next child sets `LeadingOperator` to `+`, `-`, `*`, `/`, or `^`. A value node has `Type` `value` and `Value.Column` set to `schema.table.column`, or `Value.Column` `__custom` with `CustomValue`.
 
-The root `where` and a join `on` omit `type`. A group nested inside `items` sets `"type": "group"`.
-
-### `ViewCondition`
+### `WhereGroup`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `type` | `string` | `condition` |
-| `left` | `ViewValue` | Usually a column |
-| `operator` | `string` | See below |
-| `right` | `ViewValue` | Omit for `is null` and `is not null` |
-| `start` | `ViewValue` | Date `between` only. Inclusive start |
-| `end` | `ViewValue` | Date `between` only. Inclusive end |
-| `cast_to_date` | `boolean` | Join match only. Compare the date and ignore time |
+| `Type` | `string` | `group` |
+| `Children` | `array` | Each item is a `WhereCondition` or a nested group |
+
+### `WhereCondition`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `Type` | `string` | `condition` |
+| `LeadingLogicalOperator` | `string \| null` | `AND` or `OR`. Omit on the first child |
+| `LeftValue` | `object` | `{ "Column": "schema.table.column" }`. A source column, not a `DisplayName` |
+| `Operator` | `string` | See below |
+| `RightValue` | `object` | A source column, or `{ "Column": "__custom", "CustomValue": ... }`. Omit for `is null` and `is not null` |
+| `RightStartDate` | `string` | Date `between` only |
+| `RightEndDate` | `string` | Date `between` only |
 
 | Left side | Operators |
 | --- | --- |
 | Number, boolean | `=`, `<>`, `>`, `>=`, `<`, `<=`, `is null`, `is not null` |
 | Text | `=`, `contains`, `does not contain`, `is null`, `is not null` |
-| Date | `between` (`start` and `end`) |
+| Date | `between` (`RightStartDate` and `RightEndDate`) |
 
-A date `between` can use presets on `start` and `end`. For a trade date, **Beginning of day** through **End of day** keeps every timestamp on that date.
-
-```json
-{
-  "type": "condition",
-  "left": { "kind": "column", "table": "trades", "column": "TradeDate" },
-  "operator": "between",
-  "start": { "kind": "preset", "preset": "Beginning of day" },
-  "end": { "kind": "preset", "preset": "End of day" }
-}
-```
+A filter cannot use a select-column `DisplayName`. `BookQty <> CustodianQty` compares the two source columns.
 
 ### `ColumnSchema`
 
@@ -377,9 +335,9 @@ List warehouse views.
 {
   "views": [
     {
-      "name": "v_recon_breaks",
-      "schema": "dbo",
-      "description": "Open reconciliation breaks"
+      "name": "position_breaks",
+      "schema": "ref",
+      "description": null
     }
   ]
 }
@@ -407,14 +365,7 @@ Read one view definition.
 
 #### Response `200 OK`
 
-A [`ViewDefinition`](#viewdefinition) plus:
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `warehouse_id` | `integer` | Warehouse ID |
-| `qualified_name` | `string` | `{schema}.{name}`, for example `ref.position_breaks` |
-
-The body matches what was saved. Full definitions are in the [create examples](#position-breaks).
+The saved [`ViewDefinition`](#viewdefinition). Full definitions are in the [create examples](#position-breaks).
 
 ---
 
@@ -429,15 +380,9 @@ Create a view from a [`ViewDefinition`](#viewdefinition). Same object the wareho
 
 The caller also needs **Database Views** access on the warehouse. Tables and columns in the definition must be visible through screen access.
 
-#### Headers
-
-| Name | Required | Description |
-| --- | --- | --- |
-| `Idempotency-Key` | No | UUID. A retry with the same key and body returns the original view instead of creating a second one |
-
 #### Request body
 
-[`ViewDefinition`](#viewdefinition).
+[`ViewDefinition`](#viewdefinition). `Schema`, `Name`, `Table`, and `SelectColumns` are required.
 
 #### Response `201 Created`
 
@@ -447,19 +392,16 @@ The saved definition, same shape as [`GET .../views/{viewName}`](#get-warehouses
 
 | HTTP | `code` | When |
 | --- | --- | --- |
-| `409` | `conflict` | `schema` + `name` already exists in the warehouse |
-| `422` | `validation_error` | Unknown table or column, duplicate display name, aggregate column while `row_mode` is `all_rows`, `distinct` on `COUNT(*)`, empty `columns`, illegal name |
+| `409` | `conflict` | `Schema` + `Name` already exists. `message` is the server text |
+| `400` | `validation_error` | Missing required field, or the server rejected the definition. `message` is the server text, for example `Table is required.` |
+| `502` | `upstream_error` | The save timed out |
 
 ```json
 {
   "error": {
     "code": "validation_error",
-    "message": "View definition is invalid.",
-    "details": {
-      "fields": [
-        { "path": "columns[1].display_name", "message": "Display name Account is already used." }
-      ]
-    }
+    "message": "Table is required.",
+    "details": {}
   }
 }
 ```
@@ -468,7 +410,7 @@ Walkthroughs these examples follow: [Reconciliation](/views/examples/reconciliat
 
 #### Position breaks
 
-Book versus custodian quantities. Inner join on as-of date, account, and security. `Diff` is book quantity minus custodian quantity. The where keeps rows where `Diff` is not 0.
+Book versus custodian quantities. Inner join on as-of date, account, and security. `Diff` is book quantity minus custodian quantity. The where keeps rows where book quantity is not custodian quantity.
 
 Load [`book_positions.csv`](/examples/book_positions.csv) and [`custodian_positions.csv`](/examples/custodian_positions.csv) first. Three rows remain: ACC1/MSFT −5, ACC2/AAPL +5, ACC3/AMZN −5.
 
@@ -477,65 +419,86 @@ Load [`book_positions.csv`](/examples/book_positions.csv) and [`custodian_positi
 
 ```js
 const body = {
-  schema: "ref",
-  name: "position_breaks",
-  description: "Book vs custodian quantity breaks",
-  base_table: "book_positions",
-  row_mode: "all_rows",
-  joins: [
+  Schema: "ref",
+  Name: "position_breaks",
+  Description: "Book vs custodian quantity breaks",
+  Table: "ref.book_positions",
+  JoinCriteria: [
     {
-      join_type: "inner",
-      left_table: "book_positions",
-      right_table: "custodian_positions",
-      on: {
-        op: "and",
-        items: [
+      Table1: "ref.book_positions",
+      Table2: "ref.custodian_positions",
+      JoinType: "INNER",
+      Children: [
+        {
+          Type: "condition",
+          Source1: { Column: "ref.book_positions.AsOfDate" },
+          Operator: "=",
+          Source2: { Column: "ref.custodian_positions.AsOfDate" },
+          CastToDate: true,
+        },
+        {
+          Type: "condition",
+          LeadingLogicalOperator: "AND",
+          Source1: { Column: "ref.book_positions.Account" },
+          Operator: "=",
+          Source2: { Column: "ref.custodian_positions.Account" },
+        },
+        {
+          Type: "condition",
+          LeadingLogicalOperator: "AND",
+          Source1: { Column: "ref.book_positions.Security" },
+          Operator: "=",
+          Source2: { Column: "ref.custodian_positions.Security" },
+        },
+      ],
+    },
+  ],
+  GroupByColumns: [],
+  SelectColumns: [
+    {
+      Type: "Reference",
+      DisplayName: "Account",
+      Source: { Table: "ref.book_positions", ColumnConfig: { ColumnName: "Account" } },
+    },
+    {
+      Type: "Reference",
+      DisplayName: "Security",
+      Source: { Table: "ref.book_positions", ColumnConfig: { ColumnName: "Security" } },
+    },
+    {
+      Type: "Reference",
+      DisplayName: "BookQty",
+      Source: { Table: "ref.book_positions", ColumnConfig: { ColumnName: "BookQty" } },
+    },
+    {
+      Type: "Reference",
+      DisplayName: "CustodianQty",
+      Source: { Table: "ref.custodian_positions", ColumnConfig: { ColumnName: "CustodianQty" } },
+    },
+    {
+      Type: "Calculated",
+      DisplayName: "Diff",
+      Calculation: JSON.stringify({
+        Type: "group",
+        Children: [
+          { Type: "value", Value: { Column: "ref.book_positions.BookQty" } },
           {
-            type: "condition",
-            left: { kind: "column", table: "book_positions", column: "AsOfDate" },
-            operator: "=",
-            right: { kind: "column", table: "custodian_positions", column: "AsOfDate" },
-            cast_to_date: true,
-          },
-          {
-            type: "condition",
-            left: { kind: "column", table: "book_positions", column: "Account" },
-            operator: "=",
-            right: { kind: "column", table: "custodian_positions", column: "Account" },
-          },
-          {
-            type: "condition",
-            left: { kind: "column", table: "book_positions", column: "Security" },
-            operator: "=",
-            right: { kind: "column", table: "custodian_positions", column: "Security" },
+            Type: "value",
+            LeadingOperator: "-",
+            Value: { Column: "ref.custodian_positions.CustodianQty" },
           },
         ],
-      },
+      }),
     },
   ],
-  columns: [
-    { type: "reference", display_name: "Account", table: "book_positions", column: "Account" },
-    { type: "reference", display_name: "Security", table: "book_positions", column: "Security" },
-    { type: "reference", display_name: "BookQty", table: "book_positions", column: "BookQty" },
-    { type: "reference", display_name: "CustodianQty", table: "custodian_positions", column: "CustodianQty" },
-    {
-      type: "calculated",
-      display_name: "Diff",
-      expression: {
-        operator: "-",
-        left: { kind: "column", table: "book_positions", column: "BookQty" },
-        right: { kind: "column", table: "custodian_positions", column: "CustodianQty" },
-      },
-    },
-  ],
-  where: {
-    op: "and",
-    items: [
+  Where: {
+    Type: "group",
+    Children: [
       {
-        type: "condition",
-        left: { kind: "column", column: "Diff" },
-        operator: "<>",
-        right: { kind: "literal", value_type: "number", value: 0 },
+        Type: "condition",
+        LeftValue: { Column: "ref.book_positions.BookQty" },
+        Operator: "<>",
+        RightValue: { Column: "ref.custodian_positions.CustodianQty" },
       },
     ],
   },
@@ -548,7 +511,6 @@ const response = await fetch(
     headers: {
       Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
       "Content-Type": "application/json",
-      "Idempotency-Key": "3f1c2a90-7b14-4e2a-9c55-1a0e6d8b4f21",
     },
     body: JSON.stringify(body),
   },
@@ -561,69 +523,91 @@ const data = await response.json();
   <Tabs.Tab>
 
 ```python
+import json
 import os
 import requests
 
 body = {
-    "schema": "ref",
-    "name": "position_breaks",
-    "description": "Book vs custodian quantity breaks",
-    "base_table": "book_positions",
-    "row_mode": "all_rows",
-    "joins": [
+    "Schema": "ref",
+    "Name": "position_breaks",
+    "Description": "Book vs custodian quantity breaks",
+    "Table": "ref.book_positions",
+    "JoinCriteria": [
         {
-            "join_type": "inner",
-            "left_table": "book_positions",
-            "right_table": "custodian_positions",
-            "on": {
-                "op": "and",
-                "items": [
-                    {
-                        "type": "condition",
-                        "left": {"kind": "column", "table": "book_positions", "column": "AsOfDate"},
-                        "operator": "=",
-                        "right": {"kind": "column", "table": "custodian_positions", "column": "AsOfDate"},
-                        "cast_to_date": True,
-                    },
-                    {
-                        "type": "condition",
-                        "left": {"kind": "column", "table": "book_positions", "column": "Account"},
-                        "operator": "=",
-                        "right": {"kind": "column", "table": "custodian_positions", "column": "Account"},
-                    },
-                    {
-                        "type": "condition",
-                        "left": {"kind": "column", "table": "book_positions", "column": "Security"},
-                        "operator": "=",
-                        "right": {"kind": "column", "table": "custodian_positions", "column": "Security"},
-                    },
-                ],
-            },
+            "Table1": "ref.book_positions",
+            "Table2": "ref.custodian_positions",
+            "JoinType": "INNER",
+            "Children": [
+                {
+                    "Type": "condition",
+                    "Source1": {"Column": "ref.book_positions.AsOfDate"},
+                    "Operator": "=",
+                    "Source2": {"Column": "ref.custodian_positions.AsOfDate"},
+                    "CastToDate": True,
+                },
+                {
+                    "Type": "condition",
+                    "LeadingLogicalOperator": "AND",
+                    "Source1": {"Column": "ref.book_positions.Account"},
+                    "Operator": "=",
+                    "Source2": {"Column": "ref.custodian_positions.Account"},
+                },
+                {
+                    "Type": "condition",
+                    "LeadingLogicalOperator": "AND",
+                    "Source1": {"Column": "ref.book_positions.Security"},
+                    "Operator": "=",
+                    "Source2": {"Column": "ref.custodian_positions.Security"},
+                },
+            ],
         }
     ],
-    "columns": [
-        {"type": "reference", "display_name": "Account", "table": "book_positions", "column": "Account"},
-        {"type": "reference", "display_name": "Security", "table": "book_positions", "column": "Security"},
-        {"type": "reference", "display_name": "BookQty", "table": "book_positions", "column": "BookQty"},
-        {"type": "reference", "display_name": "CustodianQty", "table": "custodian_positions", "column": "CustodianQty"},
+    "GroupByColumns": [],
+    "SelectColumns": [
         {
-            "type": "calculated",
-            "display_name": "Diff",
-            "expression": {
-                "operator": "-",
-                "left": {"kind": "column", "table": "book_positions", "column": "BookQty"},
-                "right": {"kind": "column", "table": "custodian_positions", "column": "CustodianQty"},
-            },
+            "Type": "Reference",
+            "DisplayName": "Account",
+            "Source": {"Table": "ref.book_positions", "ColumnConfig": {"ColumnName": "Account"}},
+        },
+        {
+            "Type": "Reference",
+            "DisplayName": "Security",
+            "Source": {"Table": "ref.book_positions", "ColumnConfig": {"ColumnName": "Security"}},
+        },
+        {
+            "Type": "Reference",
+            "DisplayName": "BookQty",
+            "Source": {"Table": "ref.book_positions", "ColumnConfig": {"ColumnName": "BookQty"}},
+        },
+        {
+            "Type": "Reference",
+            "DisplayName": "CustodianQty",
+            "Source": {"Table": "ref.custodian_positions", "ColumnConfig": {"ColumnName": "CustodianQty"}},
+        },
+        {
+            "Type": "Calculated",
+            "DisplayName": "Diff",
+            "Calculation": json.dumps({
+                "Type": "group",
+                "Children": [
+                    {"Type": "value", "Value": {"Column": "ref.book_positions.BookQty"}},
+                    {
+                        "Type": "value",
+                        "LeadingOperator": "-",
+                        "Value": {"Column": "ref.custodian_positions.CustodianQty"},
+                    },
+                ],
+            }),
         },
     ],
-    "where": {
-        "op": "and",
-        "items": [
+    "Where": {
+        "Type": "group",
+        "Children": [
             {
-                "type": "condition",
-                "left": {"kind": "column", "column": "Diff"},
-                "operator": "<>",
-                "right": {"kind": "literal", "value_type": "number", "value": 0},
+                "Type": "condition",
+                "LeftValue": {"Column": "ref.book_positions.BookQty"},
+                "Operator": "<>",
+                "RightValue": {"Column": "ref.custodian_positions.CustodianQty"},
             }
         ],
     },
@@ -631,10 +615,7 @@ body = {
 
 response = requests.post(
     "https://portal.cosethub.com/api/v1/warehouses/7/views",
-    headers={
-        "Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}",
-        "Idempotency-Key": "3f1c2a90-7b14-4e2a-9c55-1a0e6d8b4f21",
-    },
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
     json=body,
 )
 response.raise_for_status()
@@ -663,29 +644,32 @@ Load [`positions_by_fund.csv`](/examples/positions_by_fund.csv) first.
 
 ```js
 const body = {
-  schema: "ref",
-  name: "mv_by_fund",
-  description: "Market value and position count by fund",
-  base_table: "positions_by_fund",
-  row_mode: "aggregate",
-  joins: [],
-  group_by: [{ table: "positions_by_fund", column: "Fund" }],
-  columns: [
-    { type: "reference", display_name: "Fund", table: "positions_by_fund", column: "Fund" },
+  Schema: "ref",
+  Name: "mv_by_fund",
+  Description: "Market value and position count by fund",
+  Table: "ref.positions_by_fund",
+  JoinCriteria: [],
+  GroupByColumns: [{ Table: "ref.positions_by_fund", Column: "Fund" }],
+  SelectColumns: [
     {
-      type: "sum",
-      display_name: "TotalMV",
-      distinct: false,
-      inner: { type: "column", table: "positions_by_fund", column: "MarketValue" },
+      Type: "Reference",
+      DisplayName: "Fund",
+      Source: { Table: "ref.positions_by_fund", ColumnConfig: { ColumnName: "Fund" } },
     },
     {
-      type: "count",
-      display_name: "PositionCount",
-      distinct: false,
-      inner: { type: "star" },
+      Type: "SUM",
+      DisplayName: "TotalMV",
+      IsDistinct: false,
+      InnerType: "Column",
+      Source: { Table: "ref.positions_by_fund", ColumnConfig: { ColumnName: "MarketValue" } },
+    },
+    {
+      Type: "COUNT",
+      DisplayName: "PositionCount",
+      IsDistinct: false,
     },
   ],
-  where: null,
+  Where: null,
 };
 
 const response = await fetch(
@@ -695,7 +679,6 @@ const response = await fetch(
     headers: {
       Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
       "Content-Type": "application/json",
-      "Idempotency-Key": "8c4e1d62-0a53-4f7b-b619-2d5a9c0e7b34",
     },
     body: JSON.stringify(body),
   },
@@ -712,37 +695,37 @@ import os
 import requests
 
 body = {
-    "schema": "ref",
-    "name": "mv_by_fund",
-    "description": "Market value and position count by fund",
-    "base_table": "positions_by_fund",
-    "row_mode": "aggregate",
-    "joins": [],
-    "group_by": [{"table": "positions_by_fund", "column": "Fund"}],
-    "columns": [
-        {"type": "reference", "display_name": "Fund", "table": "positions_by_fund", "column": "Fund"},
+    "Schema": "ref",
+    "Name": "mv_by_fund",
+    "Description": "Market value and position count by fund",
+    "Table": "ref.positions_by_fund",
+    "JoinCriteria": [],
+    "GroupByColumns": [{"Table": "ref.positions_by_fund", "Column": "Fund"}],
+    "SelectColumns": [
         {
-            "type": "sum",
-            "display_name": "TotalMV",
-            "distinct": False,
-            "inner": {"type": "column", "table": "positions_by_fund", "column": "MarketValue"},
+            "Type": "Reference",
+            "DisplayName": "Fund",
+            "Source": {"Table": "ref.positions_by_fund", "ColumnConfig": {"ColumnName": "Fund"}},
         },
         {
-            "type": "count",
-            "display_name": "PositionCount",
-            "distinct": False,
-            "inner": {"type": "star"},
+            "Type": "SUM",
+            "DisplayName": "TotalMV",
+            "IsDistinct": False,
+            "InnerType": "Column",
+            "Source": {"Table": "ref.positions_by_fund", "ColumnConfig": {"ColumnName": "MarketValue"}},
+        },
+        {
+            "Type": "COUNT",
+            "DisplayName": "PositionCount",
+            "IsDistinct": False,
         },
     ],
-    "where": None,
+    "Where": None,
 }
 
 response = requests.post(
     "https://portal.cosethub.com/api/v1/warehouses/7/views",
-    headers={
-        "Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}",
-        "Idempotency-Key": "8c4e1d62-0a53-4f7b-b619-2d5a9c0e7b34",
-    },
+    headers={"Authorization": f"Bearer {os.environ['ACCESS_TOKEN']}"},
     json=body,
 )
 response.raise_for_status()
@@ -758,13 +741,13 @@ data = response.json()
 | Beta | 90750 | 3 |
 | Gamma | 567500 | 2 |
 
-To add Strategy to the grain, put `Strategy` on `group_by` and add a reference column for it. That result is on [Group by & aggregates](/views/examples/group-by-aggregates).
+To add Strategy to the grain, put `Strategy` on `GroupByColumns` and add a reference column for it. That result is on [Group by & aggregates](/views/examples/group-by-aggregates).
 
 ---
 
 ### `PUT /warehouses/{warehouseId}/views/{viewName}`
 
-Replace a view definition. Send the full [`ViewDefinition`](#viewdefinition). Omitted sections are removed, not left as they were.
+Replace a view definition. Send the full [`ViewDefinition`](#viewdefinition). An omitted `Description` or `Table` is cleared. Roles, owners, and tags are kept.
 
 | | |
 | --- | --- |
@@ -776,7 +759,7 @@ Replace a view definition. Send the full [`ViewDefinition`](#viewdefinition). Om
 | Name | Type | Description |
 | --- | --- | --- |
 | `warehouseId` | `integer` | Warehouse ID |
-| `viewName` | `string` | Schema-qualified name. Must match `schema` and `name` in the body |
+| `viewName` | `string` | Schema-qualified name. Must match `Schema` and `Name` in the body |
 
 #### Request body
 
@@ -790,40 +773,49 @@ The saved definition.
 
 | HTTP | `code` | When |
 | --- | --- | --- |
-| `404` | `not_found` | Unknown warehouse or view |
-| `422` | `validation_error` | Same validation as create |
+| `404` | `not_found` | Warehouse view not found. `message` is the server text |
+| `403` | `forbidden` | The caller can read the view but cannot change it. `message` is `Not authorized` |
+| `400` | `validation_error` | Same validation as create, or `Schema` and `Name` do not match the path |
+| `502` | `upstream_error` | The save timed out |
 
 Replacing `ref.mv_by_fund` so the grain is Fund and Strategy:
 
 ```json
 {
-  "schema": "ref",
-  "name": "mv_by_fund",
-  "description": "Market value and position count by fund and strategy",
-  "base_table": "positions_by_fund",
-  "row_mode": "aggregate",
-  "joins": [],
-  "group_by": [
-    { "table": "positions_by_fund", "column": "Fund" },
-    { "table": "positions_by_fund", "column": "Strategy" }
+  "Schema": "ref",
+  "Name": "mv_by_fund",
+  "Description": "Market value and position count by fund and strategy",
+  "Table": "ref.positions_by_fund",
+  "JoinCriteria": [],
+  "GroupByColumns": [
+    { "Table": "ref.positions_by_fund", "Column": "Fund" },
+    { "Table": "ref.positions_by_fund", "Column": "Strategy" }
   ],
-  "columns": [
-    { "type": "reference", "display_name": "Fund", "table": "positions_by_fund", "column": "Fund" },
-    { "type": "reference", "display_name": "Strategy", "table": "positions_by_fund", "column": "Strategy" },
+  "SelectColumns": [
     {
-      "type": "sum",
-      "display_name": "TotalMV",
-      "distinct": false,
-      "inner": { "type": "column", "table": "positions_by_fund", "column": "MarketValue" }
+      "Type": "Reference",
+      "DisplayName": "Fund",
+      "Source": { "Table": "ref.positions_by_fund", "ColumnConfig": { "ColumnName": "Fund" } }
     },
     {
-      "type": "count",
-      "display_name": "PositionCount",
-      "distinct": false,
-      "inner": { "type": "star" }
+      "Type": "Reference",
+      "DisplayName": "Strategy",
+      "Source": { "Table": "ref.positions_by_fund", "ColumnConfig": { "ColumnName": "Strategy" } }
+    },
+    {
+      "Type": "SUM",
+      "DisplayName": "TotalMV",
+      "IsDistinct": false,
+      "InnerType": "Column",
+      "Source": { "Table": "ref.positions_by_fund", "ColumnConfig": { "ColumnName": "MarketValue" } }
+    },
+    {
+      "Type": "COUNT",
+      "DisplayName": "PositionCount",
+      "IsDistinct": false
     }
   ],
-  "where": null
+  "Where": null
 }
 ```
 
@@ -1362,6 +1354,3 @@ Update warehouse UI / display metadata (not connection secrets).
 #### Response `200 OK`
 
 Returns updated `WarehouseSummary`.
-
----
-
