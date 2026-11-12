@@ -212,7 +212,7 @@ Matching rules, repeated types, and the REST encoding of `parameters`: [Job and 
 | `coset_bulk_upsert_table_rows` | `POST .../rows/bulk` | W |
 | `coset_put_warehouse_metadata` | `PUT .../metadata` | W |
 
-`coset_list_views` returns names. `coset_get_view` returns the definition (joins, columns, where). `coset_create_view` and `coset_update_view` write that definition. Production side effect. Arguments are `warehouse_id` plus the [`ViewDefinition`](./warehouses#viewdefinition) fields. `view_name` is the schema-qualified name (`ref.position_breaks`). `coset_create_view` takes an optional `idempotency_key`, sent as `Idempotency-Key`. `coset_update_view` replaces the whole definition.
+`coset_list_views` returns names. `coset_get_view` returns the definition. `coset_create_view` and `coset_update_view` write that definition. Production side effect. Arguments are `warehouse_id` and one `view` object, the same JSON [`GET` returns](./warehouses#viewdefinition). `coset_update_view` also takes `view_name` (`ref.position_breaks`). Send the full object from `coset_get_view`. An omitted `Description` or `Table` is cleared. Roles, owners, and tags are kept. `Schema` and `Name` must match `view_name`.
 
 `coset_query_view_rows` still only reads result rows. Row inserts and updates are not available on views.
 
@@ -220,75 +220,87 @@ REST contract and both payloads: [Create view](./warehouses#post-warehouseswareh
 
 #### Create position breaks
 
-Book versus custodian. Inner join on date, account, and security. Keep rows where `Diff` is not 0.
+Book versus custodian. Inner join on date, account, and security. Keep rows where book quantity is not custodian quantity.
 
 ```json
 {
   "name": "coset_create_view",
   "arguments": {
     "warehouse_id": 7,
-    "idempotency_key": "3f1c2a90-7b14-4e2a-9c55-1a0e6d8b4f21",
-    "schema": "ref",
-    "name": "position_breaks",
-    "description": "Book vs custodian quantity breaks",
-    "base_table": "book_positions",
-    "row_mode": "all_rows",
-    "joins": [
-      {
-        "join_type": "inner",
-        "left_table": "book_positions",
-        "right_table": "custodian_positions",
-        "on": {
-          "op": "and",
-          "items": [
+    "view": {
+      "Schema": "ref",
+      "Name": "position_breaks",
+      "Description": "Book vs custodian quantity breaks",
+      "Table": "ref.book_positions",
+      "JoinCriteria": [
+        {
+          "Table1": "ref.book_positions",
+          "Table2": "ref.custodian_positions",
+          "JoinType": "INNER",
+          "Children": [
             {
-              "type": "condition",
-              "left": { "kind": "column", "table": "book_positions", "column": "AsOfDate" },
-              "operator": "=",
-              "right": { "kind": "column", "table": "custodian_positions", "column": "AsOfDate" },
-              "cast_to_date": true
+              "Type": "condition",
+              "Source1": { "Column": "ref.book_positions.AsOfDate" },
+              "Operator": "=",
+              "Source2": { "Column": "ref.custodian_positions.AsOfDate" },
+              "CastToDate": true
             },
             {
-              "type": "condition",
-              "left": { "kind": "column", "table": "book_positions", "column": "Account" },
-              "operator": "=",
-              "right": { "kind": "column", "table": "custodian_positions", "column": "Account" }
+              "Type": "condition",
+              "LeadingLogicalOperator": "AND",
+              "Source1": { "Column": "ref.book_positions.Account" },
+              "Operator": "=",
+              "Source2": { "Column": "ref.custodian_positions.Account" }
             },
             {
-              "type": "condition",
-              "left": { "kind": "column", "table": "book_positions", "column": "Security" },
-              "operator": "=",
-              "right": { "kind": "column", "table": "custodian_positions", "column": "Security" }
+              "Type": "condition",
+              "LeadingLogicalOperator": "AND",
+              "Source1": { "Column": "ref.book_positions.Security" },
+              "Operator": "=",
+              "Source2": { "Column": "ref.custodian_positions.Security" }
             }
           ]
         }
-      }
-    ],
-    "columns": [
-      { "type": "reference", "display_name": "Account", "table": "book_positions", "column": "Account" },
-      { "type": "reference", "display_name": "Security", "table": "book_positions", "column": "Security" },
-      { "type": "reference", "display_name": "BookQty", "table": "book_positions", "column": "BookQty" },
-      { "type": "reference", "display_name": "CustodianQty", "table": "custodian_positions", "column": "CustodianQty" },
-      {
-        "type": "calculated",
-        "display_name": "Diff",
-        "expression": {
-          "operator": "-",
-          "left": { "kind": "column", "table": "book_positions", "column": "BookQty" },
-          "right": { "kind": "column", "table": "custodian_positions", "column": "CustodianQty" }
-        }
-      }
-    ],
-    "where": {
-      "op": "and",
-      "items": [
+      ],
+      "GroupByColumns": [],
+      "SelectColumns": [
         {
-          "type": "condition",
-          "left": { "kind": "column", "column": "Diff" },
-          "operator": "<>",
-          "right": { "kind": "literal", "value_type": "number", "value": 0 }
+          "Type": "Reference",
+          "DisplayName": "Account",
+          "Source": { "Table": "ref.book_positions", "ColumnConfig": { "ColumnName": "Account" } }
+        },
+        {
+          "Type": "Reference",
+          "DisplayName": "Security",
+          "Source": { "Table": "ref.book_positions", "ColumnConfig": { "ColumnName": "Security" } }
+        },
+        {
+          "Type": "Reference",
+          "DisplayName": "BookQty",
+          "Source": { "Table": "ref.book_positions", "ColumnConfig": { "ColumnName": "BookQty" } }
+        },
+        {
+          "Type": "Reference",
+          "DisplayName": "CustodianQty",
+          "Source": { "Table": "ref.custodian_positions", "ColumnConfig": { "ColumnName": "CustodianQty" } }
+        },
+        {
+          "Type": "Calculated",
+          "DisplayName": "Diff",
+          "Calculation": "{\"Type\":\"group\",\"Children\":[{\"Type\":\"value\",\"Value\":{\"Column\":\"ref.book_positions.BookQty\"}},{\"Type\":\"value\",\"LeadingOperator\":\"-\",\"Value\":{\"Column\":\"ref.custodian_positions.CustodianQty\"}}]}"
         }
-      ]
+      ],
+      "Where": {
+        "Type": "group",
+        "Children": [
+          {
+            "Type": "condition",
+            "LeftValue": { "Column": "ref.book_positions.BookQty" },
+            "Operator": "<>",
+            "RightValue": { "Column": "ref.custodian_positions.CustodianQty" }
+          }
+        ]
+      }
     }
   }
 }
@@ -305,35 +317,39 @@ One row per fund: `SUM(MarketValue)` and `COUNT(*)`.
   "name": "coset_create_view",
   "arguments": {
     "warehouse_id": 7,
-    "idempotency_key": "8c4e1d62-0a53-4f7b-b619-2d5a9c0e7b34",
-    "schema": "ref",
-    "name": "mv_by_fund",
-    "description": "Market value and position count by fund",
-    "base_table": "positions_by_fund",
-    "row_mode": "aggregate",
-    "joins": [],
-    "group_by": [{ "table": "positions_by_fund", "column": "Fund" }],
-    "columns": [
-      { "type": "reference", "display_name": "Fund", "table": "positions_by_fund", "column": "Fund" },
-      {
-        "type": "sum",
-        "display_name": "TotalMV",
-        "distinct": false,
-        "inner": { "type": "column", "table": "positions_by_fund", "column": "MarketValue" }
-      },
-      {
-        "type": "count",
-        "display_name": "PositionCount",
-        "distinct": false,
-        "inner": { "type": "star" }
-      }
-    ],
-    "where": null
+    "view": {
+      "Schema": "ref",
+      "Name": "mv_by_fund",
+      "Description": "Market value and position count by fund",
+      "Table": "ref.positions_by_fund",
+      "JoinCriteria": [],
+      "GroupByColumns": [{ "Table": "ref.positions_by_fund", "Column": "Fund" }],
+      "SelectColumns": [
+        {
+          "Type": "Reference",
+          "DisplayName": "Fund",
+          "Source": { "Table": "ref.positions_by_fund", "ColumnConfig": { "ColumnName": "Fund" } }
+        },
+        {
+          "Type": "SUM",
+          "DisplayName": "TotalMV",
+          "IsDistinct": false,
+          "InnerType": "Column",
+          "Source": { "Table": "ref.positions_by_fund", "ColumnConfig": { "ColumnName": "MarketValue" } }
+        },
+        {
+          "Type": "COUNT",
+          "DisplayName": "PositionCount",
+          "IsDistinct": false
+        }
+      ],
+      "Where": null
+    }
   }
 }
 ```
 
-To change the grain later, call `coset_update_view` with `view_name` `ref.mv_by_fund` and the same body plus a `Strategy` group-by column. That replace is [PUT view](./warehouses#put-warehouseswarehouseidviewsviewname). Expected rows: [Market value by fund](./warehouses#market-value-by-fund).
+To change the grain later, call `coset_update_view` with `view_name` `ref.mv_by_fund` and the same `view` plus a `Strategy` group-by column. That replace is [PUT view](./warehouses#put-warehouseswarehouseidviewsviewname). Expected rows: [Market value by fund](./warehouses#market-value-by-fund).
 
 ### Recipes
 
